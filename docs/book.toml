@@ -1,0 +1,6 @@
+[book]
+authors = ["Michallis Pashidis"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Smart ID Rust client"
