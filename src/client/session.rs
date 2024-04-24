@@ -33,3 +33,4 @@ pub struct SessionStatus {
     #[serde(rename = "deviceIpAddress")]
     pub device_ip_address: String,
 }
+

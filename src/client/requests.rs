@@ -20,6 +20,50 @@ pub struct AuthenticationSessionRequest {
     pub request_properties: RequestProperties,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SignatureSessionRequest {
+    #[serde(rename = "relyingPartyUUID")]
+    pub relying_party_uuid: Option<String>,
+    #[serde(rename = "relyingPartyName")]
+    pub relying_party_name: Option<String>,
+    #[serde(rename = "certificateLevel")]
+    pub certificate_level: String,
+    pub hash: Option<String>,
+    #[serde(rename = "hashType")]
+    pub hash_type: String,
+    pub nonce: String,
+    pub capabilities: Vec<String>,
+    #[serde(rename = "allowedInteractionsOrder")]
+    pub interaction_order: Vec<Interaction>,
+    #[serde(rename = "requestProperties")]
+    pub request_properties: RequestProperties,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CertificateRequest {
+    #[serde(rename = "relyingPartyUUID")]
+    pub relying_party_uuid: Option<String>,
+    #[serde(rename = "relyingPartyName")]
+    pub relying_party_name: Option<String>,
+    #[serde(rename = "certificateLevel")]
+    pub certificate_level: String,
+    pub nonce: String,
+    #[serde(rename = "requestProperties")]
+    pub capabilities: Vec<String>, //todo not sure as Set is generic interface
+    #[serde(rename = "requestProperties")]
+    pub request_properties: RequestProperties,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SessionStatusRequest {
+    #[serde(rename = "sessionId")]
+    pub session_id: String,
+    #[serde(rename = "responseSocketOpenTimeUnit")]
+    pub request_socket_open_time_value: String,
+    #[serde(rename = "responseSocketOpenTimeValue")]
+    pub response_socket_open_time_value: i64,
+}
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Interaction {
     #[serde(rename = "type")]

@@ -2,12 +2,22 @@
 name = "smart-id-rust-client"
 version = "0.1.0"
 description = "Smart ID Rust Client"
-authors = ["Michallis Pashidis"]
-license = ""
-repository = ""
+homepage = "https://smart-id.com"
+authors = ["Michallis Pashidis <michallis@trust1team.com>"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/Trust1Team/smart-id-rust-client"
 edition = "2021"
+keywords = ["eidas", "eID", "wallet", "authentication", "signing"]
+categories = ["authentication"]
+readme = "README.MD"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "smart_id_rust_client"
+path = "src/lib.rs"
+test = true
+doc = true
+edition = "2021"
+crate-type = ["lib"]
 
 [dependencies]
 anyhow = "1.0.81"
@@ -20,6 +30,7 @@ tracing-subscriber = {  version = "0.3.18", features = [
     "fmt",
     "json",
 ] }
+time-unit = "0.1.2"
 
 
 [dev-dependencies]

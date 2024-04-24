@@ -517,6 +517,7 @@ dependencies = [
  "serde_json",
  "serial_test",
  "serial_test_derive",
+ "time-unit",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -564,6 +565,12 @@ dependencies = [
  "cfg-if",
  "once_cell",
 ]
+
+[[package]]
+name = "time-unit"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a93d55317331585f1e6708785a4e26e9bacbc3285e83a2af2fb130ab3f9ed7d"
 
 [[package]]
 name = "tokio"
