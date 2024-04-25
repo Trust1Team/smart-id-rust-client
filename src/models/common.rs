@@ -44,7 +44,7 @@ mod tests {
     use super::*;
     use tracing::{error, info};
     use tracing_test::traced_test;
-    use crate::client::requests::{Interaction, InteractionFlow};
+    use crate::models::requests::{Interaction, InteractionFlow};
 
     #[traced_test]
     #[tokio::test]

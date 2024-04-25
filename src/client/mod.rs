@@ -1,4 +1,1 @@
-pub mod requests;
-pub mod responses;
-mod common;
-mod session;
+pub mod reqwest_generic;

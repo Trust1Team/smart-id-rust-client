@@ -20,7 +20,7 @@ pub struct SessionSignature {
     pub value: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct SessionStatus {
     pub state: String,
     pub result: SessionResult,
