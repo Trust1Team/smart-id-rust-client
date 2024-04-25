@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
+#[non_exhaustive]
 pub enum Capability {
     QUALIFIED,
     ADVANCED,
@@ -9,6 +10,7 @@ pub enum Capability {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
+#[non_exhaustive]
 pub enum IdentityType {
     PAS,
     IDC,
@@ -17,6 +19,7 @@ pub enum IdentityType {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
+#[non_exhaustive]
 pub enum CountryCode {
     EE, LT, LV, BE
 }

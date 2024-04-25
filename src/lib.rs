@@ -14,6 +14,7 @@ use crate::models::session::SessionStatus;
 
 mod models;
 mod client;
+mod error;
 
 // todo: error handling
 // todo: fn implementation
@@ -56,16 +57,11 @@ fn set_session_status_response_socket_open_time(session_status_res_socket_open_t
     Ok(())
 }
 
+// void setSslContext(SSLContext sslContext);
+
 // TODO: check why we need this method in the lib
 fn set_ssl_context(ssl_context: String) -> Result<()> {
     todo!();
     Ok(())
 }
 
-/**
-
-
-  void setSslContext(SSLContext sslContext);
-
-}
- **/
