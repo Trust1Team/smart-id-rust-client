@@ -1,28 +1,62 @@
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use crate::common::{HashType, Interaction};
 use crate::config::SmartIDConfig;
+use crate::error::SmartIdClientError;
 use crate::models::common::CertificateLevel;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde_with::skip_serializing_none]
 pub struct AuthenticationSessionRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "relyingPartyUUID")]
     pub relying_party_uuid: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "relyingPartyName")]
     pub relying_party_name: Option<String>,
     #[serde(rename = "certificateLevel")]
     pub certificate_level: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "hashType")]
-    pub hash_type: String,
-    pub nonce: String,
-    pub capabilities: Vec<String>,
+    pub hash_type: Option<HashType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nonce: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub capabilities: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "allowedInteractionsOrder")]
-    pub interaction_order: Vec<Interaction>,
+    pub interaction_order: Option<Vec<Interaction>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "requestProperties")]
-    pub request_properties: RequestProperties,
+    pub request_properties: Option<RequestProperties>,
+}
+
+impl AuthenticationSessionRequest {
+    pub async fn new(cfg: &SmartIDConfig, interactions: Vec<Interaction>, hash: impl Into<String>, hash_type: HashType) -> Result<Self> {
+        /// At least one interaction is needed for every authentication request
+        if interactions.len() == 0 {
+            return Err(SmartIdClientError::ConfigMissingException("Define at least 1 interaction for an authentication request").into());
+        };
+
+        /// validate test TODO
+        //validate_interaction_flow(&interactions)?;
+
+        Ok(AuthenticationSessionRequest {
+            relying_party_uuid: Some(cfg.relying_party_uuid.clone()),
+            relying_party_name: Some(cfg.relying_party_name.clone()),
+            certificate_level: CertificateLevel::QUALIFIED.into(),
+            interaction_order: Some(interactions),
+            hash: Some(hash.into()),
+            hash_type: Some(hash_type),
+            ..Self::default()
+        })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde_with::skip_serializing_none]
 pub struct SignatureSessionRequest {
     #[serde(rename = "relyingPartyUUID")]
     pub relying_party_uuid: Option<String>,
@@ -32,16 +66,17 @@ pub struct SignatureSessionRequest {
     pub certificate_level: String,
     pub hash: Option<String>,
     #[serde(rename = "hashType")]
-    pub hash_type: String,
-    pub nonce: String,
-    pub capabilities: Vec<String>,
+    pub hash_type: Option<String>,
+    pub nonce: Option<String>,
+    pub capabilities: Option<Vec<String>>,
     #[serde(rename = "allowedInteractionsOrder")]
-    pub interaction_order: Vec<Interaction>,
+    pub interaction_order: Option<Vec<Interaction>>,
     #[serde(rename = "requestProperties")]
-    pub request_properties: RequestProperties,
+    pub request_properties: Option<RequestProperties>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde_with::skip_serializing_none]
 pub struct CertificateRequest {
     #[serde(rename = "relyingPartyUUID")]
     pub relying_party_uuid: Option<String>,
@@ -49,12 +84,9 @@ pub struct CertificateRequest {
     pub relying_party_name: Option<String>,
     #[serde(rename = "certificateLevel")]
     pub certificate_level: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub nonce: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "capabilities")]
     pub capabilities: Option<Vec<String>>, //todo not sure as Set is generic interface
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "requestProperties")]
     pub request_properties: Option<RequestProperties>,
 }
@@ -90,106 +122,12 @@ pub struct SessionStatusRequest {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Interaction {
-    #[serde(rename = "type")]
-    pub interaction_flow: Option<InteractionFlow>,
-    pub display_text_60: Option<String>,
-    pub display_text_200: Option<String>,
-}
-
-impl Interaction {
-    pub fn new(interaction_flow: Option<InteractionFlow>, display_text_60: Option<String>, display_text_200: Option<String>) -> Self {
-        Interaction {
-            interaction_flow: interaction_flow,
-            display_text_60,
-            display_text_200,
-        }
-    }
-
-    pub fn diplay_text_and_pin(&self, display_text_60: String) -> Self {
-        Interaction {
-            interaction_flow: Some(InteractionFlow::DISPLAY_TEXT_AND_PIN),
-            display_text_60: Some(display_text_60),
-            display_text_200: None,
-        }
-    }
-
-    pub fn verification_code_choice(&self, display_text_60: String) -> Self {
-        Interaction {
-            interaction_flow: Some(InteractionFlow::VERIFICATION_CODE_CHOICE),
-            display_text_60: Some(display_text_60),
-            display_text_200: None,
-        }
-    }
-
-    pub fn confirmation_message(&self, display_text_200: String) -> Self {
-        Interaction {
-            interaction_flow: Some(InteractionFlow::CONFIRMATION_MESSAGE),
-            display_text_60: None,
-            display_text_200: Some(display_text_200),
-        }
-    }
-
-    pub fn confirmation_message_and_verification_code_choice(&self, display_text_200: String) -> Self {
-        Interaction {
-            interaction_flow: Some(InteractionFlow::CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE),
-            display_text_60: None,
-            display_text_200: Some(display_text_200),
-        }
-    }
-
-    pub fn validate_display_text60(&self) -> Result<()> {
-        match &self.interaction_flow {
-            None => Ok(()),
-            Some(inter_f) => {
-                if inter_f.eq(&InteractionFlow::VERIFICATION_CODE_CHOICE) || inter_f.eq(&InteractionFlow::DISPLAY_TEXT_AND_PIN) {
-                    let display_text_60 = self.display_text_60.clone();
-                    let display_text_200 = self.display_text_200.clone();
-                    if display_text_60.is_none() {
-                        return Err(anyhow::anyhow!(format!("displayText60 cannot be null for AllowedInteractionOrder of type {}", inter_f.get_code())));
-                    };
-                    if display_text_60.is_some() && display_text_60.unwrap().clone().len() > 60 {
-                        return Err(anyhow::anyhow!("displayText60 must not be longer than 60 characters"));
-                    };
-                    if display_text_200.is_some() {
-                        return Err(anyhow::anyhow!(format!("displayText200 must be null for AllowedInteractionOrder of type {}", inter_f.get_code())));
-                    };
-                }
-                Ok(())
-            }
-        }
-    }
-
-    pub fn validate_display_text200(&self) -> Result<()> {
-        match &self.interaction_flow {
-            None => Ok(()),
-            Some(inter_f) => {
-                if inter_f.eq(&InteractionFlow::CONFIRMATION_MESSAGE) || inter_f.eq(&InteractionFlow::CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE) {
-                    let display_text_60 = self.display_text_60.clone();
-                    let display_text_200 = self.display_text_200.clone();
-                    if display_text_200.is_none() {
-                        return Err(anyhow::anyhow!(format!("displayText200 cannot be null for AllowedInteractionOrder of type {}", inter_f.get_code())));
-                    };
-                    if display_text_200.is_some() && display_text_200.unwrap().clone().len() > 200 {
-                        return Err(anyhow::anyhow!("displayText200 must not be longer than 200 characters"));
-                    };
-                    if display_text_60.is_some() {
-                        return Err(anyhow::anyhow!(format!("displayText60 must be null for AllowedInteractionOrder of type {}", inter_f.get_code())));
-                    };
-                }
-                Ok(())
-            }
-        }
-    }
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RequestProperties {
     #[serde(rename = "shareMdClientIpAddress")]
     pub share_md_client_ip_address: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
 pub enum InteractionFlow {
     DISPLAY_TEXT_AND_PIN,
@@ -198,29 +136,25 @@ pub enum InteractionFlow {
     CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE,
 }
 
-impl InteractionFlow {
-    pub fn get_code(&self) -> String {
-        match self {
-            InteractionFlow::DISPLAY_TEXT_AND_PIN => "displayTextAndPIN".to_string(),
-            InteractionFlow::CONFIRMATION_MESSAGE => "confirmationMessage".to_string(),
-            InteractionFlow::VERIFICATION_CODE_CHOICE => "verificationCodeChoice".to_string(),
-            InteractionFlow::CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE => {
-                "confirmationMessageAndVerificationCodeChoice".to_string()
-            }
+impl From<String> for InteractionFlow {
+    fn from(s: String) -> Self {
+        match s.as_str() {
+            "displayTextAndPIN" => InteractionFlow::DISPLAY_TEXT_AND_PIN,
+            "confirmationMessage" => InteractionFlow::CONFIRMATION_MESSAGE,
+            "verificationCodeChoice" => InteractionFlow::VERIFICATION_CODE_CHOICE,
+            "confirmationMessageAndVerificationCodeChoice" => InteractionFlow::CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE,
+            _ => InteractionFlow::DISPLAY_TEXT_AND_PIN
         }
     }
 }
 
-impl InteractionFlow {
-    // transforms to Smart ID InteractionFlow 'code'
-    fn as_str(&self) -> &'static str {
+impl Into<String> for InteractionFlow {
+    fn into(self) -> String {
         match self {
-            InteractionFlow::DISPLAY_TEXT_AND_PIN => "displayTextAndPIN",
-            InteractionFlow::CONFIRMATION_MESSAGE => "confirmationMessage",
-            InteractionFlow::VERIFICATION_CODE_CHOICE => "verificationCodeChoice",
-            InteractionFlow::CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE => {
-                "confirmationMessageAndVerificationCodeChoice"
-            }
+            InteractionFlow::DISPLAY_TEXT_AND_PIN => "displayTextAndPIN".to_string(),
+            InteractionFlow::CONFIRMATION_MESSAGE => "confirmationMessage".to_string(),
+            InteractionFlow::VERIFICATION_CODE_CHOICE => "verificationCodeChoice".to_string(),
+            InteractionFlow::CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE => "confirmationMessageAndVerificationCodeChoice".to_string(),
         }
     }
 }
@@ -244,7 +178,7 @@ mod tests {
         match inter_flow.validate_display_text60() {
             Ok(_) => assert!(false), //must fail
             Err(e) => {
-                assert_eq!(e.to_string(), "displayText60 cannot be null for AllowedInteractionOrder of type verificationCodeChoice");
+                assert_eq!(e.to_string(), "displayText60 cannot be null for AllowedInteractionOrder of type VERIFICATION_CODE_CHOICE");
                 assert!(true)
             }
         }
@@ -280,7 +214,7 @@ mod tests {
         match inter_flow.validate_display_text60() {
             Ok(_) => assert!(false), //must fail
             Err(e) => {
-                assert_eq!(e.to_string(), "displayText200 must be null for AllowedInteractionOrder of type verificationCodeChoice");
+                assert_eq!(e.to_string(), "displayText200 must be null for AllowedInteractionOrder of type VERIFICATION_CODE_CHOICE");
                 assert!(true)
             }
         }
@@ -298,7 +232,7 @@ mod tests {
         match inter_flow.validate_display_text60() {
             Ok(_) => assert!(false), //must fail
             Err(e) => {
-                assert_eq!(e.to_string(), "displayText60 cannot be null for AllowedInteractionOrder of type displayTextAndPIN");
+                assert_eq!(e.to_string(), "displayText60 cannot be null for AllowedInteractionOrder of type DISPLAY_TEXT_AND_PIN");
                 assert!(true)
             }
         }
@@ -334,17 +268,11 @@ mod tests {
         match inter_flow.validate_display_text60() {
             Ok(_) => assert!(false), //must fail
             Err(e) => {
-                assert_eq!(e.to_string(), "displayText200 must be null for AllowedInteractionOrder of type displayTextAndPIN");
+                assert_eq!(e.to_string(), "displayText200 must be null for AllowedInteractionOrder of type DISPLAY_TEXT_AND_PIN");
                 assert!(true)
             }
         }
     }
-
-
-
-
-
-
 
     #[traced_test]
     #[tokio::test]
@@ -358,7 +286,7 @@ mod tests {
         match inter_flow.validate_display_text200() {
             Ok(_) => assert!(false), //must fail
             Err(e) => {
-                assert_eq!(e.to_string(), "displayText200 cannot be null for AllowedInteractionOrder of type confirmationMessage");
+                assert_eq!(e.to_string(), "displayText200 cannot be null for AllowedInteractionOrder of type CONFIRMATION_MESSAGE");
                 assert!(true)
             }
         }
@@ -394,7 +322,7 @@ mod tests {
         match inter_flow.validate_display_text200() {
             Ok(_) => assert!(false), //must fail
             Err(e) => {
-                assert_eq!(e.to_string(), "displayText60 must be null for AllowedInteractionOrder of type confirmationMessage");
+                assert_eq!(e.to_string(), "displayText60 must be null for AllowedInteractionOrder of type CONFIRMATION_MESSAGE");
                 assert!(true)
             }
         }
@@ -412,7 +340,7 @@ mod tests {
         match inter_flow.validate_display_text200() {
             Ok(_) => assert!(false), //must fail
             Err(e) => {
-                assert_eq!(e.to_string(), "displayText200 cannot be null for AllowedInteractionOrder of type confirmationMessageAndVerificationCodeChoice");
+                assert_eq!(e.to_string(), "displayText200 cannot be null for AllowedInteractionOrder of type CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE");
                 assert!(true)
             }
         }
@@ -448,7 +376,7 @@ mod tests {
         match inter_flow.validate_display_text200() {
             Ok(_) => assert!(false), //must fail
             Err(e) => {
-                assert_eq!(e.to_string(), "displayText60 must be null for AllowedInteractionOrder of type confirmationMessageAndVerificationCodeChoice");
+                assert_eq!(e.to_string(), "displayText60 must be null for AllowedInteractionOrder of type CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE");
                 assert!(true)
             }
         }

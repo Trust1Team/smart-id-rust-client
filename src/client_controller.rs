@@ -5,11 +5,23 @@ use tracing::{debug, error, info};
 use anyhow::Result;
 use tokio::time::sleep;
 use crate::client::smart_id_connector::SmartIdConnector;
-use crate::common::SemanticsIdentifier;
+use crate::common::{HashType, Interaction, SemanticsIdentifier};
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
-use crate::models::requests::CertificateRequest;
+use crate::error::SmartIdClientError::SmartIdClientException;
+use crate::models::requests::{AuthenticationSessionRequest, CertificateRequest};
 use crate::models::session::SessionStatus;
+
+/// Get certificate by semantic identifier
+/// When successful, the session id is used to poll the result
+pub async fn ctrl_get_certificate_by_document_number(cfg: &SmartIDConfig, doc_nr: impl Into<String>) -> Result<SessionStatus> {
+    let sc =  SmartIdConnector::new(cfg).await;
+    let req = CertificateRequest::new(cfg).await;
+    match sc.get_certificate_by_document_number(doc_nr.into(), &req).await {
+        Ok(r) => ctrl_poll_session_status(cfg, r.session_id).await,
+        Err(_) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound))
+    }
+}
 
 /// Get certificate by semantic identifier
 /// When successful, the session id is used to poll the result
@@ -17,6 +29,25 @@ pub async fn ctrl_get_certificate_by_semantic_identifier(cfg: &SmartIDConfig, id
     let sc =  SmartIdConnector::new(cfg).await;
     let req = CertificateRequest::new(cfg).await;
     match sc.get_certificate_by_semantic_identifier(id, &req).await {
+        Ok(r) => ctrl_poll_session_status(cfg, r.session_id).await,
+        Err(_) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound))
+    }
+}
+
+pub async fn ctrl_authenticate_by_document_number(cfg: &SmartIDConfig, doc_nr: impl Into<String>, interactions: Vec<Interaction>, hash: String, hash_type: HashType) -> Result<SessionStatus> {
+    let sc =  SmartIdConnector::new(cfg).await;
+    let ia = Interaction::diplay_text_and_pin("Please enter your PIN code");
+    let req = AuthenticationSessionRequest::new(cfg, interactions, hash, hash_type).await?;
+    match sc.authenticate_by_document_number(doc_nr.into(), &req).await {
+        Ok(r) => ctrl_poll_session_status(cfg, r.session_id).await,
+        Err(_) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound))
+    }
+}
+
+pub async fn ctrl_authenticate_by_semantic_identifier(cfg: &SmartIDConfig, id: SemanticsIdentifier, interactions: Vec<Interaction>, hash: String, hash_type: HashType) -> Result<SessionStatus> {
+    let sc =  SmartIdConnector::new(cfg).await;
+    let req = AuthenticationSessionRequest::new(cfg, interactions, hash, hash_type).await?;
+    match sc.authenticate_by_semantic_identifier(id, &req).await {
         Ok(r) => ctrl_poll_session_status(cfg, r.session_id).await,
         Err(_) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound))
     }
@@ -46,5 +77,5 @@ pub async fn retry<F, Fu>(attempts: u8, delay: u64, f: F) -> Result<SessionStatu
         sleep(Duration::from_secs(delay)).await;
     }
     error!("ctrl_poll_session_status::polling::retry::error after {} attempts", attempts);
-    Err(anyhow::anyhow!("Failed to retrieve session status (while polling) after {} attempts", attempts))
+    Err(SmartIdClientError::SessionTimeoutException.into())
 }

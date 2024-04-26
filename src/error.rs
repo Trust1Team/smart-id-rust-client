@@ -48,6 +48,10 @@ pub enum SmartIdClientError {
     #[error("Session timed out without getting any response from user")]
     SessionTimeoutException,
 
+    /// Session exception when Retry is required
+    #[error("Session exception when Retry is required")]
+    SessionRetryException,
+
     /// User has multiple accounts and pressed Cancel on device choice screen on any device
     #[error("User has multiple accounts and pressed Cancel on device choice screen on any device")]
     UserRefusedCertChoiceException,

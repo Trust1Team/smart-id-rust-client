@@ -1,13 +1,14 @@
-use time_unit::TimeUnit;
 use crate::models::common::{SemanticsIdentifier};
 use crate::models::session::SessionStatus;
 use anyhow::Result;
 use tracing::debug;
 use tracing::log::info;
 use crate::client::reqwest_generic::{get, post};
-use crate::models::requests::{CertificateRequest, SignatureSessionRequest};
+use crate::models::requests::{AuthenticationSessionRequest, CertificateRequest, SignatureSessionRequest};
 use crate::models::responses::{AuthenticationSessionResponse, CertificateChoiceResponse, SignatureSessionResponse};
 use crate::config::SmartIDConfig;
+use crate::error::SmartIdClientError;
+use crate::error::SmartIdClientError::SmartIdClientException;
 
 // region: Path definitions
 const PATH_SESSION_STATUS_URI: &'static str = "/session";
@@ -50,26 +51,20 @@ fn path_authenticate_by_natural_person_semantics_identifier(semantic_identifier:
 #[derive(Debug)]
 pub struct SmartIdConnector {
     pub cfg: SmartIDConfig,
-    pub session_status_response_socket_open_time_unit: TimeUnit,
-    pub session_status_response_socket_open_time_value: i64,
 }
 
 impl Default for SmartIdConnector {
     fn default() -> Self {
         SmartIdConnector {
             cfg: SmartIDConfig::default(),
-            session_status_response_socket_open_time_unit: TimeUnit::Seconds,
-            session_status_response_socket_open_time_value: 30,
         }
     }
 }
 
 impl SmartIdConnector {
-    pub async fn new_with_time_interval(cfg: SmartIDConfig, time_unit: TimeUnit, time_value: i64) -> Self {
+    pub async fn new_with_time_interval(cfg: SmartIDConfig) -> Self {
         SmartIdConnector {
             cfg,
-            session_status_response_socket_open_time_unit: time_unit,
-            session_status_response_socket_open_time_value: time_value,
             ..Default::default()
         }
     }
@@ -92,20 +87,20 @@ impl SmartIdConnector {
                 if res.state == "COMPLETE" {
                     Ok(res)
                 } else {
-                    Err(anyhow::anyhow!("Session not complete"))
+                    Err(SmartIdClientError::SessionRetryException.into())
                 }
             }
             Err(e) => {
                 info!("smart_id_client::get_session_status::ERROR: {:#?}", e);
-                Err(e)
+                Err(SmartIdClientError::SessionTimeoutException.into())
             }
         }
     }
 
-    pub async fn get_certificate(&self, document_number: String, req: &CertificateRequest) -> Result<CertificateChoiceResponse> {
+    pub async fn get_certificate_by_document_number(&self, document_number: String, req: &CertificateRequest) -> Result<CertificateChoiceResponse> {
         let path = format!("{}{}", self.cfg.url, path_certificate_choice_by_document_number(document_number));
-        debug!("smart_id_client::get_certificate: {}", path);
-        debug!("smart_id_client::get_certificate::body {:#?}", req);
+        debug!("smart_id_client::get_certificate_by_document_number: {}", path);
+        debug!("smart_id_client::get_certificate_by_document_number::body {:#?}", serde_json::to_string(req));
         post::<CertificateRequest, CertificateChoiceResponse>(path.as_str(), req, self.cfg.client_request_timeout).await
     }
 
@@ -116,28 +111,33 @@ impl SmartIdConnector {
         post::<CertificateRequest, CertificateChoiceResponse>(path.as_str(), req, self.cfg.client_request_timeout).await
     }
 
-    pub async fn sign(&self, document_number: String, req: SignatureSessionRequest) -> Result<SignatureSessionResponse> {
-        todo!();
-        Ok(SignatureSessionResponse::default())
+    pub async fn authenticate_by_document_number(&self, document_number: String, req: &AuthenticationSessionRequest) -> Result<AuthenticationSessionResponse> {
+        let path = format!("{}{}", self.cfg.url, path_authenticate_by_document_number(document_number));
+        debug!("smart_id_client::authenticate_by_document_number: {}", path);
+        debug!("smart_id_client::authenticate_by_document_number::body {:#?}", serde_json::to_string(req));
+        post::<AuthenticationSessionRequest,AuthenticationSessionResponse>(path.as_str(), req, self.cfg.client_request_timeout).await
     }
 
-    pub async fn sign_by_semantic_identifier(&self, id: SemanticsIdentifier, req: SignatureSessionRequest) -> Result<SignatureSessionResponse> {
-        todo!();
-        Ok(SignatureSessionResponse::default())
+    pub async fn authenticate_by_semantic_identifier(&self, id: SemanticsIdentifier, req: &AuthenticationSessionRequest) -> Result<AuthenticationSessionResponse> {
+        let path = format!("{}{}", self.cfg.url, path_authenticate_by_natural_person_semantics_identifier(id.identifier));
+        debug!("smart_id_client::authenticate_by_semantic_identifier: {}", path);
+        debug!("smart_id_client::authenticate_by_document_number::body {:#?}", serde_json::to_string(req));
+        post::<AuthenticationSessionRequest,AuthenticationSessionResponse>(path.as_str(), req, self.cfg.client_request_timeout).await
     }
 
-    pub async fn authenticate(&self, document_number: String, req: SignatureSessionRequest) -> Result<AuthenticationSessionResponse> {
-        todo!();
-        Ok(AuthenticationSessionResponse::default())
+    pub async fn sign_by_document_number(&self, document_number: String, req: &SignatureSessionRequest) -> Result<SignatureSessionResponse> {
+        let path = format!("{}{}", self.cfg.url, path_signature_by_document_number(document_number));
+        debug!("smart_id_client::sign_by_document_number: {}", path);
+        debug!("smart_id_client::sign_by_document_number::body {:#?}", serde_json::to_string(req));
+        post::<SignatureSessionRequest,SignatureSessionResponse>(path.as_str(), req, self.cfg.client_request_timeout).await
     }
 
-    pub async fn authenticate_by_semantic_identifier(&self, id: SemanticsIdentifier, req: SignatureSessionRequest) -> Result<AuthenticationSessionResponse> {
-        todo!();
-        Ok(AuthenticationSessionResponse::default())
+    pub async fn sign_by_semantic_identifier(&self, id: SemanticsIdentifier, req: &SignatureSessionRequest) -> Result<SignatureSessionResponse> {
+        let path = format!("{}{}", self.cfg.url, path_signature_by_natural_person_semantics_identifier(id.identifier));
+        debug!("smart_id_client::sign_by_semantic_identifier: {}", path);
+        debug!("smart_id_client::sign_by_semantic_identifier::body {:#?}", serde_json::to_string(req));
+        post::<SignatureSessionRequest,SignatureSessionResponse>(path.as_str(), req, self.cfg.client_request_timeout).await
     }
 
-    pub async fn set_session_status_response_socket_open_time(&self, session_status_res_socket_open_time_unit: TimeUnit, session_status_res_socket_open_time_value: i64) -> Result<()> {
-        todo!();
-        Ok(())
-    }
+
 }
