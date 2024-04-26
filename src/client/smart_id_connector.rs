@@ -4,7 +4,7 @@ use crate::models::session::SessionStatus;
 use anyhow::Result;
 use tracing::debug;
 use tracing::log::info;
-use crate::client::reqwest_generic::get;
+use crate::client::reqwest_generic::{get, post};
 use crate::models::requests::{CertificateRequest, SignatureSessionRequest};
 use crate::models::responses::{AuthenticationSessionResponse, CertificateChoiceResponse, SignatureSessionResponse};
 use crate::config::SmartIDConfig;
@@ -74,31 +74,44 @@ impl SmartIdConnector {
         }
     }
 
-    pub async fn new(cfg: SmartIDConfig) -> Self {
+    pub async fn new(cfg: &SmartIDConfig) -> Self {
         SmartIdConnector {
-            cfg,
+            cfg: cfg.clone(),
             ..Default::default()
         }
     }
 
-    pub async fn get_session_status(&self, session_id: impl Into<String>) -> Result<SessionStatus> {
-        let path = path_session_status_uri(session_id.into());
-
-        Ok(SessionStatus::default())
-    }
-
-    pub async fn get_certificate(&self, document_number: String) -> Result<CertificateChoiceResponse> {
-        let path = format!("{}{}", self.cfg.url, path_certificate_choice_by_document_number(document_number));
-        debug!("smart_id_client::get_certificate: {}", path);
-        match get::<CertificateChoiceResponse>(path.as_str(), self.cfg.client_request_timeout).await {
-            Ok(res) => Ok(res),
-            Err(e) => Err(e),
+    pub async fn get_session_status(&self, session_id: &str) -> Result<SessionStatus> {
+        let path = format!("{}{}", self.cfg.url, path_session_status_uri(session_id.into()));
+        debug!("smart_id_client::get_session_status: {}", path);
+        match get::<SessionStatus>(path.as_str(), self.cfg.client_request_timeout).await {
+            Ok(res) => {
+                info!("smart_id_client::get_session_status::SESSION_STATUS: {:#?}", res.state);
+                if res.state == "COMPLETE" {
+                    Ok(res)
+                } else {
+                    Err(anyhow::anyhow!("Session not complete"))
+                }
+            }
+            Err(e) => {
+                info!("smart_id_client::get_session_status::ERROR: {:#?}", e);
+                Err(e)
+            }
         }
     }
 
-    pub async fn get_certificate_by_semantic_identifier(&self, id: SemanticsIdentifier, req: CertificateRequest) -> Result<CertificateChoiceResponse> {
-        todo!();
-        Ok(CertificateChoiceResponse::default())
+    pub async fn get_certificate(&self, document_number: String, req: &CertificateRequest) -> Result<CertificateChoiceResponse> {
+        let path = format!("{}{}", self.cfg.url, path_certificate_choice_by_document_number(document_number));
+        debug!("smart_id_client::get_certificate: {}", path);
+        debug!("smart_id_client::get_certificate::body {:#?}", req);
+        post::<CertificateRequest, CertificateChoiceResponse>(path.as_str(), req, self.cfg.client_request_timeout).await
+    }
+
+    pub async fn get_certificate_by_semantic_identifier(&self, id: SemanticsIdentifier, req: &CertificateRequest) -> Result<CertificateChoiceResponse> {
+        let path = format!("{}{}", self.cfg.url, path_certificate_choice_by_natural_person_semantics_identifier(id.identifier));
+        debug!("smart_id_client::get_certificate_by_semantic_identifier: {}", path);
+        debug!("smart_id_client::get_certificate_by_semantic_identifier::body {:#?}", serde_json::to_string(req));
+        post::<CertificateRequest, CertificateChoiceResponse>(path.as_str(), req, self.cfg.client_request_timeout).await
     }
 
     pub async fn sign(&self, document_number: String, req: SignatureSessionRequest) -> Result<SignatureSessionResponse> {

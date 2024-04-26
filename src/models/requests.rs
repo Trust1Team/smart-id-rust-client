@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use crate::config::SmartIDConfig;
+use crate::models::common::CertificateLevel;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AuthenticationSessionRequest {
@@ -39,7 +41,7 @@ pub struct SignatureSessionRequest {
     pub request_properties: RequestProperties,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CertificateRequest {
     #[serde(rename = "relyingPartyUUID")]
     pub relying_party_uuid: Option<String>,
@@ -47,11 +49,34 @@ pub struct CertificateRequest {
     pub relying_party_name: Option<String>,
     #[serde(rename = "certificateLevel")]
     pub certificate_level: String,
-    pub nonce: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nonce: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "capabilities")]
+    pub capabilities: Option<Vec<String>>, //todo not sure as Set is generic interface
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "requestProperties")]
-    pub capabilities: Vec<String>, //todo not sure as Set is generic interface
-    #[serde(rename = "requestProperties")]
-    pub request_properties: RequestProperties,
+    pub request_properties: Option<RequestProperties>,
+}
+
+impl CertificateRequest {
+    pub async fn new(cfg: &SmartIDConfig) -> Self {
+        CertificateRequest {
+            relying_party_uuid: Some(cfg.relying_party_uuid.clone()),
+            relying_party_name: Some(cfg.relying_party_name.clone()),
+            certificate_level: CertificateLevel::QUALIFIED.into(),
+            ..Self::default()
+        }
+    }
+
+    pub  async fn new_with_level(cfg: &SmartIDConfig, level: CertificateLevel) -> Self {
+        CertificateRequest {
+            relying_party_uuid: Some(cfg.relying_party_uuid.clone()),
+            relying_party_name: Some(cfg.relying_party_name.clone()),
+            certificate_level: CertificateLevel::QUALIFIED.into(),
+            ..Self::default()
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -11,6 +11,21 @@ pub enum Capability {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
 #[non_exhaustive]
+pub enum CertificateLevel {
+    QUALIFIED,
+    ADVANCED,
+    QSCD
+}
+
+impl From<CertificateLevel> for String {
+    fn from(value: CertificateLevel) -> Self {
+        format!("{:?}", value).to_uppercase()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[allow(non_camel_case_types)]
+#[non_exhaustive]
 pub enum IdentityType {
     PAS,
     IDC,
@@ -30,12 +45,12 @@ pub struct SemanticsIdentifier {
 }
 
 impl SemanticsIdentifier {
-    pub fn new_from_string(identity_type: String, country_code: String, identity_number: String) -> Self {
-        SemanticsIdentifier { identifier: format!("{}{}-{}", identity_type, country_code, identity_number) }
+    pub fn new_from_string(identity_type: impl Into<String>, country_code: impl Into<String>, identity_number: impl Into<String>) -> Self {
+        SemanticsIdentifier { identifier: format!("{}{}-{}", identity_type.into(), country_code.into(), identity_number.into()) }
     }
 
-    pub fn new_from_enum(identity_type: IdentityType, country_code: CountryCode, identity_number: String) -> Self {
-        SemanticsIdentifier { identifier: format!("{:?}{:?}-{}", identity_type, country_code, identity_number) }
+    pub fn new_from_enum(identity_type: IdentityType, country_code: CountryCode, identity_number: impl Into<String>) -> Self {
+        SemanticsIdentifier { identifier: format!("{:?}{:?}-{}", identity_type, country_code, identity_number.into()) }
     }
 }
 
@@ -52,14 +67,21 @@ mod tests {
     #[traced_test]
     #[tokio::test]
     async fn test_semantics_id_construct_by_string() {
-        let sem_id = SemanticsIdentifier::new_from_string("PNO".to_string(), "BE".to_string(), "123456789".to_string());
+        let sem_id = SemanticsIdentifier::new_from_string("PNO".into(), "BE".into(), "123456789".into());
         assert_eq!(sem_id.identifier, "PNOBE-123456789");
     }
 
     #[traced_test]
     #[tokio::test]
     async fn test_semantics_id_construct_by_enum() {
-        let sem_id = SemanticsIdentifier::new_from_enum(IdentityType::PNO, CountryCode::BE, "123456789".to_string());
+        let sem_id = SemanticsIdentifier::new_from_enum(IdentityType::PNO, CountryCode::BE, "123456789".into());
         assert_eq!(sem_id.identifier, "PNOBE-123456789");
+    }
+
+    #[traced_test]
+    #[tokio::test]
+    async fn test_resolve_certificate_level_string_value() {
+        let cert_level: CertificateLevel = CertificateLevel::QUALIFIED;
+        assert_eq!(String::from(cert_level), "QUALIFIED");
     }
 }

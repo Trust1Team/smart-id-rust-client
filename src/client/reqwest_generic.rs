@@ -2,9 +2,12 @@ use anyhow::{anyhow, bail, Result};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fmt::Debug;
+use std::future::Future;
 use std::path::PathBuf;
+use std::time::Duration;
 use tokio::fs::File;
-use tracing::debug;
+use tokio::time::sleep;
+use tracing::{debug, error};
 
 /// Generic get JWT based on APIKEY
 /// Not used for Smart ID client
@@ -95,7 +98,7 @@ where
     R: DeserializeOwned,
 {
     let client = reqwest::Client::builder()
-        //.danger_accept_invalid_certs(true)
+        .danger_accept_invalid_certs(true)
         .timeout(std::time::Duration::from_millis(
             timeout_millis.unwrap_or(30000),
         ))
@@ -185,3 +188,5 @@ where
         .await
         .map_err(|e| e.into())
 }
+
+
