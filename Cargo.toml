@@ -1,8 +1,60 @@
 [package]
 name = "smart-id-rust-client"
 version = "0.1.0"
+description = "Smart ID Rust Client"
+homepage = "https://smart-id.com"
+authors = ["Michallis Pashidis <michallis@trust1team.com>"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/Trust1Team/smart-id-rust-client"
 edition = "2021"
+keywords = ["eidas", "eID", "wallet", "authentication", "signing"]
+categories = ["authentication"]
+readme = "README.MD"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "smart_id_rust_client"
+path = "src/lib.rs"
+test = true
+doc = true
+edition = "2021"
+crate-type = ["lib"]
 
 [dependencies]
+anyhow = "1.0.81"
+serde = { version = "1.0.197", features = ["derive"] }
+serde_json = "1.0.114"
+tokio = { version = "1.36.0", features = ["full"] }
+tracing = "0.1.40"
+ring = "0.17.8"
+tracing-subscriber = {  version = "0.3.18", features = [
+    "env-filter",
+    "fmt",
+    "json",
+] }
+reqwest = {  version = "0.12.4", features = [
+    "json",
+    "rustls-tls",
+] }
+thiserror = "1.0.59"
+x509-parser = "0.16.0"
+base64 = "0.22.0"
+serde_with = "3.8.0"
+
+
+
+[dev-dependencies]
+serial_test = { version = "3.1.0", features = ["async"] }
+serial_test_derive = "3.1.0"
+tracing-test = "0.2.4"
+
+[profile.dev]
+opt-level = 1              # Use slightly better optimizations.
+strip = false              # Automatically strip symbols from the binary.
+split-debuginfo = "packed" # this feature on the dev profile is necessary to make sure we can use GDB for debugging --> will make sure it can load all symbols
+
+[profile.release]
+opt-level = "s"
+strip = true
+codegen-units = 1 # Compile crates one after another so the compiler can optimize better
+lto = true        # Enables link to optimizations
+panic = 'abort'
