@@ -90,7 +90,7 @@ impl SmartIdConnector {
     pub async fn get_certificate(&self, document_number: String) -> Result<CertificateChoiceResponse> {
         let path = format!("{}{}", self.cfg.url, path_certificate_choice_by_document_number(document_number));
         debug!("smart_id_client::get_certificate: {}", path);
-        match get::<CertificateChoiceResponse>(path.as_str(), None, None).await {
+        match get::<CertificateChoiceResponse>(path.as_str(), self.cfg.client_request_timeout).await {
             Ok(res) => Ok(res),
             Err(e) => Err(e),
         }

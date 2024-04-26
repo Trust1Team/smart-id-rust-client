@@ -20,6 +20,7 @@ pub struct SmartIDConfig {
     pub url: String,
     pub relying_party_uuid: String,
     pub relying_party_name: String,
+    pub client_request_timeout: Option<u64>,
     pub document_number: Option<String>,
     pub data_to_sign: Option<String>,
     pub certificate_level_qualified: Option<String>,
@@ -32,6 +33,7 @@ impl From<SmartIDConfig> for SmartIDConfigBuilder {
             url: Some(config.url),
             relying_party_uuid: Some(config.relying_party_uuid),
             relying_party_name: Some(config.relying_party_name),
+            client_request_timeout: config.client_request_timeout,
             document_number: config.document_number,
             data_to_sign: config.data_to_sign,
             certificate_level_qualified: config.certificate_level_qualified,
@@ -57,6 +59,7 @@ pub struct SmartIDConfigBuilder {
     url: Option<String>,
     relying_party_uuid: Option<String>,
     relying_party_name: Option<String>,
+    client_request_timeout: Option<u64>,
     document_number: Option<String>,
     data_to_sign: Option<String>,
     certificate_level_qualified: Option<String>,
@@ -98,6 +101,7 @@ impl SmartIDConfigBuilder {
             url: self.url.clone().ok_or(SmartIdClientError::ConfigMissingException("url"))?,
             relying_party_uuid: self.relying_party_uuid.clone().ok_or(SmartIdClientError::ConfigMissingException("relying_party_uuid"))?,
             relying_party_name: self.relying_party_name.clone().ok_or(SmartIdClientError::ConfigMissingException("relying_party_name"))?,
+            client_request_timeout: self.client_request_timeout.clone(),
             document_number: self.document_number.clone(),
             data_to_sign: self.data_to_sign.clone(),
             certificate_level_qualified: self.certificate_level_qualified.clone(),
@@ -120,6 +124,7 @@ impl SmartIDConfig {
             url: get_env("HOST_URL").unwrap(),
             relying_party_uuid: get_env("RELYING_PARTY_UUID").unwrap(),
             relying_party_name: get_env("RELYING_PARTY_NAME").unwrap(),
+            client_request_timeout: get_env_u64("CLIENT_REQ_TIMEOUT_MILLIS").ok(),
             document_number: env::var("DOCUMENT_NUMBER").ok(),
             data_to_sign: env::var("DATA_TO_SIGN").ok(),
             certificate_level_qualified: env::var("CERTIFICATE_LEVEL_QUALIFIED").ok(),
@@ -130,4 +135,8 @@ impl SmartIDConfig {
 
 fn get_env(name: &'static str) -> Result<String> {
     env::var(name).map_err(|_| SmartIdClientError::ConfigMissingException(name).into())
+}
+
+fn get_env_u64(name: &'static str) -> Result<u64> {
+    env::var(name).unwrap().parse().map_err(|_| SmartIdClientError::ConfigMissingException(name).into())
 }
