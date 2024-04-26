@@ -1,9 +1,12 @@
 use time_unit::TimeUnit;
-use crate::client::models::common::SemanticsIdentifier;
-use crate::client::models::session::SessionStatus;
+use crate::models::common::{SemanticsIdentifier};
+use crate::models::session::SessionStatus;
 use anyhow::Result;
-use crate::client::models::requests::{CertificateRequest, SignatureSessionRequest};
-use crate::client::models::responses::{AuthenticationSessionResponse, CertificateChoiceResponse, SignatureSessionResponse};
+use tracing::debug;
+use tracing::log::info;
+use crate::client::reqwest_generic::get;
+use crate::models::requests::{CertificateRequest, SignatureSessionRequest};
+use crate::models::responses::{AuthenticationSessionResponse, CertificateChoiceResponse, SignatureSessionResponse};
 use crate::config::SmartIDConfig;
 
 // region: Path definitions
@@ -45,10 +48,10 @@ fn path_authenticate_by_natural_person_semantics_identifier(semantic_identifier:
 // endregion: Path definitions
 
 #[derive(Debug)]
-struct SmartIdConnector {
-    cfg: SmartIDConfig,
-    session_status_response_socket_open_time_unit: TimeUnit,
-    session_status_response_socket_open_time_value: i64,
+pub struct SmartIdConnector {
+    pub cfg: SmartIDConfig,
+    pub session_status_response_socket_open_time_unit: TimeUnit,
+    pub session_status_response_socket_open_time_value: i64,
 }
 
 impl Default for SmartIdConnector {
@@ -62,50 +65,63 @@ impl Default for SmartIdConnector {
 }
 
 impl SmartIdConnector {
-    pub fn new_with_time_interval(session_status_response_socket_open_time_unit: TimeUnit, session_status_response_socket_open_time_value: i64) -> Self {
+    pub async fn new_with_time_interval(cfg: SmartIDConfig, time_unit: TimeUnit, time_value: i64) -> Self {
         SmartIdConnector {
-            session_status_response_socket_open_time_unit,
-            session_status_response_socket_open_time_value,
+            cfg,
+            session_status_response_socket_open_time_unit: time_unit,
+            session_status_response_socket_open_time_value: time_value,
             ..Default::default()
         }
     }
 
-    pub fn get_session_status(&self, session_id: &str) -> Result<SessionStatus> {
-        todo!();
+    pub async fn new(cfg: SmartIDConfig) -> Self {
+        SmartIdConnector {
+            cfg,
+            ..Default::default()
+        }
+    }
+
+    pub async fn get_session_status(&self, session_id: impl Into<String>) -> Result<SessionStatus> {
+        let path = path_session_status_uri(session_id.into());
+
         Ok(SessionStatus::default())
     }
 
-    pub fn get_certificate(&self, document_number: String, req: CertificateRequest) -> Result<CertificateChoiceResponse> {
+    pub async fn get_certificate(&self, document_number: String) -> Result<CertificateChoiceResponse> {
+        let path = format!("{}{}", self.cfg.url, path_certificate_choice_by_document_number(document_number));
+        debug!("smart_id_client::get_certificate: {}", path);
+        match get::<CertificateChoiceResponse>(path.as_str(), None, None).await {
+            Ok(res) => Ok(res),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub async fn get_certificate_by_semantic_identifier(&self, id: SemanticsIdentifier, req: CertificateRequest) -> Result<CertificateChoiceResponse> {
         todo!();
         Ok(CertificateChoiceResponse::default())
     }
 
-    pub fn get_certificate_by_semantic_identifier(&self, id: SemanticsIdentifier, req: CertificateRequest) -> Result<CertificateChoiceResponse> {
-        todo!();
-        Ok(CertificateChoiceResponse::default())
-    }
-
-    pub fn sign(&self, document_number: String, req: SignatureSessionRequest) -> Result<SignatureSessionResponse> {
+    pub async fn sign(&self, document_number: String, req: SignatureSessionRequest) -> Result<SignatureSessionResponse> {
         todo!();
         Ok(SignatureSessionResponse::default())
     }
 
-    pub fn sign_by_semantic_identifier(&self, id: SemanticsIdentifier, req: SignatureSessionRequest) -> Result<SignatureSessionResponse> {
+    pub async fn sign_by_semantic_identifier(&self, id: SemanticsIdentifier, req: SignatureSessionRequest) -> Result<SignatureSessionResponse> {
         todo!();
         Ok(SignatureSessionResponse::default())
     }
 
-    pub fn authenticate(&self, document_number: String, req: SignatureSessionRequest) -> Result<AuthenticationSessionResponse> {
+    pub async fn authenticate(&self, document_number: String, req: SignatureSessionRequest) -> Result<AuthenticationSessionResponse> {
         todo!();
         Ok(AuthenticationSessionResponse::default())
     }
 
-    pub fn authenticate_by_semantic_identifier(&self, id: SemanticsIdentifier, req: SignatureSessionRequest) -> Result<AuthenticationSessionResponse> {
+    pub async fn authenticate_by_semantic_identifier(&self, id: SemanticsIdentifier, req: SignatureSessionRequest) -> Result<AuthenticationSessionResponse> {
         todo!();
         Ok(AuthenticationSessionResponse::default())
     }
 
-    pub fn set_session_status_response_socket_open_time(&self, session_status_res_socket_open_time_unit: TimeUnit, session_status_res_socket_open_time_value: i64) -> Result<()> {
+    pub async fn set_session_status_response_socket_open_time(&self, session_status_res_socket_open_time_unit: TimeUnit, session_status_res_socket_open_time_value: i64) -> Result<()> {
         todo!();
         Ok(())
     }

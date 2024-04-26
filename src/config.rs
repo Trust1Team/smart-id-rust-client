@@ -17,13 +17,13 @@ pub fn config() -> &'static SmartIDConfig {
 /// Smart ID Client Configuration
 #[derive(Debug, Clone)]
 pub struct SmartIDConfig {
-    url: String,
-    relying_party_uuid: String,
-    relying_party_name: String,
-    document_number: Option<String>,
-    data_to_sign: Option<String>,
-    certificate_level_qualified: Option<String>,
-    certificate_level_advanced: Option<String>,
+    pub url: String,
+    pub relying_party_uuid: String,
+    pub relying_party_name: String,
+    pub document_number: Option<String>,
+    pub data_to_sign: Option<String>,
+    pub certificate_level_qualified: Option<String>,
+    pub certificate_level_advanced: Option<String>,
 }
 
 impl From<SmartIDConfig> for SmartIDConfigBuilder {

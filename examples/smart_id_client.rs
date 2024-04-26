@@ -1,5 +1,6 @@
 use tracing::info;
-use smart_id_rust_client::{get_config_from_env, set_ssl_context, SmartIDConfigBuilder};
+use smart_id_rust_client::{get_config_from_env, set_ssl_context};
+use smart_id_rust_client::config::SmartIDConfigBuilder;
 
 /** Change the alias to `Box<error::Error>` */
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
@@ -20,6 +21,7 @@ async fn main() {
 
     /// or use builder pattern to construct the config
     let cfg = SmartIDConfigBuilder::new().url("https://sid.demo.sk.ee/smart-id-rp/v2").build();
+
 
 
     info!("Config: {:?}", cfg);

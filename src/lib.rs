@@ -7,16 +7,13 @@
 use anyhow::Result;
 use time_unit::TimeUnit;
 use tracing::callsite::Identifier;
-use crate::client::models::common::SemanticsIdentifier;
-use crate::client::models::requests::{CertificateRequest, SignatureSessionRequest};
-use crate::client::models::responses::{AuthenticationSessionResponse, CertificateChoiceResponse, SignatureSessionResponse};
-use crate::client::models::session::SessionStatus;
 use crate::config::SmartIDConfig;
 
-mod client;
+pub mod client;
 mod error;
 mod utils;
 pub mod config;
+mod models;
 
 
 /// Get configuration based on the environment variables (default config override)
@@ -27,38 +24,37 @@ pub fn get_config_from_env() -> SmartIDConfig {
 
 // todo: error handling
 // todo: fn implementation
-pub fn get_session_status(session_id: &str) -> Result<SessionStatus> {
+pub fn get_session_status(session_id: &str) -> Result<()> {
     todo!();
-    Ok(SessionStatus::default())
+    Ok(())
 }
 
-pub fn get_certificate(document_number: String, req: CertificateRequest) -> Result<CertificateChoiceResponse> {
-    todo!();
-    Ok(CertificateChoiceResponse::default())
+pub fn get_certificate(cfg: SmartIDConfig, document_number: String) -> Result<()> {
+    Ok(())
 }
 
-pub fn get_certificate_by_semantic_identifier(id: SemanticsIdentifier, req: CertificateRequest) -> Result<CertificateChoiceResponse> {
+pub fn get_certificate_by_semantic_identifier(cfg: SmartIDConfig) -> Result<()> {
     todo!();
-    Ok(CertificateChoiceResponse::default())
+    Ok(())
 }
 
-pub fn sign(document_number: String, req: SignatureSessionRequest) -> Result<SignatureSessionResponse> {
+pub fn sign(cfg: SmartIDConfig) -> Result<()> {
     todo!();
-    Ok(SignatureSessionResponse::default())
+    Ok(())
 }
 
-pub fn sign_by_semantic_identifier(id: SemanticsIdentifier, req: SignatureSessionRequest) -> Result<SignatureSessionResponse> {
+pub fn sign_by_semantic_identifier(cfg: SmartIDConfig) -> Result<()> {
     todo!();
-    Ok(SignatureSessionResponse::default())
+    Ok(())
 }
 
-pub fn authenticate(document_number: String, req: SignatureSessionRequest) -> Result<AuthenticationSessionResponse> {
+pub fn authenticate(cfg: SmartIDConfig) -> Result<()> {
     todo!();
-    Ok(AuthenticationSessionResponse::default())
+    Ok(())
 }
-pub fn authenticate_by_semantic_identifier(id: Identifier, req: SignatureSessionRequest) -> Result<AuthenticationSessionResponse> {
+pub fn authenticate_by_semantic_identifier(cfg: SmartIDConfig) -> Result<()> {
     todo!();
-    Ok(AuthenticationSessionResponse::default())
+    Ok(())
 }
 
 pub fn set_session_status_response_socket_open_time(session_status_res_socket_open_time_unit: TimeUnit, session_status_res_socket_open_time_value: i64) -> Result<()> {
