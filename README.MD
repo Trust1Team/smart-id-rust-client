@@ -16,6 +16,9 @@ authentication and mobile digital signing using Smart-ID.</div>
 
 </div>
 
+## Status
+Beta version - under development!
+
 ## Documentation
 
 [Smart-ID Documentation](https://github.com/SK-EID/smart-id-documentation)
