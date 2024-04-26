@@ -7,52 +7,61 @@
 use anyhow::Result;
 use time_unit::TimeUnit;
 use tracing::callsite::Identifier;
-use crate::models::common::SemanticsIdentifier;
-use crate::models::requests::{CertificateRequest, SignatureSessionRequest};
-use crate::models::responses::{AuthenticationSessionResponse, CertificateChoiceResponse, SignatureSessionResponse};
-use crate::models::session::SessionStatus;
+use crate::client::models::common::SemanticsIdentifier;
+use crate::client::models::requests::{CertificateRequest, SignatureSessionRequest};
+use crate::client::models::responses::{AuthenticationSessionResponse, CertificateChoiceResponse, SignatureSessionResponse};
+use crate::client::models::session::SessionStatus;
+use crate::config::SmartIDConfig;
 
-mod models;
 mod client;
 mod error;
+mod utils;
+pub mod config;
+
+
+/// Get configuration based on the environment variables (default config override)
+/// Function will panic when the environment variables are not set
+pub fn get_config_from_env() -> SmartIDConfig {
+    SmartIDConfig::default()
+}
 
 // todo: error handling
 // todo: fn implementation
-fn get_session_status(session_id: &str) -> Result<SessionStatus> {
+pub fn get_session_status(session_id: &str) -> Result<SessionStatus> {
     todo!();
     Ok(SessionStatus::default())
 }
 
-fn get_certificate(document_number: String, req: CertificateRequest) -> Result<CertificateChoiceResponse> {
+pub fn get_certificate(document_number: String, req: CertificateRequest) -> Result<CertificateChoiceResponse> {
     todo!();
     Ok(CertificateChoiceResponse::default())
 }
 
-fn get_certificate_by_semantic_identifier(id: SemanticsIdentifier, req: CertificateRequest) -> Result<CertificateChoiceResponse> {
+pub fn get_certificate_by_semantic_identifier(id: SemanticsIdentifier, req: CertificateRequest) -> Result<CertificateChoiceResponse> {
     todo!();
     Ok(CertificateChoiceResponse::default())
 }
 
-fn sign(document_number: String, req: SignatureSessionRequest) -> Result<SignatureSessionResponse> {
+pub fn sign(document_number: String, req: SignatureSessionRequest) -> Result<SignatureSessionResponse> {
     todo!();
     Ok(SignatureSessionResponse::default())
 }
 
-fn sign_by_semantic_identifier(id: SemanticsIdentifier, req: SignatureSessionRequest) -> Result<SignatureSessionResponse> {
+pub fn sign_by_semantic_identifier(id: SemanticsIdentifier, req: SignatureSessionRequest) -> Result<SignatureSessionResponse> {
     todo!();
     Ok(SignatureSessionResponse::default())
 }
 
-fn authenticate(document_number: String, req: SignatureSessionRequest) -> Result<AuthenticationSessionResponse> {
+pub fn authenticate(document_number: String, req: SignatureSessionRequest) -> Result<AuthenticationSessionResponse> {
     todo!();
     Ok(AuthenticationSessionResponse::default())
 }
-fn authenticate_by_semantic_identifier(id: Identifier, req: SignatureSessionRequest) -> Result<AuthenticationSessionResponse> {
+pub fn authenticate_by_semantic_identifier(id: Identifier, req: SignatureSessionRequest) -> Result<AuthenticationSessionResponse> {
     todo!();
     Ok(AuthenticationSessionResponse::default())
 }
 
-fn set_session_status_response_socket_open_time(session_status_res_socket_open_time_unit: TimeUnit, session_status_res_socket_open_time_value: i64) -> Result<()> {
+pub fn set_session_status_response_socket_open_time(session_status_res_socket_open_time_unit: TimeUnit, session_status_res_socket_open_time_value: i64) -> Result<()> {
     todo!();
     Ok(())
 }
@@ -60,7 +69,7 @@ fn set_session_status_response_socket_open_time(session_status_res_socket_open_t
 // void setSslContext(SSLContext sslContext);
 
 // TODO: check why we need this method in the lib
-fn set_ssl_context(ssl_context: String) -> Result<()> {
+pub fn set_ssl_context(ssl_context: Option<String>) -> Result<()> {
     todo!();
     Ok(())
 }

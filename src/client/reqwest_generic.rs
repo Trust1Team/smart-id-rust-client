@@ -1,6 +1,4 @@
 use anyhow::{anyhow, bail, Result};
-use reqwest::multipart::Part;
-use reqwest::{multipart, Body, Response};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fmt::Debug;
@@ -80,7 +78,7 @@ pub async fn delete(
     url: &str,
     bearer_token: Option<String>,
     timeout_millis: Option<u64>,
-) -> Result<Response> {
+) -> Result<()> {
     let client = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
         .timeout(std::time::Duration::from_millis(
@@ -96,7 +94,7 @@ pub async fn delete(
         .header("X-Consumer-Username", X_CONSUMER_USERNAME)
         .send()
         .await?;
-    Ok(res)
+    Ok(())
 }
 
 /// Generic POST request

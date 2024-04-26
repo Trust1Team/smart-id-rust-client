@@ -3,6 +3,10 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum SmartIdClientError {
+    /// Config Exception
+    #[error("Configuration missing: {0}")]
+    ConfigMissingException(&'static str),
+
     /// Generic
     #[error("Smart ID Exception: {0}")]
     SmartIdException(&'static str),

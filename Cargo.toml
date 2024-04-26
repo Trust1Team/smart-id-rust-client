@@ -34,8 +34,6 @@ time-unit = "0.1.2"
 reqwest = {  version = "0.12.4", features = [
     "json",
     "rustls-tls",
-    "stream",
-    "multipart",
 ] }
 thiserror = "1.0.59"
 
