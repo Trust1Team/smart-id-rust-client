@@ -23,6 +23,7 @@ pub struct SmartIDConfig {
     pub client_request_timeout: Option<u64>,
     pub client_retry_attempts: Option<u8>,
     pub client_retry_delay: Option<u64>,
+    pub client_enable_polling: Option<bool>,
 }
 
 impl From<SmartIDConfig> for SmartIDConfigBuilder {
@@ -34,6 +35,7 @@ impl From<SmartIDConfig> for SmartIDConfigBuilder {
             client_request_timeout: config.client_request_timeout,
             client_retry_attempts: config.client_retry_attempts,
             client_retry_delay: config.client_retry_delay,
+            client_enable_polling: config.client_enable_polling,
         }
     }
 }
@@ -58,6 +60,7 @@ pub struct SmartIDConfigBuilder {
     client_request_timeout: Option<u64>,
     client_retry_attempts: Option<u8>,
     client_retry_delay: Option<u64>,
+    pub client_enable_polling: Option<bool>,
 }
 
 impl SmartIDConfigBuilder {
@@ -103,6 +106,7 @@ impl SmartIDConfigBuilder {
             client_request_timeout: self.client_request_timeout.clone(),
             client_retry_attempts: self.client_retry_attempts.clone(),
             client_retry_delay: self.client_retry_delay.clone(),
+            client_enable_polling: self.client_enable_polling.clone(),
         })
     }
 
@@ -124,6 +128,7 @@ impl SmartIDConfig {
             client_request_timeout: get_env_u64("CLIENT_REQ_NETWORK_TIMEOUT_MILLIS").ok(),
             client_retry_attempts: get_env_u8("CLIENT_REQ_MAX_ATTEMPTS").ok(),
             client_retry_delay: get_env_u64("CLIENT_REQ_DELAY_SEONDS_BETWEEN_ATTEMPTS").ok(),
+            client_enable_polling: get_env_bool("ENABLE_POLLING_BY_LIB").ok(),
         })
     }
 }
@@ -137,5 +142,9 @@ fn get_env_u64(name: &'static str) -> Result<u64> {
 }
 
 fn get_env_u8(name: &'static str) -> Result<u8> {
+    env::var(name).unwrap().parse().map_err(|_| SmartIdClientError::ConfigMissingException(name).into())
+}
+
+fn get_env_bool(name: &'static str) -> Result<bool> {
     env::var(name).unwrap().parse().map_err(|_| SmartIdClientError::ConfigMissingException(name).into())
 }

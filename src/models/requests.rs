@@ -6,7 +6,6 @@ use crate::error::SmartIdClientError;
 use crate::models::common::CertificateLevel;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde_with::skip_serializing_none]
 pub struct AuthenticationSessionRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "relyingPartyUUID")]
@@ -40,9 +39,6 @@ impl AuthenticationSessionRequest {
             return Err(SmartIdClientError::ConfigMissingException("Define at least 1 interaction for an authentication request").into());
         };
 
-        /// validate test TODO
-        //validate_interaction_flow(&interactions)?;
-
         Ok(AuthenticationSessionRequest {
             relying_party_uuid: Some(cfg.relying_party_uuid.clone()),
             relying_party_name: Some(cfg.relying_party_name.clone()),
@@ -55,24 +51,51 @@ impl AuthenticationSessionRequest {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde_with::skip_serializing_none]
 pub struct SignatureSessionRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "relyingPartyUUID")]
     pub relying_party_uuid: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "relyingPartyName")]
     pub relying_party_name: Option<String>,
     #[serde(rename = "certificateLevel")]
     pub certificate_level: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "hashType")]
-    pub hash_type: Option<String>,
+    pub hash_type: Option<HashType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub nonce: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub capabilities: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "allowedInteractionsOrder")]
     pub interaction_order: Option<Vec<Interaction>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "requestProperties")]
     pub request_properties: Option<RequestProperties>,
+}
+
+impl SignatureSessionRequest {
+    pub async fn new(cfg: &SmartIDConfig, interactions: Vec<Interaction>, hash: impl Into<String>, hash_type: HashType) -> Result<Self> {
+        /// At least one interaction is needed for every authentication request
+        if interactions.len() == 0 {
+            return Err(SmartIdClientError::ConfigMissingException("Define at least 1 interaction for an authentication request").into());
+        };
+
+        Ok(SignatureSessionRequest {
+            relying_party_uuid: Some(cfg.relying_party_uuid.clone()),
+            relying_party_name: Some(cfg.relying_party_name.clone()),
+            certificate_level: CertificateLevel::QUALIFIED.into(),
+            interaction_order: Some(interactions),
+            hash: Some(hash.into()),
+            hash_type: Some(hash_type),
+            ..Self::default()
+        })
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

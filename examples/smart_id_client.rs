@@ -20,8 +20,15 @@ async fn main() -> Result<()> {
     let cfg = SmartIDConfigBuilder::new().url("https://sid.demo.sk.ee/smart-id-rp/v2").build().expect("Error building config");
     info!("Config: {:?}", cfg);
 
-    //let _ = uc_get_certificate_choice(&cfg).await;
+
+    /// Example get Certificate
+    let _ = uc_get_certificate_choice(&cfg).await;
+
+    /// Example authenticate user
     let _ = uc_authenticate_by_semantic_identifier(&cfg).await;
+
+    /// Example sign document digest
+    let _ = uc_sign_by_semantic_identifier(&cfg).await;
 
     Ok(())
 }
@@ -43,15 +50,18 @@ async fn uc_get_certificate_choice(cfg: &SmartIDConfig) -> Result<()> {
 async fn uc_authenticate_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<()> {
     /// Create the semantic identifier
     let sem_id = SemanticsIdentifier::new_from_enum(IdentityType::PNO, CountryCode::BE, "81092402747");
+
     /// Define interactions
     let interactions: Vec<Interaction> = vec![Interaction::diplay_text_and_pin("Authenticate to Application: ReadMyCards")];
+
     /// Create hash
     let hash_type = HashType::SHA256;
     let hash = sha_digest("This is a test string".to_string().into_bytes(), &hash_type)?;
     let b64_hash =  base64::engine::general_purpose::STANDARD.encode(hash.as_ref());
-
     let verification_code_for_user = generate_verification_number(hash.as_ref().to_vec())?;
     info!("Verification code for user: {}", verification_code_for_user);
+
+    /// Ask user for authentication
     let res = authenticate_by_semantic_identifier(&cfg, sem_id, interactions, b64_hash, hash_type).await;
     match res {
         Ok(r) => {
@@ -68,30 +78,35 @@ async fn uc_authenticate_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<(
     }
 }
 
-/*async fn uc_sign_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<()> {
+async fn uc_sign_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<()> {
     /// Create the semantic identifier
     let sem_id = SemanticsIdentifier::new_from_enum(IdentityType::PNO, CountryCode::BE, "81092402747");
+
     /// Define interactions
-    let interactions: Vec<Interaction> = vec![Interaction::diplay_text_and_pin("Authenticate to Application: ReadMyCards")];
+    let interactions: Vec<Interaction> = vec![Interaction::confirmation_message("Are you sure to sign document: something.pdf?"), Interaction::diplay_text_and_pin("Sign using ReadMyCards")];
+
     /// Create hash
     let hash_type = HashType::SHA256;
     let hash = sha_digest("This is a test string".to_string().into_bytes(), &hash_type)?;
     let b64_hash =  base64::engine::general_purpose::STANDARD.encode(hash.as_ref());
 
+    /// Create verification cod
     let verification_code_for_user = generate_verification_number(hash.as_ref().to_vec())?;
     info!("Verification code for user: {}", verification_code_for_user);
+
+    /// Ask user to sign
     let res = sign_by_semantic_identifier(&cfg, sem_id, interactions, b64_hash, hash_type).await;
     match res {
         Ok(r) => {
-            info!("Smart ID Authentication DUMP RESPONSE {:#?}", r);
+            info!("Smart ID SIGN DUMP RESPONSE {:#?}", r);
             if r.state == "COMPLETE" && ResultState::from(r.result.end_result).eq(&ResultState::OK) {
-                let cert = r.cert.unwrap().value.unwrap();
-                info!("Smart ID Authentication Result {:#?}", cert);
+                let siganture = r.signature.unwrap().value.unwrap();
+                info!("Smart ID SIGN Result {:#?}", siganture);
                 Ok(())
             } else {
-                Err(anyhow::anyhow!("Error UC authenticate"))
+                Err(anyhow::anyhow!("Error UC SIGN"))
             }
         }
-        Err(e) => Err(anyhow::anyhow!("Error UC Authenticate: {:?}", e))
+        Err(e) => Err(anyhow::anyhow!("Error UC SIGN: {:?}", e))
     }
-}*/
+}

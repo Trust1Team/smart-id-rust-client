@@ -16,7 +16,7 @@ pub mod config;
 mod models;
 mod client_controller;
 
-use crate::client_controller::{ctrl_authenticate_by_document_number, ctrl_authenticate_by_semantic_identifier, ctrl_get_certificate_by_document_number, ctrl_get_certificate_by_semantic_identifier};
+use crate::client_controller::{ctrl_authenticate_by_document_number, ctrl_authenticate_by_semantic_identifier, ctrl_get_certificate_by_document_number, ctrl_get_certificate_by_semantic_identifier, ctrl_poll_session_status, ctrl_sign_by_document_number, ctrl_sign_by_semantic_identifier};
 
 /// Common models are exposed
 pub use models::common;
@@ -30,11 +30,11 @@ pub async fn get_config_from_env() -> SmartIDConfig {
     SmartIDConfig::default()
 }
 
-// todo: error handling
-// todo: fn implementation
-pub async fn get_session_status(session_id: &str) -> Result<()> {
-    todo!();
-    Ok(())
+/// Get Session status based on a session id.
+/// This is done automatically by the library,
+/// the function is exposed for manual polling
+pub async fn get_session_status(cfg: SmartIDConfig, session_id: &str) -> Result<SessionStatus> {
+    ctrl_poll_session_status(&cfg, session_id.to_string()).await
 }
 
 /// Initiates certificate choice between multiple signing certificates the user may hold on his/her different mobile devices.
@@ -47,13 +47,7 @@ pub async fn get_session_status(session_id: &str) -> Result<()> {
 /// The certificate is retrieved based on a document number.
 /// SessionResult must be handled by consumer
 pub async fn get_certificate_by_document_number(cfg: SmartIDConfig, document_number: impl Into<String>) -> Result<SessionStatus> {
-    match ctrl_get_certificate_by_document_number(&cfg, document_number.into()).await {
-        Ok(r) => {
-
-            Ok(r)
-        },
-        Err(e) => Err(e)
-    }
+    ctrl_get_certificate_by_document_number(&cfg, document_number.into()).await
 }
 
 /// Initiates certificate choice between multiple signing certificates the user may hold on his/her different mobile devices.
@@ -82,14 +76,30 @@ pub async fn authenticate_by_semantic_identifier(cfg: &SmartIDConfig, id: Semant
     ctrl_authenticate_by_semantic_identifier(cfg, id, interactions, hash, hash_type).await
 }
 
-pub async fn sign(cfg: SmartIDConfig) -> Result<()> {
-    todo!();
-    Ok(())
+/// This method is the main entry point to signature logic.
+/// It accepts QSCD as a certificate level parameter.
+/// This is a shortcut marking a certificate of QUALIFIED level which is also QSCD-capable. ADVANCED certificates cannot be QSCD- capable.
+/// There are two main modes of signature operation and Relying Party must choose carefully between them.
+/// They look like the ones used in case of authentication, but there are important differences.
+///
+/// Signature by document number. This is the main and common usage scenario.
+/// Document number can be obtained from result of certificate choice operation or previous authentication result.
+/// It is vitally important that signatures using any of the *AdES signature schemes that include certificate as part of signature use this method.
+/// Otherwise, the signature may be given by the person specified, but not using the key pair corresponding to the certificate chosen by Relying Party.
+pub async fn sign_by_document_number(cfg: &SmartIDConfig, document_number: impl Into<String>, interactions: Vec<Interaction>, hash: String, hash_type: HashType) -> Result<SessionStatus> {
+    ctrl_sign_by_document_number(cfg, document_number.into(), interactions, hash, hash_type).await
 }
 
-pub async fn sign_by_semantic_identifier(cfg: SmartIDConfig) -> Result<()> {
-    todo!();
-    Ok(())
+/// This method is the main entry point to signature logic.
+/// It accepts QSCD as a certificate level parameter.
+/// This is a shortcut marking a certificate of QUALIFIED level which is also QSCD-capable. ADVANCED certificates cannot be QSCD- capable.
+/// There are two main modes of signature operation and Relying Party must choose carefully between them.
+/// They look like the ones used in case of authentication, but there are important differences.
+///
+/// Signature by person's identifier.
+/// This method should only be used if it is acceptable that the end user gives the signature using any of the Smart-ID devices at his/her possession.
+pub async fn sign_by_semantic_identifier(cfg: &SmartIDConfig, id: SemanticsIdentifier, interactions: Vec<Interaction>, hash: String, hash_type: HashType) -> Result<SessionStatus> {
+    ctrl_sign_by_semantic_identifier(cfg, id, interactions, hash, hash_type).await
 }
 
 
