@@ -39,8 +39,6 @@ pub enum SmartIdClientError {
     #[error("Enduring Smart ID exception: {0}")]
     EnduringSmartIdException(&'static str),
 
-
-
     /// User's action triggered ending session.
     /// General practise is to ask the user to try again.
     #[error("User action exception: {0}, try use case again")]
@@ -102,4 +100,8 @@ pub enum SmartIdClientError {
     /// User account not found
     #[error("User account not found")]
     UserAccountNotFoundException,
+
+    /// Certificate Decryption error
+    #[error("Certificate Decryption error")]
+    DecryptionError
 }

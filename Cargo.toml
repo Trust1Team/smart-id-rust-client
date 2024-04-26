@@ -36,6 +36,8 @@ reqwest = {  version = "0.12.4", features = [
     "rustls-tls",
 ] }
 thiserror = "1.0.59"
+x509-parser = "0.16.0"
+base64 = "0.22.0"
 
 
 [dev-dependencies]

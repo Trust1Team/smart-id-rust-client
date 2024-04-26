@@ -6,12 +6,8 @@
 
 use anyhow::Result;
 use time_unit::TimeUnit;
-use tracing::callsite::Identifier;
-use tracing::info;
-use crate::client::smart_id_connector::SmartIdConnector;
 use crate::config::SmartIDConfig;
 use crate::models::common::SemanticsIdentifier;
-use crate::models::requests::CertificateRequest;
 
 pub mod client;
 mod error;
@@ -23,6 +19,7 @@ mod client_controller;
 /// Common models are exposed
 pub use models::common;
 use crate::client_controller::ctrl_get_certificate_by_semantic_identifier;
+use crate::models::session::SessionStatus;
 
 
 /// Get configuration based on the environment variables (default config override)
@@ -58,7 +55,7 @@ pub async fn get_certificate(cfg: SmartIDConfig, document_number: impl Into<Stri
 /// The method accepts QSCD as a certificate level parameter. This is a shortcut marking a certificate of QUALIFIED level which is also QSCD-capable. ADVANCED certificates cannot be QSCD-capable.
 ///
 /// The certificate is retrieved based on a ETSI semantic identifier.
-pub async fn get_certificate_by_semantic_identifier(cfg: &SmartIDConfig, id: SemanticsIdentifier) -> Result<()> {
+pub async fn get_certificate_by_semantic_identifier(cfg: &SmartIDConfig, id: SemanticsIdentifier) -> Result<SessionStatus> {
     ctrl_get_certificate_by_semantic_identifier(cfg, id).await
 }
 

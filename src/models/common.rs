@@ -1,4 +1,8 @@
 use serde::{Deserialize, Serialize};
+use x509_parser::prelude::{FromDer, X509Certificate};
+use base64::{engine::general_purpose::STANDARD, Engine as _};
+use anyhow::Result;
+use x509_parser::error::X509Result;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
@@ -15,6 +19,17 @@ pub enum CertificateLevel {
     QUALIFIED,
     ADVANCED,
     QSCD
+}
+
+impl From<String> for CertificateLevel {
+    fn from(value: String) -> Self {
+        match value.to_uppercase().as_str() {
+            "QUALIFIED" => CertificateLevel::QUALIFIED,
+            "ADVANCED" => CertificateLevel::ADVANCED,
+            "QSCD" => CertificateLevel::QSCD,
+            _ => CertificateLevel::QUALIFIED
+        }
+    }
 }
 
 impl From<CertificateLevel> for String {
@@ -53,9 +68,6 @@ impl SemanticsIdentifier {
         SemanticsIdentifier { identifier: format!("{:?}{:?}-{}", identity_type, country_code, identity_number.into()) }
     }
 }
-
-
-
 
 #[cfg(test)]
 mod tests {

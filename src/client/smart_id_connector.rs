@@ -81,6 +81,8 @@ impl SmartIdConnector {
         }
     }
 
+    /// Request long poll timeout value. If not provided, a default is used.
+    /// This parameter is used for a long poll method, meaning the request method might not return until a timeout expires
     pub async fn get_session_status(&self, session_id: &str) -> Result<SessionStatus> {
         let path = format!("{}{}", self.cfg.url, path_session_status_uri(session_id.into()));
         debug!("smart_id_client::get_session_status: {}", path);
