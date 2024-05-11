@@ -1,5 +1,5 @@
-use tracing::{error, info};
-use smart_id_rust_client::{authenticate_by_semantic_identifier, generate_verification_number, get_certificate_by_semantic_identifier, get_config_from_env, sha_digest, sign_by_semantic_identifier};
+use tracing::{error, info, warn};
+use smart_id_rust_client::{authenticate_by_semantic_identifier, generate_verification_number, get_certificate_by_semantic_identifier, get_config_from_env, SessionSignature, SessionStatus, sha_digest, sign_by_semantic_identifier};
 use smart_id_rust_client::common::{CountryCode, HashType, IdentityType, Interaction, ResultState, SemanticsIdentifier};
 use smart_id_rust_client::config::{SmartIDConfig, SmartIDConfigBuilder};
 use anyhow::Result;
@@ -22,10 +22,10 @@ async fn main() -> Result<()> {
 
 
     /// Example get Certificate
-    let _ = uc_get_certificate_choice(&cfg).await;
+    //let _ = uc_get_certificate_choice(&cfg).await;
 
     /// Example authenticate user
-    let _ = uc_authenticate_by_semantic_identifier(&cfg).await;
+    //let _ = uc_authenticate_by_semantic_identifier(&cfg).await;
 
     /// Example sign document digest
     let _ = uc_sign_by_semantic_identifier(&cfg).await;
@@ -34,12 +34,15 @@ async fn main() -> Result<()> {
 }
 
 async fn uc_get_certificate_choice(cfg: &SmartIDConfig) -> Result<()> {
+
     /// Create the semantic identifier
     let sem_id = SemanticsIdentifier::new_from_enum(IdentityType::PNO, CountryCode::BE, "81092402747");
+
+    /// Verify if a certificate exists for given id
     let res = get_certificate_by_semantic_identifier(&cfg, sem_id).await;
     match res {
         Ok(r) => {
-            let cert = r.cert.unwrap().value.unwrap();
+            let cert = validate_response_success(r).map(|res| res.cert.unwrap().value.unwrap())?;
             info!("Smart ID Certificate {:#?}", cert);
             Ok(())
         }
@@ -63,18 +66,14 @@ async fn uc_authenticate_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<(
 
     /// Ask user for authentication
     let res = authenticate_by_semantic_identifier(&cfg, sem_id, interactions, b64_hash, hash_type).await;
+
     match res {
         Ok(r) => {
-            info!("Smart ID Authentication DUMP RESPONSE {:#?}", r);
-            if r.state == "COMPLETE" && ResultState::from(r.result.end_result).eq(&ResultState::OK) {
-                let cert = r.cert.unwrap().value.unwrap();
-                info!("Smart ID Authentication Result {:#?}", cert);
-                Ok(())
-            } else {
-                Err(anyhow::anyhow!("Error UC authenticate"))
-            }
+            let session_result = validate_response_success(r).map(|res| res.result)?;
+            info!("Smart ID Authentication result {:#?}", session_result);
+            Ok(())
         }
-        Err(e) => Err(anyhow::anyhow!("Error UC Authenticate: {:?}", e))
+        Err(_) => Err(anyhow::anyhow!("Error during authentication"))
     }
 }
 
@@ -98,15 +97,25 @@ async fn uc_sign_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<()> {
     let res = sign_by_semantic_identifier(&cfg, sem_id, interactions, b64_hash, hash_type).await;
     match res {
         Ok(r) => {
-            info!("Smart ID SIGN DUMP RESPONSE {:#?}", r);
-            if r.state == "COMPLETE" && ResultState::from(r.result.end_result).eq(&ResultState::OK) {
-                let siganture = r.signature.unwrap().value.unwrap();
-                info!("Smart ID SIGN Result {:#?}", siganture);
-                Ok(())
-            } else {
-                Err(anyhow::anyhow!("Error UC SIGN"))
+            match validate_response_success(r).map(|res| res.signature)? {
+                None => {
+                    warn!("No signature");
+                    Ok(())
+                }
+                Some(signature) => {
+                    info!("Smart ID signature result {:#?}", signature);
+                    Ok(())
+                }
             }
         }
-        Err(e) => Err(anyhow::anyhow!("Error UC SIGN: {:?}", e))
+        Err(_) => Err(anyhow::anyhow!("Error signing digest"))
+    }
+}
+
+fn validate_response_success(response: SessionStatus) -> Result<SessionStatus> {
+    if response.state == "COMPLETE" && ResultState::from(response.result.end_result.clone()).eq(&ResultState::OK) {
+        Ok(response)
+    } else {
+        Err(anyhow::anyhow!("Error SmartID Response"))
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "smart-id-rust-client"
-version = "0.1.0"
+version = "0.1.2"
 description = "Smart ID Rust Client"
 homepage = "https://smart-id.com"
 authors = ["Michallis Pashidis <michallis@trust1team.com>"]

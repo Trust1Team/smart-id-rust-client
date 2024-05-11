@@ -16,6 +16,17 @@ authentication and mobile digital signing using Smart-ID.</div>
 
 </div>
 
+# Introduction
+The library can be used for easy integration with the Smart-ID API. 
+It provides a simple interface for mobile authentication and mobile digital signing using Smart-ID.
+Additional utilities has been provided for easy integration with the Smart-ID API:
+- generate digest and calculate verification code
+- helper structs
+- interactions with the mobile end-user
+
+## Status
+Beta version - under development!
+
 ## Documentation
 
 [Smart-ID Documentation](https://github.com/SK-EID/smart-id-documentation)
