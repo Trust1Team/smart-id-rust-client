@@ -23,6 +23,7 @@ pub use models::common;
 pub use crate::models::session::SessionStatus;
 pub use crate::models::session::SessionSignature;
 pub use crate::models::session::SessionCertificate;
+pub use crate::models::session::SessionResult;
 pub use utils::verification::{generate_verification_number, sha_digest};
 
 
