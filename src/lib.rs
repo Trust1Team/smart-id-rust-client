@@ -21,6 +21,8 @@ use crate::client_controller::{ctrl_authenticate_by_document_number, ctrl_authen
 /// Common models are exposed
 pub use models::common;
 pub use crate::models::session::SessionStatus;
+pub use crate::models::session::SessionSignature;
+pub use crate::models::session::SessionCertificate;
 pub use utils::verification::{generate_verification_number, sha_digest};
 
 

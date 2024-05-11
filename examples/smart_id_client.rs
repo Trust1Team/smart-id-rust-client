@@ -25,10 +25,10 @@ async fn main() -> Result<()> {
     let _ = uc_get_certificate_choice(&cfg).await;
 
     /// Example authenticate user
-    let _ = uc_authenticate_by_semantic_identifier(&cfg).await;
+    //let _ = uc_authenticate_by_semantic_identifier(&cfg).await;
 
     /// Example sign document digest
-    let _ = uc_sign_by_semantic_identifier(&cfg).await;
+    //let _ = uc_sign_by_semantic_identifier(&cfg).await;
 
     Ok(())
 }
