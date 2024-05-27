@@ -19,7 +19,7 @@ pub async fn ctrl_get_certificate_by_document_number(cfg: &SmartIDConfig, doc_nr
     let req = CertificateRequest::new(cfg).await;
     match sc.get_certificate_by_document_number(doc_nr.into(), &req).await {
         Ok(r) => ctrl_poll_session_status(cfg, r.session_id).await,
-        Err(_) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound))
+        Err(e) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound(e.to_string())))
     }
 }
 
@@ -30,7 +30,7 @@ pub async fn ctrl_get_certificate_by_semantic_identifier(cfg: &SmartIDConfig, id
     let req = CertificateRequest::new(cfg).await;
     match sc.get_certificate_by_semantic_identifier(id, &req).await {
         Ok(r) => ctrl_poll_session_status(cfg, r.session_id).await,
-        Err(_) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound))
+        Err(e) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound(e.to_string())))
     }
 }
 
@@ -39,7 +39,7 @@ pub async fn ctrl_authenticate_by_document_number(cfg: &SmartIDConfig, doc_nr: i
     let req = AuthenticationSessionRequest::new(cfg, interactions, hash, hash_type).await?;
     match sc.authenticate_by_document_number(doc_nr.into(), &req).await {
         Ok(r) => ctrl_poll_session_status(cfg, r.session_id).await,
-        Err(_) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound))
+        Err(e) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound(e.to_string())))
     }
 }
 
@@ -48,7 +48,7 @@ pub async fn ctrl_authenticate_by_semantic_identifier(cfg: &SmartIDConfig, id: S
     let req = AuthenticationSessionRequest::new(cfg, interactions, hash, hash_type).await?;
     match sc.authenticate_by_semantic_identifier(id, &req).await {
         Ok(r) => ctrl_poll_session_status(cfg, r.session_id).await,
-        Err(_) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound))
+        Err(e) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound(e.to_string())))
     }
 }
 
@@ -57,7 +57,7 @@ pub async fn ctrl_sign_by_document_number(cfg: &SmartIDConfig, doc_nr: impl Into
     let req = SignatureSessionRequest::new(cfg, interactions, hash, hash_type).await?;
     match sc.sign_by_document_number(doc_nr.into(), &req).await {
         Ok(r) => ctrl_poll_session_status(cfg, r.session_id).await,
-        Err(_) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound))
+        Err(e) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound(e.to_string())))
     }
 }
 
@@ -66,7 +66,7 @@ pub async fn ctrl_sign_by_semantic_identifier(cfg: &SmartIDConfig, id: Semantics
     let req = SignatureSessionRequest::new(cfg, interactions, hash, hash_type).await?;
     match sc.sign_by_semantic_identifier(id, &req).await {
         Ok(r) => ctrl_poll_session_status(cfg, r.session_id).await,
-        Err(_) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound))
+        Err(e) => Err(anyhow::anyhow!(SmartIdClientError::SessionNotFound(e.to_string())))
     }
 }
 

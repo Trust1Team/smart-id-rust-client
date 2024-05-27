@@ -114,6 +114,14 @@ impl SemanticsIdentifier {
     pub fn new_from_enum(identity_type: IdentityType, country_code: CountryCode, identity_number: impl Into<String>) -> Self {
         SemanticsIdentifier { identifier: format!("{:?}{:?}-{}", identity_type, country_code, identity_number.into()) }
     }
+
+    pub fn new_from_string_mock(identity_type: impl Into<String>, country_code: impl Into<String>) -> Self {
+        SemanticsIdentifier { identifier: format!("{}{}-{}-MOCK-Q", identity_type.into(), country_code.into(), "00010299944") }
+    }
+
+    pub fn new_from_enum_mock(identity_type: IdentityType, country_code: CountryCode) -> Self {
+        SemanticsIdentifier { identifier: format!("{:?}{:?}-{}-MOCK-Q", identity_type, country_code, "00010299944") }
+    }
 }
 
 
