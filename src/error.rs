@@ -12,8 +12,8 @@ pub enum SmartIdClientError {
     SmartIdException(&'static str),
 
     /// Session not found
-    #[error("Session not found")]
-    SessionNotFound,
+    #[error("Session not found: {0}")]
+    SessionNotFound(String),
 
     #[error("Invalid request")]
     InvalidRequest,

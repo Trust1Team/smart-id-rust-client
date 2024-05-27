@@ -9,6 +9,12 @@ use tokio::fs::File;
 use tokio::time::sleep;
 use tracing::{debug, error};
 
+const HEADER_CONTENT_TYPE: &'static str = "content-type";
+const HEADER_CONTENT_TYPE_DEFAULT: &'static str = "application/json";
+const HEADER_USER_AGENT: &'static str = "User-Agent";
+const HEADER_USER_AGENT_VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const HEADER_USER_AGENT_RUST_VERSION: &'static str = env!("CARGO_PKG_RUST_VERSION");
+
 /// Generic get JWT based on APIKEY
 /// Not used for Smart ID client
 pub async fn get_token<R>(url: &str, timeout_millis: Option<u64>) -> Result<R>
@@ -24,7 +30,8 @@ where
         .unwrap();
     client
         .get(url)
-        .header("content-type", "application/json")
+        .header(HEADER_CONTENT_TYPE, HEADER_CONTENT_TYPE_DEFAULT)
+        .header(HEADER_USER_AGENT, format!("smart-id-rust-client/{:?}/rust/{:?}",HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION))
         .send()
         .await?
         .json::<R>()
@@ -50,7 +57,8 @@ where
         .unwrap();
     let send_response = client
         .get(url)
-        .header("content-type", "application/json")
+        .header(HEADER_CONTENT_TYPE, HEADER_CONTENT_TYPE_DEFAULT)
+        .header(HEADER_USER_AGENT, format!("smart-id-rust-client/{:?}/rust/{:?}",HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION))
         .send()
         .await?;
     let status = send_response.status().as_u16();
@@ -80,7 +88,8 @@ pub async fn delete(
         .unwrap();
     let res = client
         .delete(url)
-        .header("content-type", "application/json")
+        .header(HEADER_CONTENT_TYPE, HEADER_CONTENT_TYPE_DEFAULT)
+        .header(HEADER_USER_AGENT, format!("smart-id-rust-client/{:?}/rust/{:?}",HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION))
         .send()
         .await?;
     Ok(())
@@ -106,7 +115,8 @@ where
         .unwrap();
     let send_response = client
         .post(url)
-        .header("content-type", "application/json")
+        .header(HEADER_CONTENT_TYPE, HEADER_CONTENT_TYPE_DEFAULT)
+        .header(HEADER_USER_AGENT, format!("smart-id-rust-client/{:?}/rust/{:?}",HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION))
         .json(req)
         .send()
         .await?;
@@ -141,7 +151,8 @@ where
         .unwrap();
     let send_response = client
         .post(url)
-        .header("content-type", "application/json")
+        .header(HEADER_CONTENT_TYPE, HEADER_CONTENT_TYPE_DEFAULT)
+        .header(HEADER_USER_AGENT, format!("smart-id-rust-client/{:?}/rust/{:?}",HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION))
         .json(req)
         .send()
         .await?;
@@ -180,7 +191,8 @@ where
         .unwrap();
     client
         .put(url)
-        .header("content-type", "application/json")
+        .header(HEADER_CONTENT_TYPE, HEADER_CONTENT_TYPE_DEFAULT)
+        .header(HEADER_USER_AGENT, format!("smart-id-rust-client/{:?}/rust/{:?}",HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION))
         .json(req)
         .send()
         .await?

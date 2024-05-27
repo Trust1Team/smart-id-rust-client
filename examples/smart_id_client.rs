@@ -22,10 +22,10 @@ async fn main() -> Result<()> {
 
 
     /// Example get Certificate
-    //let _ = uc_get_certificate_choice(&cfg).await;
+    let _ = uc_get_certificate_choice(&cfg).await;
 
     /// Example authenticate user
-    //let _ = uc_authenticate_by_semantic_identifier(&cfg).await;
+    let _ = uc_authenticate_by_semantic_identifier(&cfg).await;
 
     /// Example sign document digest
     let _ = uc_sign_by_semantic_identifier(&cfg).await;
@@ -36,7 +36,7 @@ async fn main() -> Result<()> {
 async fn uc_get_certificate_choice(cfg: &SmartIDConfig) -> Result<()> {
 
     /// Create the semantic identifier
-    let sem_id = SemanticsIdentifier::new_from_enum(IdentityType::PNO, CountryCode::BE, "81092402747");
+    let sem_id = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
 
     /// Verify if a certificate exists for given id
     let res = get_certificate_by_semantic_identifier(&cfg, sem_id).await;
@@ -52,7 +52,7 @@ async fn uc_get_certificate_choice(cfg: &SmartIDConfig) -> Result<()> {
 
 async fn uc_authenticate_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<()> {
     /// Create the semantic identifier
-    let sem_id = SemanticsIdentifier::new_from_enum(IdentityType::PNO, CountryCode::BE, "81092402747");
+    let sem_id = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
 
     /// Define interactions
     let interactions: Vec<Interaction> = vec![Interaction::diplay_text_and_pin("Authenticate to Application: ReadMyCards")];
@@ -79,7 +79,7 @@ async fn uc_authenticate_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<(
 
 async fn uc_sign_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<()> {
     /// Create the semantic identifier
-    let sem_id = SemanticsIdentifier::new_from_enum(IdentityType::PNO, CountryCode::BE, "81092402747");
+    let sem_id = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
 
     /// Define interactions
     let interactions: Vec<Interaction> = vec![Interaction::confirmation_message("Are you sure to sign document: something.pdf?"), Interaction::diplay_text_and_pin("Sign using ReadMyCards")];
