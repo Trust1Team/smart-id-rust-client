@@ -1,8 +1,7 @@
 use crate::models::common::{SemanticsIdentifier};
 use crate::models::session::SessionStatus;
 use anyhow::Result;
-use tracing::debug;
-use tracing::log::info;
+use tracing::{debug, info};
 use crate::client::reqwest_generic::{get, post};
 use crate::models::requests::{AuthenticationSessionRequest, CertificateRequest, SignatureSessionRequest};
 use crate::models::responses::{AuthenticationSessionResponse, CertificateChoiceResponse, SignatureSessionResponse};
