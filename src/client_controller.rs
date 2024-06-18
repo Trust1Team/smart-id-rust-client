@@ -1,7 +1,7 @@
 use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, instrument};
 use anyhow::Result;
 use tokio::time::sleep;
 use crate::client::smart_id_connector::SmartIdConnector;
@@ -14,6 +14,7 @@ use crate::models::session::SessionStatus;
 
 /// Get certificate by semantic identifier
 /// When successful, the session id is used to poll the result
+#[instrument(skip_all)]
 pub async fn ctrl_get_certificate_by_document_number(cfg: &SmartIDConfig, doc_nr: impl Into<String>) -> Result<SessionStatus> {
     let sc =  SmartIdConnector::new(cfg).await;
     let req = CertificateRequest::new(cfg).await;
@@ -25,6 +26,7 @@ pub async fn ctrl_get_certificate_by_document_number(cfg: &SmartIDConfig, doc_nr
 
 /// Get certificate by semantic identifier
 /// When successful, the session id is used to poll the result
+#[instrument(skip_all)]
 pub async fn ctrl_get_certificate_by_semantic_identifier(cfg: &SmartIDConfig, id: SemanticsIdentifier) -> Result<SessionStatus> {
     let sc =  SmartIdConnector::new(cfg).await;
     let req = CertificateRequest::new(cfg).await;
@@ -34,6 +36,9 @@ pub async fn ctrl_get_certificate_by_semantic_identifier(cfg: &SmartIDConfig, id
     }
 }
 
+/// Authenticate by document number
+/// When successful, the session id is used to poll the result
+#[instrument(skip_all)]
 pub async fn ctrl_authenticate_by_document_number(cfg: &SmartIDConfig, doc_nr: impl Into<String>, interactions: Vec<Interaction>, hash: String, hash_type: HashType) -> Result<SessionStatus> {
     let sc =  SmartIdConnector::new(cfg).await;
     let req = AuthenticationSessionRequest::new(cfg, interactions, hash, hash_type).await?;
@@ -43,6 +48,9 @@ pub async fn ctrl_authenticate_by_document_number(cfg: &SmartIDConfig, doc_nr: i
     }
 }
 
+/// Authenticate by semantic identifier
+/// When successful, the session id is used to poll the result
+#[instrument(skip_all)]
 pub async fn ctrl_authenticate_by_semantic_identifier(cfg: &SmartIDConfig, id: SemanticsIdentifier, interactions: Vec<Interaction>, hash: String, hash_type: HashType) -> Result<SessionStatus> {
     let sc =  SmartIdConnector::new(cfg).await;
     let req = AuthenticationSessionRequest::new(cfg, interactions, hash, hash_type).await?;
@@ -52,6 +60,9 @@ pub async fn ctrl_authenticate_by_semantic_identifier(cfg: &SmartIDConfig, id: S
     }
 }
 
+/// Sign by document number
+/// When successful, the session id is used to poll the result
+#[instrument(skip_all)]
 pub async fn ctrl_sign_by_document_number(cfg: &SmartIDConfig, doc_nr: impl Into<String>, interactions: Vec<Interaction>, hash: String, hash_type: HashType) -> Result<SessionStatus> {
     let sc =  SmartIdConnector::new(cfg).await;
     let req = SignatureSessionRequest::new(cfg, interactions, hash, hash_type).await?;
@@ -61,6 +72,9 @@ pub async fn ctrl_sign_by_document_number(cfg: &SmartIDConfig, doc_nr: impl Into
     }
 }
 
+/// Sign by semantic identifier
+/// When successful, the session id is used to poll the result
+#[instrument(skip_all)]
 pub async fn ctrl_sign_by_semantic_identifier(cfg: &SmartIDConfig, id: SemanticsIdentifier, interactions: Vec<Interaction>, hash: String, hash_type: HashType) -> Result<SessionStatus> {
     let sc =  SmartIdConnector::new(cfg).await;
     let req = SignatureSessionRequest::new(cfg, interactions, hash, hash_type).await?;
@@ -71,12 +85,13 @@ pub async fn ctrl_sign_by_semantic_identifier(cfg: &SmartIDConfig, id: Semantics
 }
 
 /// Poll session status is called using the session id returned by peer use cases
+#[instrument(skip_all)]
 pub async fn ctrl_poll_session_status(cfg: &SmartIDConfig, session_id: impl Into<String>) -> Result<SessionStatus> {
     let sc =  SmartIdConnector::new(cfg).await;
-    let req_max_attemtps = cfg.client_retry_attempts.unwrap_or(3);
+    let req_max_attempts = cfg.client_retry_attempts.unwrap_or(3);
     let req_max_delay_between_attempts = cfg.client_retry_delay.unwrap_or(2);
     let sid = session_id.into();
-    retry(req_max_attemtps, req_max_delay_between_attempts, || async {
+    retry(req_max_attempts, req_max_delay_between_attempts, || async {
         sc.get_session_status(sid.as_ref()).await
     }).await
 }
@@ -84,6 +99,7 @@ pub async fn ctrl_poll_session_status(cfg: &SmartIDConfig, session_id: impl Into
 /// Generic Retry mechanism
 /// Attempt-based, with a delay in seconds in between retries
 /// Total time = attempts (+latency) * delay
+#[instrument(skip_all)]
 pub async fn retry<F, Fu>(attempts: u8, delay: u64, f: F) -> Result<SessionStatus>
     where F: Fn() -> Fu, Fu: Future<Output=Result<SessionStatus>>{
     for n in 0..attempts {

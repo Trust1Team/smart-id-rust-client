@@ -1,7 +1,7 @@
 use crate::models::common::{SemanticsIdentifier};
 use crate::models::session::SessionStatus;
 use anyhow::Result;
-use tracing::{debug, info};
+use tracing::{debug, info, instrument};
 use crate::client::reqwest_generic::{get, post};
 use crate::models::requests::{AuthenticationSessionRequest, CertificateRequest, SignatureSessionRequest};
 use crate::models::responses::{AuthenticationSessionResponse, CertificateChoiceResponse, SignatureSessionResponse};
@@ -61,6 +61,7 @@ impl Default for SmartIdConnector {
 }
 
 impl SmartIdConnector {
+    #[instrument]
     pub async fn new_with_time_interval(cfg: SmartIDConfig) -> Self {
         SmartIdConnector {
             cfg,
@@ -68,6 +69,7 @@ impl SmartIdConnector {
         }
     }
 
+    #[instrument]
     pub async fn new(cfg: &SmartIDConfig) -> Self {
         SmartIdConnector {
             cfg: cfg.clone(),
@@ -77,6 +79,7 @@ impl SmartIdConnector {
 
     /// Request long poll timeout value. If not provided, a default is used.
     /// This parameter is used for a long poll method, meaning the request method might not return until a timeout expires
+    #[instrument]
     pub async fn get_session_status(&self, session_id: &str) -> Result<SessionStatus> {
         let path = format!("{}{}", self.cfg.url, path_session_status_uri(session_id.into()));
         debug!("smart_id_client::get_session_status: {}", path);
@@ -96,6 +99,7 @@ impl SmartIdConnector {
         }
     }
 
+    #[instrument]
     pub async fn get_certificate_by_document_number(&self, document_number: String, req: &CertificateRequest) -> Result<CertificateChoiceResponse> {
         let path = format!("{}{}", self.cfg.url, path_certificate_choice_by_document_number(document_number));
         debug!("smart_id_client::get_certificate_by_document_number: {}", path);
@@ -103,6 +107,7 @@ impl SmartIdConnector {
         post::<CertificateRequest, CertificateChoiceResponse>(path.as_str(), req, self.cfg.client_request_timeout).await
     }
 
+    #[instrument]
     pub async fn get_certificate_by_semantic_identifier(&self, id: SemanticsIdentifier, req: &CertificateRequest) -> Result<CertificateChoiceResponse> {
         let path = format!("{}{}", self.cfg.url, path_certificate_choice_by_natural_person_semantics_identifier(id.identifier));
         debug!("smart_id_client::get_certificate_by_semantic_identifier: {}", path);
@@ -110,6 +115,7 @@ impl SmartIdConnector {
         post::<CertificateRequest, CertificateChoiceResponse>(path.as_str(), req, self.cfg.client_request_timeout).await
     }
 
+    #[instrument]
     pub async fn authenticate_by_document_number(&self, document_number: String, req: &AuthenticationSessionRequest) -> Result<AuthenticationSessionResponse> {
         let path = format!("{}{}", self.cfg.url, path_authenticate_by_document_number(document_number));
         debug!("smart_id_client::authenticate_by_document_number: {}", path);
@@ -117,6 +123,7 @@ impl SmartIdConnector {
         post::<AuthenticationSessionRequest,AuthenticationSessionResponse>(path.as_str(), req, self.cfg.client_request_timeout).await
     }
 
+    #[instrument]
     pub async fn authenticate_by_semantic_identifier(&self, id: SemanticsIdentifier, req: &AuthenticationSessionRequest) -> Result<AuthenticationSessionResponse> {
         let path = format!("{}{}", self.cfg.url, path_authenticate_by_natural_person_semantics_identifier(id.identifier));
         debug!("smart_id_client::authenticate_by_semantic_identifier: {}", path);
@@ -124,6 +131,7 @@ impl SmartIdConnector {
         post::<AuthenticationSessionRequest,AuthenticationSessionResponse>(path.as_str(), req, self.cfg.client_request_timeout).await
     }
 
+    #[instrument]
     pub async fn sign_by_document_number(&self, document_number: String, req: &SignatureSessionRequest) -> Result<SignatureSessionResponse> {
         let path = format!("{}{}", self.cfg.url, path_signature_by_document_number(document_number));
         debug!("smart_id_client::sign_by_document_number: {}", path);
@@ -131,6 +139,7 @@ impl SmartIdConnector {
         post::<SignatureSessionRequest,SignatureSessionResponse>(path.as_str(), req, self.cfg.client_request_timeout).await
     }
 
+    #[instrument]
     pub async fn sign_by_semantic_identifier(&self, id: SemanticsIdentifier, req: &SignatureSessionRequest) -> Result<SignatureSessionResponse> {
         let path = format!("{}{}", self.cfg.url, path_signature_by_natural_person_semantics_identifier(id.identifier));
         debug!("smart_id_client::sign_by_semantic_identifier: {}", path);

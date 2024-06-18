@@ -1,12 +1,14 @@
 use anyhow::Result;
 use base64::engine::general_purpose;
 use base64::Engine;
+use tracing::instrument;
 use x509_parser::certificate::X509CertificateParser;
 use x509_parser::nom::Parser;
 use x509_parser::prelude::*;
 use crate::error::SmartIdClientError;
 
 ///Verifies if the certificate given (base64 encoded DER), is a non-repudiation certificate
+#[instrument]
 pub async fn has_key_extension_non_rep(cert: &str) -> Result<bool> {
 	let bytes = general_purpose::STANDARD.decode(cert).unwrap();
 	let mut parser = X509CertificateParser::new();
@@ -33,6 +35,7 @@ pub async fn has_key_extension_non_rep(cert: &str) -> Result<bool> {
 }
 
 /// Verifies if the certificate given (base64 encoded DER), is an authentication certificate
+#[instrument]
 pub async fn has_key_extension_auth(cert: &str) -> Result<bool> {
 	let bytes = general_purpose::STANDARD.decode(cert).unwrap();
 	let mut parser = X509CertificateParser::new();
@@ -61,6 +64,7 @@ pub async fn has_key_extension_auth(cert: &str) -> Result<bool> {
 /// Verifies if the certificate given (base64 encoded DER), is a root certificate. The function will match the
 /// certificate issuer with the certificate subject (string based). Additionally, the extensions key_cert_sign and crl_sign
 /// must be present.
+#[instrument]
 pub async fn has_key_extension_root(cert: &str) -> Result<bool> {
 	let bytes = general_purpose::STANDARD.decode(cert).unwrap();
 	let mut parser = X509CertificateParser::new();
@@ -94,6 +98,7 @@ pub async fn has_key_extension_root(cert: &str) -> Result<bool> {
 /// Verifies if the certificate given (base64 encoded DER), is an intermediate certificate. The function will verify that the
 /// certificate issuer is not equal to the certificate subject (string based). Additionally, the extensions key_cert_sign and crl_sign
 /// must be present.
+#[instrument]
 pub async fn has_key_extension_intermediate(cert: &str) -> Result<bool> {
 	let bytes = general_purpose::STANDARD.decode(cert).unwrap();
 	let mut parser = X509CertificateParser::new();
@@ -128,6 +133,7 @@ pub async fn has_key_extension_intermediate(cert: &str) -> Result<bool> {
 /// certificate issuer is not equal to the certificate subject (string based). Additionally, the extensions key_encipherment
 /// must be present.
 /// !!!Will not work for the beid as the intermediate behaves as a non-rep!!!
+#[instrument]
 pub async fn has_key_extension_encryption(cert: &str) -> Result<bool> {
 	let bytes = general_purpose::STANDARD.decode(cert).unwrap();
 	let mut parser = X509CertificateParser::new();

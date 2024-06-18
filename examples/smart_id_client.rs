@@ -11,7 +11,13 @@ async fn main() -> Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    info!("---Example::Smart ID Client---");
+    info!("===Example::Smart ID Client===");
+
+    /// Identifier to test (demo / dummy - not a real user)
+    let sem_id = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
+
+    /// Identifier - when you want to use a real user account
+    //let sem_id = SemanticsIdentifier::new_from_enum(IdentityType::PNO, CountryCode::BE, "national_id_number_here");
 
     /// Get default Config (from environment variables)
     let cfg = get_config_from_env();
@@ -22,37 +28,36 @@ async fn main() -> Result<()> {
 
 
     /// Example get Certificate
-    let _ = uc_get_certificate_choice(&cfg).await;
+    let _ = uc_get_certificate_choice(&cfg, sem_id.clone()).await;
 
     /// Example authenticate user
-    let _ = uc_authenticate_by_semantic_identifier(&cfg).await;
+    let _ = uc_authenticate_by_semantic_identifier(&cfg, sem_id.clone()).await;
 
     /// Example sign document digest
-    let _ = uc_sign_by_semantic_identifier(&cfg).await;
+    let _ = uc_sign_by_semantic_identifier(&cfg, sem_id.clone()).await;
 
+    info!("===Example::Smart ID Client END===");
     Ok(())
 }
 
-async fn uc_get_certificate_choice(cfg: &SmartIDConfig) -> Result<()> {
-
-    /// Create the semantic identifier
-    let sem_id = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
+async fn uc_get_certificate_choice(cfg: &SmartIDConfig, sem_id: SemanticsIdentifier) -> Result<()> {
+    info!("---Use-case: Certificate Choice---");
 
     /// Verify if a certificate exists for given id
     let res = get_certificate_by_semantic_identifier(&cfg, sem_id).await;
     match res {
         Ok(r) => {
             let cert = validate_response_success(r).map(|res| res.cert.unwrap().value.unwrap())?;
-            info!("Smart ID Certificate {:#?}", cert);
+            info!("[SUCCESS]::Smart ID Certificate {:#?}", cert);
+            info!("---Use-case: Certificate Choice END---");
             Ok(())
         }
-        Err(_) => Err(anyhow::anyhow!("Error getting certificate"))
+        Err(_) => Err(anyhow::anyhow!("[ERROR]::Error getting certificate"))
     }
 }
 
-async fn uc_authenticate_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<()> {
-    /// Create the semantic identifier
-    let sem_id = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
+async fn uc_authenticate_by_semantic_identifier(cfg: &SmartIDConfig, sem_id: SemanticsIdentifier) -> Result<()> {
+    info!("---Use-case: Authenticate by Semantic Identifier---");
 
     /// Define interactions
     let interactions: Vec<Interaction> = vec![Interaction::diplay_text_and_pin("Authenticate to Application: ReadMyCards")];
@@ -70,16 +75,16 @@ async fn uc_authenticate_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<(
     match res {
         Ok(r) => {
             let session_result = validate_response_success(r).map(|res| res.result)?;
-            info!("Smart ID Authentication result {:#?}", session_result);
+            info!("[SUCCESS]::Smart ID Authentication result {:#?}", session_result);
+            info!("---Use-case: Authenticate by Semantic Identifier END---");
             Ok(())
         }
-        Err(_) => Err(anyhow::anyhow!("Error during authentication"))
+        Err(_) => Err(anyhow::anyhow!("[ERROR]::Error during authentication"))
     }
 }
 
-async fn uc_sign_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<()> {
-    /// Create the semantic identifier
-    let sem_id = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
+async fn uc_sign_by_semantic_identifier(cfg: &SmartIDConfig, sem_id: SemanticsIdentifier) -> Result<()> {
+    info!("---Use-case: Digitally Sign by Semantic Identifier---");
 
     /// Define interactions
     let interactions: Vec<Interaction> = vec![Interaction::confirmation_message("Are you sure to sign document: something.pdf?"), Interaction::diplay_text_and_pin("Sign using ReadMyCards")];
@@ -99,16 +104,18 @@ async fn uc_sign_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<()> {
         Ok(r) => {
             match validate_response_success(r).map(|res| res.signature)? {
                 None => {
-                    warn!("No signature");
+                    warn!("[UNKNOWN]::No signature");
+                    info!("---Use-case: Digitally Sign by Semantic Identifier END---");
                     Ok(())
                 }
                 Some(signature) => {
-                    info!("Smart ID signature result {:#?}", signature);
+                    info!("[SUCCESS]::Smart ID signature result {:#?}", signature);
+                    info!("---Use-case: Digitally Sign by Semantic Identifier END---");
                     Ok(())
                 }
             }
         }
-        Err(_) => Err(anyhow::anyhow!("Error signing digest"))
+        Err(_) => Err(anyhow::anyhow!("[ERROR]::Error signing digest"))
     }
 }
 

@@ -44,7 +44,11 @@ cargo build
 ## Examples
 
 ```zsh
+# with debug logs (default)
 cargo run --example smart_id_client
+
+# only with info logs
+RUST_LOG=info cargo run --example smart_id_client
 ```
 
 ## Tests

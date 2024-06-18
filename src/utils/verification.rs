@@ -1,9 +1,10 @@
 use ring::digest::{Context, Digest, SHA256, SHA384, SHA512};
-use tracing::debug;
+use tracing::{debug, instrument};
 use crate::common::HashType;
 
 /// Generate SmartID verification code
 /// See Smart-ID documentation in mdBooks
+#[instrument]
 pub fn generate_verification_number(digest: Vec<u8>) -> anyhow::Result<String> {
     let updated_digest = sha_digest(digest, &HashType::SHA256)?;
     // integer(SHA256(hash)[-2:-1]) mod 10000
@@ -28,6 +29,7 @@ pub fn generate_verification_number(digest: Vec<u8>) -> anyhow::Result<String> {
 }
 
 /// Helper method to calculate the hash digest
+#[instrument]
 pub fn sha_digest(data: Vec<u8>, hash_type: &HashType) -> anyhow::Result<Digest> {
     let algorithm = match hash_type {
         HashType::SHA256 => &SHA256,
