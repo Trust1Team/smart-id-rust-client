@@ -113,8 +113,25 @@ impl SmartIDConfigBuilder {
 }
 // endregion: Config Builder
 
+
+/// Use this config builder for testing purposes
 impl Default for SmartIDConfig {
     fn default() -> Self {
+        Self {
+            url: String::from("https://rp-api.smart-id.com/v2"),
+            relying_party_uuid: "00000000-0000-0000-0000-000000000000".to_string(),
+            relying_party_name: "DEMO".to_string(),
+            client_request_timeout: Some(30000), //millis
+            client_retry_attempts: Some(15),
+            client_retry_delay: Some(1), //seconds
+            client_enable_polling: Some(true), //auto-polling
+        } 
+    }
+}
+
+/// Use this configuration builder
+impl SmartIDConfig {
+    pub fn from_env() -> Self {
         Self::load_from_env().expect("Failed to initialize Smart ID Client or load SmartIDConfig from env")
     }
 }
@@ -127,7 +144,7 @@ impl SmartIDConfig {
             relying_party_name: get_env("RELYING_PARTY_NAME").unwrap(),
             client_request_timeout: get_env_u64("CLIENT_REQ_NETWORK_TIMEOUT_MILLIS").ok(),
             client_retry_attempts: get_env_u8("CLIENT_REQ_MAX_ATTEMPTS").ok(),
-            client_retry_delay: get_env_u64("CLIENT_REQ_DELAY_SEONDS_BETWEEN_ATTEMPTS").ok(),
+            client_retry_delay: get_env_u64("CLIENT_REQ_DELAY_SECONDS_BETWEEN_ATTEMPTS").ok(),
             client_enable_polling: get_env_bool("ENABLE_POLLING_BY_LIB").ok(),
         })
     }

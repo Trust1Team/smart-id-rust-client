@@ -40,7 +40,7 @@ where
 }
 
 /// Generic GET request
-/// Connection pooling is provided in reqwest
+/// Connection pooling is provided in `reqwest`
 pub async fn get<R>(
     url: &str,
     timeout_millis: Option<u64>,
@@ -74,7 +74,7 @@ where
 }
 
 /// Generic DELETE request
-/// Connection pooling is provided in reqwest
+/// Connection pooling is provided in `reqwest`
 pub async fn delete(
     url: &str,
     timeout_millis: Option<u64>,
@@ -96,7 +96,7 @@ pub async fn delete(
 }
 
 /// Generic POST request
-/// Connection pooling is provided in reqwest
+/// Connection pooling is provided in `reqwest`
 pub async fn post<T, R>(
     url: &str,
     req: &T,
@@ -133,7 +133,7 @@ where
 }
 
 // Generic POST request
-/// Connection pooling is provided in reqwest
+/// Connection pooling is provided in `reqwest`
 pub async fn post_json_value<T>(
     url: &str,
     req: &T,
@@ -172,7 +172,7 @@ where
 }
 
 /// Generic PUT request
-/// Connection pooling is provided in reqwest
+/// Connection pooling is provided in `reqwest`
 pub async fn put<T, R>(
     url: &str,
     req: &T,

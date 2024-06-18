@@ -29,13 +29,29 @@ pub use utils::verification::{generate_verification_number, sha_digest};
 
 /// Get configuration based on the environment variables (default config override)
 /// Function will panic when the environment variables are not set
+/// The following variables must be set:
+///| ENV_VAR                                   | DESCRIPTION                                                                    | REQUIRED       |
+///|-------------------------------------------|--------------------------------------------------------------------------------|----------------|
+///| HOST_URL                                  | The host address of the Smart ID Service                                       | Y              |
+///| RELYING_PARTY_UUID                        | The UUID assigned to the Relying-party - provided by Smart ID                  | Y              |
+///| RELYING_PARTY_NAME                        | The unique name assigned to the Relying-Party - provided by Smart ID           | Y              |
+///| CLIENT_REQ_NETWORK_TIMEOUT_MILLIS         | The timeout for the REST client when requesting Smart ID Services              | N - default () |
+///| CLIENT_REQ_MAX_ATTEMPTS                   | The maximum attempts for the REST client retry mechanism                       |                |
+///| CLIENT_REQ_DELAY_SECONDS_BETWEEN_ATTEMPTS | The wait time between consecutive REST client requests                         |                |
+///| ENABLE_POLLING_BY_LIB                     | Enable automatic polling (when `false` - polling MUST be implemented by callee |                |
 pub async fn get_config_from_env() -> SmartIDConfig {
+    SmartIDConfig::from_env()
+}
+
+/// Get configuration based on the Smart ID test environment variables
+/// Function is used during development, and in combination with a Smart ID demo client application
+pub async fn get_config_default() -> SmartIDConfig {
     SmartIDConfig::default()
 }
 
 /// Get Session status based on a session id.
-/// This is done automatically by the library,
-/// the function is exposed for manual polling
+/// This is done automatically by the library when polling is enabled,
+/// The function is exposed when the callee want to implement a manual polling mechanism
 pub async fn get_session_status(cfg: SmartIDConfig, session_id: &str) -> Result<SessionStatus> {
     ctrl_poll_session_status(&cfg, session_id.to_string()).await
 }
@@ -67,14 +83,20 @@ pub async fn get_certificate_by_semantic_identifier(cfg: &SmartIDConfig, id: Sem
 }
 
 
-/// Send the authentication request and get the response
-/// This method uses automatic session status polling internally
+/// Send the authentication request and get the response using a document number
+/// This method can use automatic session status polling internally
 /// An interaction flow is necessary and required (at least one)
 ///
 /// SessionResult must be handled by consumer
 pub async fn authenticate_by_document_number(cfg: &SmartIDConfig, document_number: impl Into<String>, interactions: Vec<Interaction>, hash: String, hash_type: HashType) -> Result<SessionStatus> {
     ctrl_authenticate_by_document_number(cfg, document_number.into(), interactions, hash, hash_type).await
 }
+
+/// Send the authentication request and get the response using a semantic identifier
+/// This method can use automatic session status polling internally
+/// An interaction flow is necessary and required (at least one)
+///
+/// SessionResult must be handled by consumer
 pub async fn authenticate_by_semantic_identifier(cfg: &SmartIDConfig, id: SemanticsIdentifier, interactions: Vec<Interaction>, hash: String, hash_type: HashType) -> Result<SessionStatus> {
     ctrl_authenticate_by_semantic_identifier(cfg, id, interactions, hash, hash_type).await
 }

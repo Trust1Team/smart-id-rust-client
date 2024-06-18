@@ -77,6 +77,23 @@ cargo run --example smart_id_client
 ```
 
 ### Configuration
+Default values are provided and targets the TEST environment of Smart ID. 
+The required environment variables are:
+
+| ENV_VAR                                   | DESCRIPTION                                                                    | REQUIRED       |
+|-------------------------------------------|--------------------------------------------------------------------------------|----------------|
+| HOST_URL                                  | The host address of the Smart ID Service                                       | Y              |
+| RELYING_PARTY_UUID                        | The UUID assigned to the Relying-party - provided by Smart ID                  | Y              |
+| RELYING_PARTY_NAME                        | The unique name assigned to the Relying-Party - provided by Smart ID           | Y              |
+| CLIENT_REQ_NETWORK_TIMEOUT_MILLIS         | The timeout for the REST client when requesting Smart ID Services              | N - default () |
+| CLIENT_REQ_MAX_ATTEMPTS                   | The maximum attempts for the REST client retry mechanism                       |                |
+| CLIENT_REQ_DELAY_SECONDS_BETWEEN_ATTEMPTS | The wait time between consecutive REST client requests                         |                |
+| ENABLE_POLLING_BY_LIB                     | Enable automatic polling (when `false` - polling MUST be implemented by callee |                |
+
+
+
+
+
 SmartID configuration can be loaded form environment variables:
 ```shell
 /// Get default Config (from environment variables)
