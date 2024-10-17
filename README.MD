@@ -59,6 +59,8 @@ cargo test
 
 ## Documentation
 
+[Online Refernce API documentation](https://sk-eid.github.io/smart-id-documentation/rp-api/3.0.1/introduction.html)
+
 ```zsh
 cargo doc --no-deps --open
 ```
