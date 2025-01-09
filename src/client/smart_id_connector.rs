@@ -1,10 +1,10 @@
-use crate::models::common::{SemanticsIdentifier};
-use crate::models::session::SessionStatus;
+use crate::models::v2::common::{SemanticsIdentifier};
+use crate::models::v2::session::SessionStatus;
 use anyhow::Result;
 use tracing::{debug, info};
 use crate::client::reqwest_generic::{get, post};
-use crate::models::requests::{AuthenticationSessionRequest, CertificateRequest, SignatureSessionRequest};
-use crate::models::responses::{AuthenticationSessionResponse, CertificateChoiceResponse, SignatureSessionResponse};
+use crate::models::v2::requests::{AuthenticationSessionRequest, CertificateRequest, SignatureSessionRequest};
+use crate::models::v2::responses::{AuthenticationSessionResponse, CertificateChoiceResponse, SignatureSessionResponse};
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
 use crate::error::SmartIdClientError::SmartIdClientException;

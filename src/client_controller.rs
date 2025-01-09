@@ -5,12 +5,12 @@ use tracing::{debug, error, info};
 use anyhow::Result;
 use tokio::time::sleep;
 use crate::client::smart_id_connector::SmartIdConnector;
-use crate::common::{HashType, Interaction, SemanticsIdentifier};
+use crate::models::v2::common::{HashType, Interaction, SemanticsIdentifier};
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
 use crate::error::SmartIdClientError::SmartIdClientException;
-use crate::models::requests::{AuthenticationSessionRequest, CertificateRequest, SignatureSessionRequest};
-use crate::models::session::SessionStatus;
+use crate::models::v2::requests::{AuthenticationSessionRequest, CertificateRequest, SignatureSessionRequest};
+use crate::models::v2::session::SessionStatus;
 
 /// Get certificate by semantic identifier
 /// When successful, the session id is used to poll the result

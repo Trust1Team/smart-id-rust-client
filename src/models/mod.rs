@@ -1,4 +1,2 @@
-pub mod requests;
-pub mod responses;
-pub mod common;
-pub mod session;
+pub mod v2;
+pub mod v3;

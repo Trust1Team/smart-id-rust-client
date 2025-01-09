@@ -1,6 +1,6 @@
 use ring::digest::{Context, Digest, SHA256, SHA384, SHA512};
 use tracing::debug;
-use crate::common::HashType;
+use crate::models::v2::common::HashType;
 
 /// Generate SmartID verification code
 /// See Smart-ID documentation in mdBooks

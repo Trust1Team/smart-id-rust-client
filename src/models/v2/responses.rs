@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::models::session::{SessionCertificate, SessionResult, SessionSignature};
+use crate::models::v2::session::{SessionCertificate, SessionResult, SessionSignature};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AuthenticationSessionResponse {

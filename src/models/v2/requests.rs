@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
-use crate::common::{HashType, Interaction};
+use crate::models::v2::common::{HashType, Interaction};
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
-use crate::models::common::CertificateLevel;
+use crate::models::v2::common::CertificateLevel;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AuthenticationSessionRequest {

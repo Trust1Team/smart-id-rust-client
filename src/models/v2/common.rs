@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use x509_parser::prelude::{FromDer};
 use base64::{Engine as _};
 use anyhow::Result;
-use crate::models::requests::InteractionFlow;
+use crate::models::v2::requests::InteractionFlow;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
@@ -232,7 +232,7 @@ mod tests {
     use super::*;
     use tracing::{error, info};
     use tracing_test::traced_test;
-    use crate::models::requests::InteractionFlow;
+    use crate::models::v2::requests::InteractionFlow;
 
     #[traced_test]
     #[tokio::test]

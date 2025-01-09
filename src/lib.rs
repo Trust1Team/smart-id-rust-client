@@ -6,24 +6,24 @@
 
 use anyhow::Result;
 use crate::config::SmartIDConfig;
-use crate::models::common::SemanticsIdentifier;
-use crate::common::{HashType, Interaction};
+use models::v2::common::SemanticsIdentifier;
+use models::v2::common::{HashType, Interaction};
 
 pub mod client;
 mod error;
 pub mod utils;
 pub mod config;
-mod models;
+pub mod models;
 mod client_controller;
 
 use crate::client_controller::{ctrl_authenticate_by_document_number, ctrl_authenticate_by_semantic_identifier, ctrl_get_certificate_by_document_number, ctrl_get_certificate_by_semantic_identifier, ctrl_poll_session_status, ctrl_sign_by_document_number, ctrl_sign_by_semantic_identifier};
 
 /// Common models are exposed
-pub use models::common;
-pub use crate::models::session::SessionStatus;
-pub use crate::models::session::SessionSignature;
-pub use crate::models::session::SessionCertificate;
-pub use crate::models::session::SessionResult;
+pub use models::v2::common;
+pub use models::v2::session::SessionStatus;
+pub use models::v2::session::SessionSignature;
+pub use models::v2::session::SessionCertificate;
+pub use models::v2::session::SessionResult;
 pub use utils::verification::{generate_verification_number, sha_digest};
 
 
