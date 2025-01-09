@@ -49,7 +49,7 @@ impl From<SmartIDConfig> for SmartIDConfigBuilder {
 /// # use anyhow::Result;
 /// # use smart_id_rust_client::config::{SmartIDConfig, SmartIDConfigBuilder};
 /// let cfg: Result<SmartIDConfig> = SmartIDConfigBuilder::new()
-///     .url("https://sid.demo.sk.ee/smart-id-rp/v2") // DEMO environment
+///     .url("https://sid.demo.sk.ee/smart-id-rp/v3") // DEMO environment
 ///     .build();
 /// ```
 #[derive(Debug, Clone)]

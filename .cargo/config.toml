@@ -1,7 +1,7 @@
 [env]
 RUST_LOG = "hyper=none,smart_id_rust_client=debug,smart_id_client=debug"
 
-HOST_URL = "https://sid.demo.sk.ee/smart-id-rp/v2"
+HOST_URL = "https://sid.demo.sk.ee/smart-id-rp/v3"
 RELYING_PARTY_UUID = "00000000-0000-0000-0000-000000000000"
 RELYING_PARTY_NAME = "DEMO"
 CLIENT_REQ_NETWORK_TIMEOUT_MILLIS= "30000"

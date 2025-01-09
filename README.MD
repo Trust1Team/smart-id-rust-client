@@ -86,7 +86,7 @@ let cfg = get_config_from_env();
 Or using the builder pattern:
 ```shell
 /// Config Builder
-let cfg = SmartIDConfigBuilder::new().url("https://sid.demo.sk.ee/smart-id-rp/v2").build().expect("Error building config");
+let cfg = SmartIDConfigBuilder::new().url("https://sid.demo.sk.ee/smart-id-rp/v3").build().expect("Error building config");
 ```
 
 ### Verify Certificate Existence

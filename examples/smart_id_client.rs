@@ -17,7 +17,7 @@ async fn main() -> Result<()> {
     let cfg = get_config_from_env();
 
     /// or use builder pattern to construct the config
-    let cfg = SmartIDConfigBuilder::new().url("https://sid.demo.sk.ee/smart-id-rp/v2").build().expect("Error building config");
+    let cfg = SmartIDConfigBuilder::new().url("https://sid.demo.sk.ee/smart-id-rp/v3").build().expect("Error building config");
     info!("Config: {:?}", cfg);
 
 
