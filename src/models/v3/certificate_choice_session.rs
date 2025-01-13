@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use crate::common::CertificateLevel;
 use crate::config::SmartIDConfig;
-use crate::models::v3::common::RequestProperties;
+use crate::models::v3::common::{RequestProperties, SessionConfig};
 
 // region CertificateChoiceSessionRequest
 
@@ -34,7 +34,7 @@ impl CertificateRequest {
         CertificateRequest {
             relying_party_uuid: cfg.relying_party_uuid.clone(),
             relying_party_name: cfg.relying_party_name.clone(),
-            certificate_level: CertificateLevel::QUALIFIED.into(),
+            certificate_level: Some(CertificateChoiceCertificateLevel::QUALIFIED),
             ..Self::default()
         }
     }
@@ -50,6 +50,17 @@ impl CertificateRequest {
 pub struct CertificateChoiceResponse {
     #[serde(rename = "sessionID")]
     pub session_id: String,
+}
+
+impl Into<SessionConfig> for CertificateChoiceResponse {
+    fn into(self) -> SessionConfig {
+        SessionConfig {
+            session_id: self.session_id,
+            session_secret: None,
+            session_token: None,
+            session_start_time: chrono::Utc::now(),
+        }
+    }
 }
 
 // endregion

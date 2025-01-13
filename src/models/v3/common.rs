@@ -10,7 +10,7 @@ pub struct RequestProperties {
 #[derive(Default, Debug, Clone, PartialEq)]
 pub(crate) struct SessionConfig {
     pub(crate) session_id: String,
-    pub(crate) session_secret: String,
-    pub(crate) session_token: String,
+    pub(crate) session_secret: Option<String>,
+    pub(crate) session_token: Option<String>,
     pub(crate) session_start_time: DateTime<Utc>, // Used to calculated elapsed seconds since session start
 }

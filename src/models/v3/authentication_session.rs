@@ -81,8 +81,8 @@ impl Into<SessionConfig> for AuthenticationResponse {
     fn into(self) -> SessionConfig {
         SessionConfig {
             session_id: self.session_id,
-            session_secret: self.session_secret,
-            session_token: self.session_token,
+            session_secret: Some(self.session_secret),
+            session_token: Some(self.session_token),
             session_start_time: Utc::now(),
         }
     }
