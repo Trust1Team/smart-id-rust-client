@@ -1,2 +1,3 @@
 mod reqwest_generic;
-pub mod smart_id_connector;
+pub mod v3;
+pub mod v2;

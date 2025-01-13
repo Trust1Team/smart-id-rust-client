@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use x509_parser::prelude::{FromDer};
 use base64::{Engine as _};
 use anyhow::Result;
+use serde_with::skip_serializing_none;
 use crate::models::v2::requests::InteractionFlow;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -126,14 +127,13 @@ impl SemanticsIdentifier {
 
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[skip_serializing_none]
+#[serde(rename_all = "camelCase")]
 pub struct Interaction {
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "type")]
     pub interaction_flow: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "displayText60")]
     pub display_text_60: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "displayText200")]
     pub display_text_200: Option<String>,
 }

@@ -145,8 +145,8 @@ pub struct SessionStatusRequest {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RequestProperties {
-    #[serde(rename = "shareMdClientIpAddress")]
     pub share_md_client_ip_address: bool,
 }
 

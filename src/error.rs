@@ -52,6 +52,18 @@ pub enum SmartIdClientError {
     #[error("Session exception when Retry is required")]
     SessionRetryException,
 
+    /// There is no running session
+    #[error("There is no running session")]
+    NoSessionException,
+
+    /// Failed to get the running session
+    #[error("Failed to get the running session")]
+    GetSessionException,
+
+    /// Failed to set the running session
+    #[error("Failed to set the running session")]
+    SetSessionException,
+
     /// User has multiple accounts and pressed Cancel on device choice screen on any device
     #[error("User has multiple accounts and pressed Cancel on device choice screen on any device")]
     UserRefusedCertChoiceException,
@@ -100,6 +112,9 @@ pub enum SmartIdClientError {
     /// User app version does not support any of the allowedInteractionsOrder interactions
     #[error("User app version does not support any of the allowedInteractionsOrder interactions")]
     RequiredInteractionNotSupportedByAppException,
+
+    #[error("Interaction parameters are invalid: {0}")]
+    InvalidInteractionParametersException(&'static str),
 
     /// User account not found
     #[error("User account not found")]

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
-use crate::models::v3::common::{CertificateLevel, InteractionFlow};
+use crate::models::v3::interaction::InteractionFlow;
+use crate::models::v3::signature::SignatureAlgorithm;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[skip_serializing_none]
@@ -9,7 +10,7 @@ pub struct SessionStatus {
     pub state: String,
     pub result: Option<SessionResult>,
     pub signature_protocol: Option<SignatureProtocol>,
-    pub signature: Option<SessionSignature>,
+    pub signature: Option<SignatureResponse>,
     pub cert: Option<SessionCertificate>,
     pub ignored_properties: Option<Vec<String>>,
     pub interaction_flow_used: Option<InteractionFlow>,
@@ -25,29 +26,22 @@ pub enum SignatureProtocol {
     RAW_DIGEST_SIGNATURE,
 }
 
-#[allow(non_camel_case_types)]
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum SignatureAlgorithm {
-    sha256WithRSAEncryption,
-    sha384WithRSAEncryption,
-    sha512WithRSAEncryption,
-}
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "signatureProtocol")]
-pub enum SessionSignature {
+pub enum SignatureResponse {
     ACSP_V1 {
         value: String,
         // TODO: RP must validate that the value contains only valid Base64 characters, and that the length is not less than 24 characters.
         // A random value of 24 or more characters from Base64 alphabet, which is generated at RP API service side.
         // There are not any guarantees that the returned value length is the same in each call of the RP API.
         server_random: String,
-        signature_algorithm: String,
+        signature_algorithm: SignatureAlgorithm,
     },
     RAW_DIGEST_SIGNATURE {
         value: String,
-        signature_algorithm: String,
+        signature_algorithm: SignatureAlgorithm,
     },
 }
 
@@ -58,7 +52,15 @@ pub enum SessionSignature {
 pub struct SessionCertificate {
     // Certificate value, DER+Base64 encoded. The certificate itself contains info on whether the certificate is QSCD-enabled, data which is not represented by certificate level.
     pub value: String,
-    pub certificate_level: CertificateLevel,
+    pub certificate_level: SessionCertificateLevel,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum SessionCertificateLevel {
+    #[default]
+    QUALIFIED,
+    ADVANCED
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

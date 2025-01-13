@@ -4,7 +4,7 @@ use std::time::Duration;
 use tracing::{debug, error, info};
 use anyhow::Result;
 use tokio::time::sleep;
-use crate::client::smart_id_connector::SmartIdConnector;
+use crate::client::v2::smart_id_connector::SmartIdConnector;
 use crate::models::v2::common::{HashType, Interaction, SemanticsIdentifier};
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
