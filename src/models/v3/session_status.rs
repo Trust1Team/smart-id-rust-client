@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
+use crate::error::SmartIdClientError;
 use crate::models::v3::interaction::InteractionFlow;
-use crate::models::v3::signature::SignatureAlgorithm;
+use crate::models::v3::signature::{SignatureAlgorithm, SignatureProtocol, SignatureResponse};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[skip_serializing_none]
@@ -16,35 +17,6 @@ pub struct SessionStatus {
     pub interaction_flow_used: Option<InteractionFlow>,
     // IP address of the mobile device. Is present only when it has been previously requested by the RelyingParty within the session creation parameters.
     pub device_ip_address: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
-#[allow(non_camel_case_types)]
-#[non_exhaustive]
-pub enum SignatureProtocol {
-    #[default]
-    ACSP_V1,
-    RAW_DIGEST_SIGNATURE,
-}
-
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[allow(non_camel_case_types)]
-#[serde(rename_all = "camelCase", tag = "signatureProtocol")]
-#[non_exhaustive]
-pub enum SignatureResponse {
-    ACSP_V1 {
-        value: String,
-        // TODO: RP must validate that the value contains only valid Base64 characters, and that the length is not less than 24 characters.
-        // A random value of 24 or more characters from Base64 alphabet, which is generated at RP API service side.
-        // There are not any guarantees that the returned value length is the same in each call of the RP API.
-        server_random: String,
-        signature_algorithm: SignatureAlgorithm,
-    },
-    RAW_DIGEST_SIGNATURE {
-        value: String,
-        signature_algorithm: SignatureAlgorithm,
-    },
 }
 
 
@@ -111,4 +83,23 @@ pub enum EndResult {
     USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE,
     #[default]
     UNKNOWN,
+}
+
+
+impl Into<SmartIdClientError> for EndResult {
+    fn into(self) -> SmartIdClientError {
+        match self {
+            EndResult::USER_REFUSED => SmartIdClientError::UserRefusedVerificationChoiceException,
+            EndResult::TIMEOUT => SmartIdClientError::SessionTimeoutException,
+            EndResult::DOCUMENT_UNUSABLE => SmartIdClientError::DocumentUnusableException,
+            EndResult::WRONG_VC => SmartIdClientError::UserSelectedWrongVerificationCodeException,
+            EndResult::REQUIRED_INTERACTION_NOT_SUPPORTED_BY_APP => SmartIdClientError::RequiredInteractionNotSupportedByAppException,
+            EndResult::USER_REFUSED_CERT_CHOICE => SmartIdClientError::UserRefusedCertChoiceException,
+            EndResult::USER_REFUSED_DISPLAYTEXTANDPIN => SmartIdClientError::UserRefusedDisplayTextAndPinException,
+            EndResult::USER_REFUSED_VC_CHOICE => SmartIdClientError::UserRefusedVerificationChoiceException,
+            EndResult::USER_REFUSED_CONFIRMATIONMESSAGE => SmartIdClientError::UserRefusedConfirmationMessageException,
+            EndResult::USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE => SmartIdClientError::UserRefusedConfirmationMessageWithVerificationChoiceException,
+            _ => SmartIdClientError::SmartIdClientException("Unknown session end result"),
+        }
+    }
 }

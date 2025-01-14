@@ -4,8 +4,7 @@ use crate::error::SmartIdClientError;
 use crate::models::v2::requests::RequestProperties;
 use crate::models::v3::common::CertificateLevel;
 use crate::models::v3::interaction::Interaction;
-use crate::models::v3::session_status::SignatureProtocol;
-use crate::models::v3::signature::{SignatureAlgorithm, SignatureRequestParameters};
+use crate::models::v3::signature::{SignatureAlgorithm, SignatureProtocol, SignatureRequestParameters};
 
 // region SignatureSessionRequest
 

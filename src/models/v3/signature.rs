@@ -4,6 +4,32 @@ use rand_chacha::ChaCha20Rng;
 use rand::{thread_rng, Rng};
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
+use sha2::Sha256;
+use anyhow::Result;
+use base64::prelude::BASE64_STANDARD;
+use rsa::pkcs8::DecodePublicKey;
+use rsa::signature::digest::Digest;
+use rustls::SignatureScheme;
+use x509_parser::der_parser::asn1_rs::BitString;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[allow(non_camel_case_types)]
+#[non_exhaustive]
+pub enum SignatureProtocol {
+    #[default]
+    ACSP_V1,
+    RAW_DIGEST_SIGNATURE,
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum SignatureAlgorithm {
+    sha256WithRSAEncryption,
+    sha384WithRSAEncryption,
+    sha512WithRSAEncryption,
+}
+
+// Region SignatureRequestParameters
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -48,10 +74,41 @@ impl SignatureRequestParameters {
 
 }
 
-#[allow(non_camel_case_types)]
+// endregion
+
+// Region SignatureResponse
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum SignatureAlgorithm {
-    sha256WithRSAEncryption,
-    sha384WithRSAEncryption,
-    sha512WithRSAEncryption,
+#[allow(non_camel_case_types)]
+#[serde(rename_all = "camelCase", tag = "signatureProtocol")]
+#[non_exhaustive]
+pub enum SignatureResponse {
+    ACSP_V1 {
+        value: String,
+        // TODO: RP must validate that the value contains only valid Base64 characters, and that the length is not less than 24 characters.
+        // A random value of 24 or more characters from Base64 alphabet, which is generated at RP API service side.
+        // There are not any guarantees that the returned value length is the same in each call of the RP API.
+        server_random: String,
+        signature_algorithm: SignatureAlgorithm,
+    },
+    RAW_DIGEST_SIGNATURE {
+        value: String,
+        signature_algorithm: SignatureAlgorithm,
+    },
 }
+
+
+impl SignatureResponse {
+    pub fn validate_signature(&self, random_challenge: Option<String>, public_key: BitString) -> Result<()> {
+        match self {
+            SignatureResponse::ACSP_V1 { value, server_random, signature_algorithm } => {
+                todo!()
+            }
+            SignatureResponse::RAW_DIGEST_SIGNATURE { value, signature_algorithm } => {
+                todo!()
+            },
+        }
+    }
+
+}
+// endregion

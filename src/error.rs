@@ -88,6 +88,10 @@ pub enum SmartIdClientError {
     #[error("Session response missing certificate")]
     SessionResponseMissingCertificate,
 
+    /// Session response missing signature
+    #[error("Session response missing signature")]
+    SessionResponseMissingSignature,
+
     /// User has multiple accounts and pressed Cancel on device choice screen on any device
     #[error("User has multiple accounts and pressed Cancel on device choice screen on any device")]
     UserRefusedCertChoiceException,

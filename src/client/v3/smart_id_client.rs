@@ -8,7 +8,7 @@ use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
 use crate::error::SmartIdClientError::{NoSessionException, SmartIdClientException};
 use crate::models::v3::common::SessionConfig;
-use crate::models::v3::session_status::{SessionState, SessionStatus};
+use crate::models::v3::session_status::{EndResult, SessionState, SessionStatus};
 use anyhow::{bail, Result};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
@@ -20,6 +20,7 @@ use crate::models::v3::authentication_session::{AuthenticationRequest, Authentic
 use crate::models::v3::certificate_choice_session::{CertificateChoiceResponse, CertificateChoiceRequest};
 use crate::models::v3::dynamic_link::{DynamicLink, DynamicLinkType, SessionType};
 use crate::models::v3::dynamic_link::SessionType::sign;
+use crate::models::v3::signature::SignatureResponse;
 use crate::models::v3::signature_session::{SignatureRequest, SignatureRequestResponse};
 use crate::SessionResult;
 use crate::utils::sec_x509::validate_certificate;
