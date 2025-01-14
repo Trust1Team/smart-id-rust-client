@@ -7,6 +7,7 @@ use crate::models::v3::dynamic_link::{DynamicLink, DynamicLinkType, SessionType}
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 #[skip_serializing_none]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub enum InteractionFlow {
     #[default]
     DisplayTextAndPIN,
@@ -17,6 +18,7 @@ pub enum InteractionFlow {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
+#[non_exhaustive]
 pub enum Interaction {
     #[serde(rename_all = "camelCase")]
     DisplayTextAndPIN {

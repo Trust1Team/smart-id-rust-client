@@ -7,7 +7,7 @@ use crate::models::v3::signature::SignatureAlgorithm;
 #[skip_serializing_none]
 #[serde(rename_all = "camelCase")]
 pub struct SessionStatus {
-    pub state: String,
+    pub state: SessionState,
     pub result: Option<SessionResult>,
     pub signature_protocol: Option<SignatureProtocol>,
     pub signature: Option<SignatureResponse>,
@@ -18,8 +18,9 @@ pub struct SessionStatus {
     pub device_ip_address: Option<String>,
 }
 
-#[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[allow(non_camel_case_types)]
+#[non_exhaustive]
 pub enum SignatureProtocol {
     #[default]
     ACSP_V1,
@@ -27,9 +28,10 @@ pub enum SignatureProtocol {
 }
 
 
-#[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[allow(non_camel_case_types)]
 #[serde(rename_all = "camelCase", tag = "signatureProtocol")]
+#[non_exhaustive]
 pub enum SignatureResponse {
     ACSP_V1 {
         value: String,
@@ -56,7 +58,8 @@ pub struct SessionCertificate {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[allow(non_camel_case_types)]
+#[non_exhaustive]
 pub enum SessionCertificateLevel {
     #[default]
     QUALIFIED,
@@ -73,14 +76,16 @@ pub struct SessionResult {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum SessionState {
     #[default]
     RUNNING,
     COMPLETE,
 }
 
-#[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[allow(non_camel_case_types)]
+#[non_exhaustive]
 pub enum EndResult {
     // Session was completed successfully, there is a certificate, document number and possibly signature in return structure.
     OK,

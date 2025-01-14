@@ -5,9 +5,11 @@ use std::fmt::Debug;
 use std::future::Future;
 use std::path::PathBuf;
 use std::time::Duration;
+use reqwest::Response;
 use tokio::fs::File;
 use tokio::time::sleep;
 use tracing::{debug, error};
+use crate::error::SmartIdClientError;
 
 const HEADER_CONTENT_TYPE: &'static str = "content-type";
 const HEADER_CONTENT_TYPE_DEFAULT: &'static str = "application/json";
@@ -62,6 +64,10 @@ where
     let status = send_response.status().as_u16();
     match status {
         200..=299 => send_response.json::<R>().await.map_err(|e| e.into()),
+        404 => Err(SmartIdClientError::SessionDoesNotExistOrHasExpired.into()),
+        472 => Err(SmartIdClientError::UserShouldViewSmartIDAppOrPortalException.into()),
+        480 => Err(SmartIdClientError::ApiClientIsTooOldException.into()),
+        580 => Err(SmartIdClientError::SystemIsUnderMaintenanceException.into()),
         _ => {
             let response = send_response.bytes().await?;
             let text = String::from_utf8(response.to_vec()).unwrap();
@@ -119,6 +125,10 @@ where
     let status = send_response.status().as_u16();
     match status {
         200..=299 => send_response.json::<R>().await.map_err(|e| e.into()),
+        404 => Err(SmartIdClientError::SessionDoesNotExistOrHasExpired.into()),
+        472 => Err(SmartIdClientError::UserShouldViewSmartIDAppOrPortalException.into()),
+        480 => Err(SmartIdClientError::ApiClientIsTooOldException.into()),
+        580 => Err(SmartIdClientError::SystemIsUnderMaintenanceException.into()),
         _ => {
             let response = send_response.bytes().await?;
             let text = String::from_utf8(response.to_vec()).unwrap();

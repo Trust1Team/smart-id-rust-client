@@ -64,6 +64,30 @@ pub enum SmartIdClientError {
     #[error("Failed to set the running session")]
     SetSessionException,
 
+    /// Authentication session completed without result
+    #[error("Authentication session completed without result")]
+    AuthenticationSessionCompletedWithoutResult,
+
+    /// Session did not complete within timeout
+    #[error("Session did not complete within timeout")]
+    SessionDidNotCompleteInTimoutError,
+
+    /// Session does not exist or has expired
+    #[error("Session does not exist or has expired")]
+    SessionDoesNotExistOrHasExpired,
+
+    /// Api client is too old and is not supported anymore
+    #[error("Api client is too old and is not supported anymore")]
+    ApiClientIsTooOldException,
+
+    /// System is under maintenance and is not available
+    #[error("System is under maintenance and is not available")]
+    SystemIsUnderMaintenanceException,
+
+    /// Session response missing certificate
+    #[error("Session response missing certificate")]
+    SessionResponseMissingCertificate,
+
     /// User has multiple accounts and pressed Cancel on device choice screen on any device
     #[error("User has multiple accounts and pressed Cancel on device choice screen on any device")]
     UserRefusedCertChoiceException,
@@ -122,5 +146,25 @@ pub enum SmartIdClientError {
 
     /// Certificate Decryption error
     #[error("Certificate Decryption error")]
-    DecryptionError
+    DecryptionError,
+
+    /// Language code is not valid
+    #[error("Language code is not valid")]
+    LanguageCodeIncorrectException,
+
+    /// Failed to generate dynamic link
+    #[error("Failed to generate dynamic link: {0}")]
+    GenerateDynamicLinkException(&'static str),
+
+    /// Invalid signature protocol
+    #[error("Invalid signature protocol: {0}")]
+    InvalidSignatureProtocal(&'static str),
+
+    /// Failed to validate session response certificate
+    #[error("Failed to validate session response certificate: {0}")]
+    FailedToValidateSessionResponseCertificate(&'static str),
+    
+    /// User should view Smart-ID app or portal
+    #[error("User should view Smart-ID app or portal")]
+    UserShouldViewSmartIDAppOrPortalException,
 }

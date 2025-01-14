@@ -2,8 +2,6 @@ use base64::{Engine};
 use base64::prelude::BASE64_STANDARD;
 use chrono::{DateTime, Utc};
 use hmac::{Hmac, Mac};
-use reqwest::Url;
-use rust_iso639::LanguageCode;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 
@@ -22,18 +20,19 @@ pub enum DynamicLinkType {
 pub enum SessionType {
     auth,
     sign,
+    certificateChoice,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct DynamicLink {
-    url: Url,
-    version: String,
-    session_token: String,
-    session_secret: String,
-    dynamic_link_type: DynamicLinkType,
-    session_type: SessionType,
-    session_start_time: DateTime<Utc>, // Used to calculated elapsed seconds since session start
-    language_code: LanguageCode<'static>,
+    pub(crate) url: String,
+    pub(crate) version: String,
+    pub(crate) session_token: String,
+    pub(crate) session_secret: String,
+    pub(crate) dynamic_link_type: DynamicLinkType,
+    pub(crate) session_type: SessionType,
+    pub(crate) session_start_time: DateTime<Utc>, // Used to calculated elapsed seconds since session start
+    pub(crate) language_code: String,
 }
 
 impl DynamicLink {
@@ -50,7 +49,7 @@ impl DynamicLink {
             self.dynamic_link_type.clone(),
             self.session_type.clone(),
             self.elapsed_seconds(),
-            self.language_code.clone().code_3.clone(),
+            self.language_code,
             self.generate_auth_code(),
         )
     }
@@ -90,14 +89,14 @@ mod tests {
 
     fn qr_dynamic_link() -> DynamicLink {
         DynamicLink {
-            url: Url::parse("https://sid.demo.sk.ee/dynamic-link/").unwrap(),
+            url: "https://sid.demo.sk.ee/dynamic-link/".to_string(),
             version: "0.1".to_string(),
             session_token: "sessionToken".to_string(),
             session_secret: "sessionSecret".to_string(),
             dynamic_link_type: DynamicLinkType::QR,
             session_type: SessionType::auth,
             session_start_time: Utc::now(),
-            language_code: rust_iso639::from_code_1("en").unwrap(),
+            language_code: "eng".to_string(),
         }
     }
 

@@ -1,9 +1,8 @@
-use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
 use crate::models::v2::requests::RequestProperties;
-use crate::models::v3::common::SessionConfig;
+use crate::models::v3::common::CertificateLevel;
 use crate::models::v3::interaction::Interaction;
 use crate::models::v3::session_status::SignatureProtocol;
 use crate::models::v3::signature::{SignatureAlgorithm, SignatureRequestParameters};
@@ -17,7 +16,7 @@ pub struct SignatureRequest {
     #[serde(rename = "relyingPartyUUID")]
     pub relying_party_uuid: String,
     pub relying_party_name: String,
-    pub certificate_level: Option<SignatureCertificateLevel>,
+    pub certificate_level: CertificateLevel,
     pub signature_protocol: SignatureProtocol,
     pub signature_protocol_parameters: SignatureRequestParameters,
     pub allowed_interaction_order: Vec<Interaction>,
@@ -36,7 +35,7 @@ impl SignatureRequest {
         Ok(SignatureRequest {
             relying_party_uuid: cfg.relying_party_uuid.clone(),
             relying_party_name: cfg.relying_party_name.clone(),
-            certificate_level: SignatureCertificateLevel::QUALIFIED.into(),
+            certificate_level: CertificateLevel::QUALIFIED,
             signature_protocol: SignatureProtocol::RAW_DIGEST_SIGNATURE,
             signature_protocol_parameters: SignatureRequestParameters::RAW_DIGEST_SIGNATURE {
                 digest,
@@ -50,37 +49,17 @@ impl SignatureRequest {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[allow(non_camel_case_types)]
-#[non_exhaustive]
-pub enum SignatureCertificateLevel {
-    QUALIFIED,
-    ADVANCED,
-    QSCD,
-}
-
 // endregion
 
 // region SignatureSessionResponse
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SignatureResponse {
+pub struct SignatureRequestResponse {
     #[serde(rename = "sessionID")]
     pub session_id: String,
     pub session_secret: String,
     pub session_token: String,
-}
-
-impl Into<SessionConfig> for SignatureResponse {
-    fn into(self) -> SessionConfig {
-        SessionConfig {
-            session_id: self.session_id,
-            session_secret: Some(self.session_secret),
-            session_token: Some(self.session_token),
-            session_start_time: Utc::now(),
-        }
-    }
 }
 
 // endregion

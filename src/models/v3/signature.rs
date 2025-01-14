@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "signatureProtocol")]
+#[non_exhaustive]
 pub enum SignatureRequestParameters {
     ACSP_V1 {
         // A random value which is calculated by generating random bits with size in the range of 32 bytes …64 bytes and applying Base64 encoding (according to rfc4648).
@@ -29,6 +30,13 @@ impl SignatureRequestParameters {
         }
     }
 
+    pub(crate) fn get_random_challenge(&self) -> Option<String> {
+        match self {
+            SignatureRequestParameters::ACSP_V1 { random_challenge, .. } => Some(random_challenge.clone()),
+            _ => None,
+        }
+    }
+
     // Generates random bits with size in the range of 32 bytes …64 bytes and applies Base64 encoding.
     fn generate_random_challenge() -> String {
         let mut rng = ChaCha20Rng::from_rng(thread_rng()).expect("Failed to create RNG");
@@ -37,6 +45,7 @@ impl SignatureRequestParameters {
         rng.fill_bytes(&mut random_bytes);
         URL_SAFE_NO_PAD.encode(&random_bytes)
     }
+
 }
 
 #[allow(non_camel_case_types)]

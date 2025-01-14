@@ -1,9 +1,10 @@
+use std::clone;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
-use crate::models::v3::common::{RequestProperties, SessionConfig};
+use crate::models::v3::common::{CertificateLevel, RequestProperties, SessionConfig};
 use crate::models::v3::signature::{SignatureAlgorithm, SignatureRequestParameters};
 use crate::models::v3::interaction::Interaction;
 use anyhow::Result;
@@ -58,9 +59,18 @@ pub enum AuthenticationCertificateLevel {
     ADVANCED,
 }
 
+impl Into<CertificateLevel> for AuthenticationCertificateLevel {
+    fn into(self) -> CertificateLevel {
+        match self {
+            AuthenticationCertificateLevel::QUALIFIED => CertificateLevel::QUALIFIED,
+            AuthenticationCertificateLevel::ADVANCED => CertificateLevel::ADVANCED,
+        }
+    }
+}
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum AuthenticationSignatureProtocol {
     ACSP_V1,
 }
@@ -75,17 +85,6 @@ pub struct AuthenticationResponse {
     pub session_id: String,
     pub session_secret: String,
     pub session_token: String,
-}
-
-impl Into<SessionConfig> for AuthenticationResponse {
-    fn into(self) -> SessionConfig {
-        SessionConfig {
-            session_id: self.session_id,
-            session_secret: Some(self.session_secret),
-            session_token: Some(self.session_token),
-            session_start_time: Utc::now(),
-        }
-    }
 }
 
 // endregion
