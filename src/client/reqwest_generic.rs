@@ -22,8 +22,7 @@ where
     R: DeserializeOwned,
 {
     let client = reqwest::Client::builder()
-        //.danger_accept_invalid_certs(true)
-        .timeout(std::time::Duration::from_millis(
+        .timeout(Duration::from_millis(
             timeout_millis.unwrap_or(30000),
         ))
         .build()
@@ -49,8 +48,7 @@ where
     R: DeserializeOwned,
 {
     let client = reqwest::Client::builder()
-        //.danger_accept_invalid_certs(true)
-        .timeout(std::time::Duration::from_millis(
+        .timeout(Duration::from_millis(
             timeout_millis.unwrap_or(30000),
         ))
         .build()
@@ -80,8 +78,7 @@ pub async fn delete(
     timeout_millis: Option<u64>,
 ) -> Result<()> {
     let client = reqwest::Client::builder()
-        //.danger_accept_invalid_certs(true)
-        .timeout(std::time::Duration::from_millis(
+        .timeout(Duration::from_millis(
             timeout_millis.unwrap_or(30000),
         ))
         .build()
@@ -107,8 +104,7 @@ where
     R: DeserializeOwned,
 {
     let client = reqwest::Client::builder()
-        .danger_accept_invalid_certs(true)
-        .timeout(std::time::Duration::from_millis(
+        .timeout(Duration::from_millis(
             timeout_millis.unwrap_or(30000),
         ))
         .build()
@@ -143,8 +139,7 @@ where
     T: Serialize + Debug,
 {
     let client = reqwest::Client::builder()
-        //.danger_accept_invalid_certs(true)
-        .timeout(std::time::Duration::from_millis(
+        .timeout(Duration::from_millis(
             timeout_millis.unwrap_or(30000),
         ))
         .build()
@@ -183,8 +178,7 @@ where
     R: DeserializeOwned,
 {
     let client = reqwest::Client::builder()
-        //.danger_accept_invalid_certs(true)
-        .timeout(std::time::Duration::from_millis(
+        .timeout(Duration::from_millis(
             timeout_millis.unwrap_or(30000),
         ))
         .build()
