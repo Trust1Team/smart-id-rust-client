@@ -66,3 +66,61 @@ pub struct SignatureRequestResponse {
 }
 
 // endregion
+
+#[cfg(test)]
+mod tests {
+    use std::env;
+    use super::*;
+    use crate::config::SmartIDConfig;
+    use crate::models::v3::interaction::Interaction;
+    use crate::models::v3::signature::SignatureAlgorithm;
+
+    fn setup() {
+        env::set_var("HOST_URL", "https://sid.demo.sk.ee/smart-id-rp/v3");
+    }
+
+    #[test]
+    fn test_signature_request_new() {
+        setup();
+        let cfg = SmartIDConfig {
+            relying_party_uuid: "test-uuid".to_string(),
+            relying_party_name: "test-name".to_string(),
+            ..Default::default()
+        };
+        let interactions = vec![Interaction::DisplayTextAndPIN {
+            display_text_60: "Test interaction".to_string(),
+        }];
+        let digest = "test-digest".to_string();
+        let signature_algorithm = SignatureAlgorithm::sha256WithRSAEncryption;
+
+        let sig_request = SignatureRequest::new(&cfg, interactions.clone(), digest.clone(), signature_algorithm.clone());
+
+        assert!(sig_request.is_ok(), "SignatureRequest::new should succeed");
+        let sig_request = sig_request.unwrap();
+        assert_eq!(sig_request.relying_party_uuid, "test-uuid");
+        assert_eq!(sig_request.relying_party_name, "test-name");
+        assert_eq!(sig_request.certificate_level, CertificateLevel::QUALIFIED);
+        assert_eq!(sig_request.signature_protocol, SignatureProtocol::RAW_DIGEST_SIGNATURE);
+        assert_eq!(sig_request.signature_protocol_parameters, SignatureRequestParameters::RAW_DIGEST_SIGNATURE {
+            digest,
+            signature_algorithm,
+        });
+        assert_eq!(sig_request.allowed_interaction_order, interactions);
+    }
+
+    #[test]
+    fn test_signature_request_validation_fail_with_no_interactions() {
+        let cfg = SmartIDConfig {
+            relying_party_uuid: "test-uuid".to_string(),
+            relying_party_name: "test-name".to_string(),
+            ..Default::default()
+        };
+        let interactions = vec![];
+        let digest = "test-digest".to_string();
+        let signature_algorithm = SignatureAlgorithm::sha256WithRSAEncryption;
+
+        let sig_request = SignatureRequest::new(&cfg, interactions, digest, signature_algorithm);
+
+        assert!(sig_request.is_err(), "SignatureRequest::new should fail with no interactions");
+    }
+}

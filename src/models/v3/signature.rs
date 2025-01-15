@@ -118,3 +118,46 @@ impl SignatureResponse {
     }
 }
 // endregion
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_acsp_v1() {
+        let signature_algorithm = SignatureAlgorithm::sha256WithRSAEncryption;
+        let params = SignatureRequestParameters::new_acsp_v1(signature_algorithm.clone());
+
+        if let SignatureRequestParameters::ACSP_V1 { random_challenge, signature_algorithm: alg } = params {
+            assert!(!random_challenge.is_empty(), "Random challenge should not be empty");
+            assert_eq!(alg, signature_algorithm, "Signature algorithm should match");
+        } else {
+            panic!("Expected SignatureRequestParameters::ACSP_V1 variant");
+        }
+    }
+
+    #[test]
+    fn test_get_random_challenge() {
+        let signature_algorithm = SignatureAlgorithm::sha256WithRSAEncryption;
+        let params = SignatureRequestParameters::new_acsp_v1(signature_algorithm);
+
+        let random_challenge = params.get_random_challenge();
+        assert!(random_challenge.is_some(), "Random challenge should be Some");
+        assert!(!random_challenge.unwrap().is_empty(), "Random challenge should not be empty");
+    }
+
+    #[test]
+    fn test_generate_random_challenge_input_value_is_correct_size() {
+        for i in 0..100 {
+            let random_challenge = SignatureRequestParameters::generate_random_challenge();
+            assert!(!random_challenge.is_empty(), "Random challenge should not be empty");
+
+            // Base 64 encoding increases the size of the input, so this must be decoded before validating
+            let random_challenge_bytes = URL_SAFE_NO_PAD.decode(random_challenge.as_bytes()).expect("Failed to decode Base64");
+            assert!(random_challenge_bytes.len() >= 32, "Random challenge input should be at least 32 bytes long");
+            println!("{}", random_challenge_bytes.len());
+            assert!(random_challenge_bytes.len() <= 64, "Random challenge input should be at most 64 bytes long");
+        }
+    }
+}

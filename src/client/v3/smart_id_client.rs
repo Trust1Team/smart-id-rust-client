@@ -367,6 +367,8 @@ impl SmartIdClientV3 {
         }
     }
 
+    // region: Utility functions
+
     fn get_session(&self) -> Result<SessionConfig> {
         match self.session_config.lock() {
             Ok(guard) => match guard.clone() {
@@ -463,4 +465,7 @@ impl SmartIdClientV3 {
     async fn validate_certificate_choice_session_status(&self, session_status: &SessionStatus, session_id: String) -> Result<()> {
         todo!()
     }
+
+    // endregion: Utility functions
+
 }
