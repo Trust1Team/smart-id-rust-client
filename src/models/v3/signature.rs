@@ -110,5 +110,11 @@ impl SignatureResponse {
         }
     }
 
+    pub fn get_value(&self) -> String {
+        match self {
+            SignatureResponse::ACSP_V1 { value, .. } => value.clone(),
+            SignatureResponse::RAW_DIGEST_SIGNATURE { value, .. } => value.clone(),
+        }
+    }
 }
 // endregion

@@ -25,11 +25,15 @@ pub struct SignatureRequest {
 }
 
 impl SignatureRequest {
-    pub async fn new(cfg: &SmartIDConfig, interactions: Vec<Interaction>, digest: String, signature_algorithm: SignatureAlgorithm) -> anyhow::Result<Self> {
+    pub fn new(cfg: &SmartIDConfig, interactions: Vec<Interaction>, digest: String, signature_algorithm: SignatureAlgorithm) -> anyhow::Result<Self> {
         /// At least one interaction is needed for every authentication request
         if interactions.len() == 0 {
             return Err(SmartIdClientError::ConfigMissingException("Define at least 1 interaction for an authentication request").into());
         };
+
+        for interaction in &interactions {
+            interaction.validate_text_length()?;
+        }
 
         Ok(SignatureRequest {
             relying_party_uuid: cfg.relying_party_uuid.clone(),

@@ -1,9 +1,10 @@
 use tracing::{error, info, warn};
-use smart_id_rust_client::{authenticate_by_semantic_identifier, generate_verification_number, get_certificate_by_semantic_identifier, get_config_from_env, SessionSignature, SessionStatus, sha_digest, sign_by_semantic_identifier};
 use smart_id_rust_client::models::v2::common::{CountryCode, HashType, IdentityType, Interaction, ResultState, SemanticsIdentifier};
 use smart_id_rust_client::config::{SmartIDConfig, SmartIDConfigBuilder};
 use anyhow::Result;
 use base64::Engine;
+use smart_id_rust_client::{generate_verification_number, sha_digest, SessionStatus};
+use smart_id_rust_client::v2::{authenticate_by_semantic_identifier, get_certificate_by_semantic_identifier, get_config_from_env, sign_by_semantic_identifier};
 
 #[tokio::main]
 async fn main() -> Result<()> {

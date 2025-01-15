@@ -16,6 +16,7 @@ pub enum InteractionFlow {
     ConfirmationMessageAndVerificationCodeChoice,
 }
 
+/// Represents different types of interactions that can be started on the users device
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 #[non_exhaustive]

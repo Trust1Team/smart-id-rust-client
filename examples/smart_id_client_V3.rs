@@ -1,62 +1,111 @@
 use tracing::{error, info, warn, Level};
-use smart_id_rust_client::{authenticate_by_semantic_identifier, generate_verification_number, get_certificate_by_semantic_identifier, get_config_from_env, SessionSignature, SessionStatus, sha_digest, sign_by_semantic_identifier};
-use smart_id_rust_client::models::v2::common::{CountryCode, HashType, IdentityType, Interaction, ResultState, SemanticsIdentifier};
+use smart_id_rust_client::{generate_verification_number, SessionSignature, SessionStatus, sha_digest};
+use smart_id_rust_client::models::v2::common::{CountryCode, HashType, IdentityType, ResultState, SemanticsIdentifier};
 use smart_id_rust_client::config::{SmartIDConfig, SmartIDConfigBuilder};
 use anyhow::Result;
 use base64::Engine;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::fmt::SubscriberBuilder;
+use smart_id_rust_client::client::v3::smart_id_client::SmartIdClientV3;
+use smart_id_rust_client::models::v3::authentication_session::AuthenticationRequest;
+use smart_id_rust_client::models::v3::dynamic_link::DynamicLinkType;
+use smart_id_rust_client::models::v3::interaction::Interaction;
+use smart_id_rust_client::models::v3::signature::SignatureAlgorithm;
+use smart_id_rust_client::models::v3::signature_session::SignatureRequest;
+use smart_id_rust_client::v2::{get_certificate_by_semantic_identifier, get_config_from_env};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     init_tracing();
 
+    // TODO: Put this in a lib.rs comment
+
     info!("---Example::Smart ID Client---");
 
     /// Get default Config (from environment variables)
     let cfg = get_config_from_env();
-
-    /// or use builder pattern to construct the config
+    // Or Build Config using the builder
     let cfg = SmartIDConfigBuilder::new().url("https://sid.demo.sk.ee/smart-id-rp/v3").build().expect("Error building config");
     info!("Config: {:?}", cfg);
 
+    // Create Smart ID Client
+    let smart_id_client = SmartIdClientV3::new(&cfg).await;
 
-    /// Example get Certificate
-    let _ = uc_get_certificate_choice(&cfg).await;
+    //
+    let signature = uc_signature_request_example(&cfg, &smart_id_client).await?;
+    info!("{:?}", signature);
 
-    /// Example authenticate user
-    let _ = uc_authenticate_by_semantic_identifier(&cfg).await;
+    uc_authentication_request_example(&cfg, &smart_id_client).await?;
 
-    /// Example sign document digest
-    let _ = uc_sign_by_semantic_identifier(&cfg).await;
+
 
     Ok(())
 }
 
-async fn uc_qr_code_link(cfg: &SmartIDConfig) -> Result<()> {
+async fn uc_authentication_request_example(cfg: &SmartIDConfig, smart_id_client: &SmartIdClientV3) -> Result<()> {
+    let authentication_request = AuthenticationRequest::new(
+        &cfg,
+        vec!(Interaction::DisplayTextAndPIN {
+            display_text_60: "Authenticate to Application: ReadMyCards".to_string()
+        }),
+        SignatureAlgorithm::sha512WithRSAEncryption
+    )?;
+    let etsi = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
+    smart_id_client.start_authentication_dynamic_link_anonymous_session(authentication_request).await?;
 
-    /// Create the semantic identifier
-    let sem_id = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
+    // This link can be displayed as QR code
+    // The user can scan the QR code with the device that has the Smart-ID app installed
+    // The QR code must be refreshed every 1 second.
+    let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "en".to_string())?;
 
-    /// Verify if a certificate exists for given id
-    let res = get_certificate_by_semantic_identifier(&cfg, sem_id).await;
-    match res {
-        Ok(r) => {
-            let cert = validate_response_success(r).map(|res| res.cert.unwrap().value.unwrap())?;
-            info!("Smart ID Certificate {:#?}", cert);
-            Ok(())
-        }
-        Err(_) => Err(anyhow::anyhow!("Error getting certificate"))
-    }
+    // This link can be opened inside an app and redirect to the Smart-ID app
+    // It also must be refreshed every 1 second.
+    let app_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::App2App, "en".to_string())?;
+
+    // This link can be opened from the web browser and redirect to the Smart-ID app
+    // It also must be refreshed every 1 second.
+    let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::Web2App, "en".to_string())?;
+
+
+    // This will long poll the session status
+    let result = smart_id_client.get_session_status(12000).await?;
+    info!("{:?}", result.result.unwrap().end_result);
+    Ok(())
 }
 
-fn validate_response_success(response: SessionStatus) -> Result<SessionStatus> {
-    if response.state == "COMPLETE" && ResultState::from(response.result.end_result.clone()).eq(&ResultState::OK) {
-        Ok(response)
-    } else {
-        Err(anyhow::anyhow!("Error SmartID Response"))
-    }
+async fn uc_signature_request_example(cfg: &SmartIDConfig, smart_id_client: &SmartIdClientV3) -> Result<String> {
+    let signature_request = SignatureRequest::new(
+        &cfg,
+        vec!(Interaction::DisplayTextAndPIN {
+            display_text_60: "Sign document".to_string()
+        }),
+        "Digest".to_string(),
+        SignatureAlgorithm::sha512WithRSAEncryption
+    )?;
+    let etsi = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
+    smart_id_client.start_signature_dynamic_link_etsi_session(signature_request, etsi.identifier).await?;
+
+    // This link can be displayed as QR code
+    // The user can scan the QR code with the device that has the Smart-ID app installed
+    // The QR code must be refreshed every 1 second.
+    let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "en".to_string())?;
+
+    // This link can be opened inside an app and redirect to the Smart-ID app
+    // It also must be refreshed every 1 second.
+    let app_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::App2App, "en".to_string())?;
+
+    // This link can be opened from the web browser and redirect to the Smart-ID app
+    // It also must be refreshed every 1 second.
+    let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::Web2App, "en".to_string())?;
+
+
+    // This will long poll the session status
+    // On successful completion the signature will be returned
+    let result = smart_id_client.get_session_status(12000).await?;
+    let signature = result.signature.unwrap();
+    Ok(signature.get_value())
 }
+
 
 pub fn init_tracing() {
     SubscriberBuilder::default()
