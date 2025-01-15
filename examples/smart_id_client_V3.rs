@@ -31,10 +31,11 @@ async fn main() -> Result<()> {
     // Create Smart ID Client
     let smart_id_client = SmartIdClientV3::new(&cfg).await;
 
-    //
+    // Signature Request Example
     let signature = uc_signature_request_example(&cfg, &smart_id_client).await?;
     info!("{:?}", signature);
 
+    // Authentication Request Example
     uc_authentication_request_example(&cfg, &smart_id_client).await?;
 
 

@@ -80,6 +80,18 @@ impl SmartIdClientV3 {
     /// # Returns
     ///
     /// A Result containing the SessionStatus or an error.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The session is not found or not running.
+    /// - The session status request fails.
+    /// - The session did not complete within the specified timeout.
+    /// - The session response endResult is not OK.
+    /// - The session response is missing a certificate.
+    /// - The session response is missing a signature.
+    /// - The session response certificate is invalid.
+    /// - The session response signature is invalid.
     pub async fn get_session_status(&self, timeoutMs: i32) -> Result<SessionStatus> {
         let session_config = self.get_session()?;
 
