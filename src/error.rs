@@ -89,6 +89,10 @@ pub enum SmartIdClientError {
     #[error("Session response missing signature")]
     SessionResponseMissingSignature,
 
+    /// Session response signature verification failed
+    #[error("Session response signature verification failed: {0}")]
+    InvalidResponseSignature(String),
+
     /// User has multiple accounts and pressed Cancel on device choice screen on any device
     #[error("User has multiple accounts and pressed Cancel on device choice screen on any device")]
     UserRefusedCertChoiceException,

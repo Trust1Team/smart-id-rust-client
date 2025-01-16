@@ -36,6 +36,7 @@ pub(crate) enum SessionConfig {
         session_id: String,
         session_secret: String,
         session_token: String,
+        digest: String,
         certificate_level: CertificateLevel,
         session_start_time: DateTime<Utc>,
     },
@@ -66,14 +67,15 @@ impl SessionConfig {
         })
     }
 
-    pub fn from_signature_request_response(signature_request_response: SignatureRequestResponse, signature_request: SignatureRequest) -> SessionConfig {
-        SessionConfig::Signature {
+    pub fn from_signature_request_response(signature_request_response: SignatureRequestResponse, signature_request: SignatureRequest) -> Result<SessionConfig> {
+        Ok(SessionConfig::Signature {
             session_id: signature_request_response.session_id,
             session_secret: signature_request_response.session_secret,
             session_token: signature_request_response.session_token,
+            digest: signature_request.signature_protocol_parameters.get_digest().ok_or(SmartIdClientError::InvalidSignatureProtocal("Digest missing from signature request"))?,
             certificate_level: signature_request.certificate_level,
             session_start_time: Utc::now(),
-        }
+        })
     }
 
     pub fn from_certificate_choice_response(certificate_choice_response: CertificateChoiceResponse, certificate_choice_request: CertificateChoiceRequest) -> SessionConfig {

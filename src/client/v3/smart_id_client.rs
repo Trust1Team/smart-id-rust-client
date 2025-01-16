@@ -221,7 +221,7 @@ impl SmartIdClientV3 {
         );
 
         let session = post::<SignatureRequest, SignatureRequestResponse>(path.as_str(), &signature_request, self.cfg.client_request_timeout).await?;
-        self.set_session(SessionConfig::from_signature_request_response(session, signature_request))
+        self.set_session(SessionConfig::from_signature_request_response(session, signature_request)?)
     }
 
     /// Starts a signature session using a dynamic link and a document number.
@@ -245,7 +245,7 @@ impl SmartIdClientV3 {
         );
 
         let session = post::<SignatureRequest, SignatureRequestResponse>(path.as_str(), &signature_request, self.cfg.client_request_timeout).await?;
-        self.set_session(SessionConfig::from_signature_request_response(session, signature_request))
+        self.set_session(SessionConfig::from_signature_request_response(session, signature_request)?)
     }
 
     // endregion: Signature
@@ -410,29 +410,27 @@ impl SmartIdClientV3 {
                     None => return Err(SmartIdClientError::SessionResponseMissingCertificate.into())
                 };
 
-                // Check that the certificate is trusted, not expired, etc
+                // Check that the certificate chain, not expired, etc
                 validate_certificate(&cert.value)?;
-
-                // Check that the certificate level is high enough
-                // TODO: Find the certificate level ordering
-                // cert.certificate_level
-
 
                 // The identity of the authenticated person is in the subject field or subjectAltName extension of the X.509 certificate.
                 let decoded_cert = BASE64_STANDARD.decode(&cert.value).map_err(|_| SmartIdClientError::FailedToValidateSessionResponseCertificate("Could not decode base64 certificate"))?;
                 let (_, parsed_cert) = X509Certificate::from_der(decoded_cert.as_slice()).map_err(|_| SmartIdClientError::FailedToValidateSessionResponseCertificate("Failed to parse certificate"))?;
                 let subject = parsed_cert.subject().clone();
                 let subject_alt_name = parsed_cert.subject_alternative_name();
+
+                // Validate the subject or subjectAltName against the expected value
                 // TODO: Find the subject to validate against
 
+                // Check that the certificate level is high enough
+                // TODO: Implement this
 
-                // TODO:
                 // signature.value is the valid signature over the expected hash as described in Signature protocols, which was submitted by the RP verified using the public key from cert.value.
                 let signature = match session_status.signature {
                     Some(signature) => signature,
                     None => return Err(SmartIdClientError::SessionResponseMissingSignature.into())
                 };
-                // signature.validate_signature()?;
+                signature.validate_acsp_v1(random_challenge, parsed_cert.public_key().clone().subject_public_key)?;
 
 
                 Ok(())

@@ -5,7 +5,11 @@ use rand::{thread_rng, Rng};
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use ring::signature::{VerificationAlgorithm, RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384, RSA_PKCS1_2048_8192_SHA512};
+use rsa::pkcs1::DecodeRsaPublicKey;
 use x509_parser::der_parser::asn1_rs::BitString;
+use x509_parser::nom::AsBytes;
+use crate::error::SmartIdClientError;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[allow(non_camel_case_types)]
@@ -22,6 +26,26 @@ pub enum SignatureAlgorithm {
     sha256WithRSAEncryption,
     sha384WithRSAEncryption,
     sha512WithRSAEncryption,
+}
+
+impl SignatureAlgorithm {
+    pub fn validate_signature(&self, public_key: BitString, digest: &[u8], value: &[u8]) -> Result<()> {
+        match self {
+            SignatureAlgorithm::sha256WithRSAEncryption => {
+                RSA_PKCS1_2048_8192_SHA256.verify(public_key.as_ref().into(), digest.into(), value.into())
+            },
+            SignatureAlgorithm::sha384WithRSAEncryption => {
+                RSA_PKCS1_2048_8192_SHA384.verify(public_key.as_ref().into(), digest.into(), value.into())
+            },
+            SignatureAlgorithm::sha512WithRSAEncryption => {
+                RSA_PKCS1_2048_8192_SHA512.verify(public_key.as_ref().into(), digest.into(), value.into())
+            },
+        }.map_err(
+            |e| SmartIdClientError::InvalidResponseSignature(format!("Failed to verify signature: {}", e))
+        )?;
+
+        Ok(())
+    }
 }
 
 // Region SignatureRequestParameters
@@ -54,6 +78,13 @@ impl SignatureRequestParameters {
     pub(crate) fn get_random_challenge(&self) -> Option<String> {
         match self {
             SignatureRequestParameters::ACSP_V1 { random_challenge, .. } => Some(random_challenge.clone()),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn get_digest(&self) -> Option<String> {
+        match self {
+            SignatureRequestParameters::RAW_DIGEST_SIGNATURE { digest, .. } => Some(digest.clone()),
             _ => None,
         }
     }
@@ -94,14 +125,24 @@ pub enum SignatureResponse {
 
 
 impl SignatureResponse {
-    pub fn validate_signature(&self, random_challenge: Option<String>, public_key: BitString) -> Result<()> {
+    pub(crate) fn validate_raw_digest(&self, digest: String, public_key: BitString) -> Result<()> {
+        match self {
+            SignatureResponse::RAW_DIGEST_SIGNATURE { value, signature_algorithm } => {
+                signature_algorithm.validate_signature(public_key, digest.as_bytes(), value.as_bytes())?;
+                Ok(())
+            }
+            _ => Err(SmartIdClientError::InvalidSignatureProtocal("Expected RAW_DIGEST_SIGNATURE signature protocol").into())
+        }
+    }
+
+    pub(crate) fn validate_acsp_v1(&self, random_challenge: String, public_key: BitString) -> Result<()> {
         match self {
             SignatureResponse::ACSP_V1 { value, server_random, signature_algorithm } => {
-                todo!()
+                let digest = format!("{:?};{};{}", SignatureProtocol::ACSP_V1, server_random, random_challenge);
+                signature_algorithm.validate_signature(public_key, digest.as_bytes(), value.as_bytes())?;
+                Ok(())
             }
-            SignatureResponse::RAW_DIGEST_SIGNATURE { value, signature_algorithm } => {
-                todo!()
-            },
+            _ => Err(SmartIdClientError::InvalidSignatureProtocal("Expected ACSP_V1 signature protocol").into())
         }
     }
 
@@ -118,6 +159,8 @@ impl SignatureResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use x509_parser::der_parser::asn1_rs::BitString;
+    use x509_parser::prelude::FromDer;
 
     #[test]
     fn test_new_acsp_v1() {
@@ -154,5 +197,65 @@ mod tests {
             println!("{}", random_challenge_bytes.len());
             assert!(random_challenge_bytes.len() <= 64, "Random challenge input should be at most 64 bytes long");
         }
+    }
+
+    #[test]
+    fn validate_raw_digest_success() {
+        let public_key_bitstring = BitString::from_der("".as_bytes()).unwrap().1;
+        let digest = "test-digest";
+        let signature = "valid-signature"; // TODO: Replace with actual valid signature from api
+
+        let response = SignatureResponse::RAW_DIGEST_SIGNATURE {
+            value: signature.to_string(),
+            signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
+        };
+
+        assert!(response.validate_raw_digest(digest.to_string(), public_key_bitstring).is_ok());
+    }
+
+    #[test]
+    fn validate_raw_digest_invalid_signature() {
+        let public_key_bitstring = BitString::from_der("".as_bytes()).unwrap().1;
+        let digest = "test-digest";
+        let signature = "invalid-signature"; // TODO: Replace with actual invalid signature
+
+        let response = SignatureResponse::RAW_DIGEST_SIGNATURE {
+            value: signature.to_string(),
+            signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
+        };
+
+        assert!(response.validate_raw_digest(digest.to_string(), public_key_bitstring).is_err());
+    }
+
+    #[test]
+    fn validate_acsp_v1_success() {
+        let public_key_bitstring = BitString::from_der("".as_bytes()).unwrap().1;
+        let random_challenge = "random-challenge";
+        let server_random = "server-random";
+        let signature = "valid-signature"; // TODO: Replace with actual valid signature from api
+
+        let response = SignatureResponse::ACSP_V1 {
+            value: signature.to_string(),
+            server_random: server_random.to_string(),
+            signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
+        };
+
+        assert!(response.validate_acsp_v1(random_challenge.to_string(), public_key_bitstring).is_ok());
+    }
+
+    #[test]
+    fn validate_acsp_v1_invalid_signature() {
+        let public_key_bitstring = BitString::from_der("".as_bytes()).unwrap().1;
+        let random_challenge = "random-challenge";
+        let server_random = "server-random";
+        let signature = "invalid-signature"; // TODO: Replace with actual invalid signature
+
+        let response = SignatureResponse::ACSP_V1 {
+            value: signature.to_string(),
+            server_random: server_random.to_string(),
+            signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
+        };
+
+        assert!(response.validate_acsp_v1(random_challenge.to_string(), public_key_bitstring).is_err());
     }
 }
