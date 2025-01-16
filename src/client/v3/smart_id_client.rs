@@ -37,6 +37,7 @@ const DYNAMIC_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str = "/authentica
 const NOTIFICATION_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/authentication/notification/etsi";
 #[allow(dead_code)]
 const NOTIFICATION_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str = "/authentication/notification/document";
+
 // endregion: Path definitions
 
 #[derive(Debug, Default)]
@@ -103,18 +104,7 @@ impl SmartIdClientV3 {
 
         match session_status.state {
             SessionState::COMPLETE => {
-                match session_config {
-                    SessionConfig::CertificateChoice { session_id, .. } => {
-                        self.validate_certificate_choice_session_status(&session_status, session_id).await
-                    }
-                    SessionConfig::Authentication { session_id, session_secret, session_token, random_challenge, .. } => {
-                        self.validate_authentication_session_status(session_status.clone(), session_id, session_secret, session_token, random_challenge).await
-                    }
-                    SessionConfig::Signature { session_id, session_secret, session_token, .. } => {
-                        self.validate_signature_session_status(&session_status, session_id, session_secret, session_token).await
-                    }
-                }?;
-
+                self.validate_session_status(session_status.clone(), session_config)?;
                 self.clear_session();
                 Ok(session_status)
             }
@@ -361,6 +351,95 @@ impl SmartIdClientV3 {
 
     // region: Utility functions
 
+    /// Validates the session status and ensures that the session has completed successfully.
+    ///
+    /// If the session is running returns Ok(()).
+    ///
+    /// If the session is complete, this function performs several checks to validate the session status:
+    /// - Ensures that the session result is present.
+    /// - Validates the certificate chain and checks for expiration.
+    /// - Verifies the identity of the authenticated person using the subject field or subjectAltName extension of the X.509 certificate.
+    /// - Checks that the certificate level is high enough.
+    /// - Validates the signature using the public key from the certificate.
+    /// - Checks the session result is OK.
+    ///
+    /// # Arguments
+    ///
+    /// * `session_status` - The status of the session to be validated.
+    /// * `session_config` - The configuration of the session.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating success or failure. If the validation is successful, it returns `Ok(())`.
+    /// If any validation step fails, it returns an appropriate `SmartIdClientError`.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The session result is missing.
+    /// - The certificate is missing or invalid.
+    /// - The signature is missing or invalid.
+    /// - The session did not complete successfully.
+    /// - The session result is not OK.
+    fn validate_session_status(&self, session_status: SessionStatus, session_config: SessionConfig) -> Result<()> {
+        match session_status.result {
+            Some(session_result) => {
+                // Return an error if the session result is not OK
+                session_result.end_result.is_ok()?;
+
+                let cert = match session_status.cert {
+                    Some(cert) => cert,
+                    None => return Err(SmartIdClientError::SessionResponseMissingCertificate.into())
+                };
+
+                // Validate the certificate chain and check for expiration
+                validate_certificate(&cert.value)?;
+
+                let decoded_cert = BASE64_STANDARD.decode(&cert.value).map_err(|_| SmartIdClientError::FailedToValidateSessionResponseCertificate("Could not decode base64 certificate"))?;
+                let (_, parsed_cert) = X509Certificate::from_der(decoded_cert.as_slice()).map_err(|_| SmartIdClientError::FailedToValidateSessionResponseCertificate("Failed to parse certificate"))?;
+
+                // The identity of the authenticated person is in the subject field or subjectAltName extension of the X.509 certificate.
+                // TODO: Find the subject to validate against
+                let _subject = parsed_cert.subject().clone();
+                let _subject_alt_name = parsed_cert.subject_alternative_name();
+
+                // Check that the certificate level is high enough
+                // TODO: Implement this
+
+                // signature.value is the valid signature over the expected hash as described in Signature protocols, which was submitted by the RP verified using the public key from cert.value.
+                let signature = match session_status.signature {
+                    Some(signature) => signature,
+                    None => return Err(SmartIdClientError::SessionResponseMissingSignature.into())
+                };
+
+                match session_config {
+                    SessionConfig::Authentication { random_challenge, .. } => {
+                        signature.validate_acsp_v1(random_challenge, parsed_cert.public_key().clone().subject_public_key)
+                    }
+                    SessionConfig::Signature { digest, .. } => {
+                        signature.validate_raw_digest(digest, parsed_cert.public_key().clone().subject_public_key)
+                    }
+                    SessionConfig::CertificateChoice { .. }=> {
+                        debug!("No validation needed for certificate choice session");
+                        Ok(())
+                    }
+                }?;
+
+                Ok(())
+            }
+            None => {
+                match session_status.state {
+                    SessionState::RUNNING => {
+                        Ok(())
+                    }
+                    SessionState::COMPLETE => {
+                        Err(SmartIdClientError::AuthenticationSessionCompletedWithoutResult.into())
+                    }
+                }
+            }
+        }
+    }
+
     fn get_session(&self) -> Result<SessionConfig> {
         match self.session_config.lock() {
             Ok(guard) => match guard.clone() {
@@ -399,61 +478,6 @@ impl SmartIdClientV3 {
                 debug!("Failed to lock session config: {:?}", e);
             }
         }
-    }
-
-    // Response verification as described here https://sk-eid.github.io/smart-id-documentation/rp-api/3.0.2/response_verification.html
-    async fn validate_authentication_session_status(&self, session_status: SessionStatus, session_id: String, session_secret: String, session_token: String, random_challenge: String) -> Result<()> {
-        match session_status.result {
-            Some(session_result) => {
-                let cert = match session_status.cert {
-                    Some(cert) => cert,
-                    None => return Err(SmartIdClientError::SessionResponseMissingCertificate.into())
-                };
-
-                // Check that the certificate chain, not expired, etc
-                validate_certificate(&cert.value)?;
-
-                // The identity of the authenticated person is in the subject field or subjectAltName extension of the X.509 certificate.
-                let decoded_cert = BASE64_STANDARD.decode(&cert.value).map_err(|_| SmartIdClientError::FailedToValidateSessionResponseCertificate("Could not decode base64 certificate"))?;
-                let (_, parsed_cert) = X509Certificate::from_der(decoded_cert.as_slice()).map_err(|_| SmartIdClientError::FailedToValidateSessionResponseCertificate("Failed to parse certificate"))?;
-                let subject = parsed_cert.subject().clone();
-                let subject_alt_name = parsed_cert.subject_alternative_name();
-
-                // Validate the subject or subjectAltName against the expected value
-                // TODO: Find the subject to validate against
-
-                // Check that the certificate level is high enough
-                // TODO: Implement this
-
-                // signature.value is the valid signature over the expected hash as described in Signature protocols, which was submitted by the RP verified using the public key from cert.value.
-                let signature = match session_status.signature {
-                    Some(signature) => signature,
-                    None => return Err(SmartIdClientError::SessionResponseMissingSignature.into())
-                };
-                signature.validate_acsp_v1(random_challenge, parsed_cert.public_key().clone().subject_public_key)?;
-
-
-                Ok(())
-            }
-            None => {
-                match session_status.state {
-                    SessionState::RUNNING => {
-                        Ok(())
-                    }
-                    SessionState::COMPLETE => {
-                        Err(SmartIdClientError::AuthenticationSessionCompletedWithoutResult.into())
-                    }
-                }
-            }
-        }
-    }
-
-    async fn validate_signature_session_status(&self, session_status: &SessionStatus, session_id: String, session_secret: String, session_token: String) -> Result<()> {
-        todo!()
-    }
-
-    async fn validate_certificate_choice_session_status(&self, session_status: &SessionStatus, session_id: String) -> Result<()> {
-        todo!()
     }
 
     // endregion: Utility functions

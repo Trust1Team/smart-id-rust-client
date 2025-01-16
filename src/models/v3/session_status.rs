@@ -3,6 +3,7 @@ use serde_with::skip_serializing_none;
 use crate::error::SmartIdClientError;
 use crate::models::v3::interaction::InteractionFlow;
 use crate::models::v3::signature::{SignatureProtocol, SignatureResponse};
+use anyhow::Result;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[skip_serializing_none]
@@ -83,6 +84,26 @@ pub enum EndResult {
     USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE,
     #[default]
     UNKNOWN,
+}
+
+
+impl EndResult {
+    pub fn is_ok(&self) -> Result<()> {
+        match self {
+            EndResult::OK => Ok(()),
+            EndResult::USER_REFUSED => Err(SmartIdClientError::UserRefusedVerificationChoiceException.into()),
+            EndResult::TIMEOUT => Err(SmartIdClientError::SessionTimeoutException.into()),
+            EndResult::DOCUMENT_UNUSABLE => Err(SmartIdClientError::DocumentUnusableException.into()),
+            EndResult::WRONG_VC => Err(SmartIdClientError::UserSelectedWrongVerificationCodeException.into()),
+            EndResult::REQUIRED_INTERACTION_NOT_SUPPORTED_BY_APP => Err(SmartIdClientError::RequiredInteractionNotSupportedByAppException.into()),
+            EndResult::USER_REFUSED_CERT_CHOICE => Err(SmartIdClientError::UserRefusedCertChoiceException.into()),
+            EndResult::USER_REFUSED_DISPLAYTEXTANDPIN => Err(SmartIdClientError::UserRefusedDisplayTextAndPinException.into()),
+            EndResult::USER_REFUSED_VC_CHOICE => Err(SmartIdClientError::UserRefusedVerificationChoiceException.into()),
+            EndResult::USER_REFUSED_CONFIRMATIONMESSAGE => Err(SmartIdClientError::UserRefusedConfirmationMessageException.into()),
+            EndResult::USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE => Err(SmartIdClientError::UserRefusedConfirmationMessageWithVerificationChoiceException.into()),
+            _ => Err(SmartIdClientError::SmartIdClientException("Unknown session end result").into()),
+        }
+    }
 }
 
 

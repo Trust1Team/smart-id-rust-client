@@ -6,9 +6,7 @@ use rand_chacha::rand_core::{RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
 use ring::signature::{VerificationAlgorithm, RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384, RSA_PKCS1_2048_8192_SHA512};
-use rsa::pkcs1::DecodeRsaPublicKey;
 use x509_parser::der_parser::asn1_rs::BitString;
-use x509_parser::nom::AsBytes;
 use crate::error::SmartIdClientError;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
