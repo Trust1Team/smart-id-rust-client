@@ -34,8 +34,8 @@ pub struct AuthenticationSessionRequest {
 
 impl AuthenticationSessionRequest {
     pub async fn new(cfg: &SmartIDConfig, interactions: Vec<Interaction>, hash: impl Into<String>, hash_type: HashType) -> Result<Self> {
-        /// At least one interaction is needed for every authentication request
-        if interactions.len() == 0 {
+        // At least one interaction is needed for every authentication request
+        if interactions.is_empty() {
             return Err(SmartIdClientError::ConfigMissingException("Define at least 1 interaction for an authentication request").into());
         };
 
@@ -81,7 +81,7 @@ pub struct SignatureSessionRequest {
 
 impl SignatureSessionRequest {
     pub async fn new(cfg: &SmartIDConfig, interactions: Vec<Interaction>, hash: impl Into<String>, hash_type: HashType) -> Result<Self> {
-        /// At least one interaction is needed for every authentication request
+        // At least one interaction is needed for every authentication request
         if interactions.len() == 0 {
             return Err(SmartIdClientError::ConfigMissingException("Define at least 1 interaction for an authentication request").into());
         };

@@ -1,10 +1,8 @@
-use std::clone;
-use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
-use crate::models::v3::common::{CertificateLevel, RequestProperties, SessionConfig};
+use crate::models::v3::common::{CertificateLevel, RequestProperties};
 use crate::models::v3::signature::{SignatureAlgorithm, SignatureRequestParameters};
 use crate::models::v3::interaction::Interaction;
 use anyhow::Result;
@@ -28,8 +26,8 @@ pub struct AuthenticationRequest {
 
 impl AuthenticationRequest {
     pub fn new(cfg: &SmartIDConfig, interactions: Vec<Interaction>, signature_algorithm: SignatureAlgorithm) -> Result<Self> {
-        /// At least one interaction is needed for every authentication request
-        if interactions.len() == 0 {
+        // At least one interaction is needed for every authentication request
+        if interactions.is_empty() {
             return Err(SmartIdClientError::ConfigMissingException("Define at least 1 interaction for an authentication request").into());
         };
 

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use crate::error::SmartIdClientError;
 use crate::models::v3::interaction::InteractionFlow;
-use crate::models::v3::signature::{SignatureAlgorithm, SignatureProtocol, SignatureResponse};
+use crate::models::v3::signature::{SignatureProtocol, SignatureResponse};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[skip_serializing_none]

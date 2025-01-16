@@ -1,21 +1,16 @@
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fmt::Debug;
-use std::future::Future;
-use std::path::PathBuf;
 use std::time::Duration;
-use reqwest::Response;
-use tokio::fs::File;
-use tokio::time::sleep;
-use tracing::{debug, error};
+use tracing::{debug};
 use crate::error::SmartIdClientError;
 
-const HEADER_CONTENT_TYPE: &'static str = "content-type";
-const HEADER_CONTENT_TYPE_DEFAULT: &'static str = "application/json";
-const HEADER_USER_AGENT: &'static str = "User-Agent";
-const HEADER_USER_AGENT_VERSION: &'static str = env!("CARGO_PKG_VERSION");
-const HEADER_USER_AGENT_RUST_VERSION: &'static str = env!("CARGO_PKG_RUST_VERSION");
+const HEADER_CONTENT_TYPE: &str = "content-type";
+const HEADER_CONTENT_TYPE_DEFAULT: &str = "application/json";
+const HEADER_USER_AGENT: &str = "User-Agent";
+const HEADER_USER_AGENT_VERSION: &str = env!("CARGO_PKG_VERSION");
+const HEADER_USER_AGENT_RUST_VERSION: &str = env!("CARGO_PKG_RUST_VERSION");
 
 /// Generic get JWT based on APIKEY
 /// Not used for Smart ID client

@@ -10,13 +10,13 @@ use crate::error::SmartIdClientError;
 use crate::error::SmartIdClientError::SmartIdClientException;
 
 // region: Path definitions
-const PATH_SESSION_STATUS_URI: &'static str = "/session";
-const PATH_CERTIFICATE_CHOICE_BY_DOCUMENT_NUMBER: &'static str = "/certificatechoice/document";
-const PATH_CERTIFICATE_CHOICE_BY_NATURAL_PERSON_SEMANTICS_IDENTIFIER_PATH: &'static str = "/certificatechoice/etsi";
-const SIGNATURE_BY_DOCUMENT_NUMBER_PATH: &'static str = "/signature/document";
-const SIGNATURE_BY_NATURAL_PERSON_SEMANTICS_IDENTIFIER_PATH: &'static str = "/signature/etsi";
-const AUTHENTICATE_BY_DOCUMENT_NUMBER_PATH: &'static str = "/authentication/document";
-const AUTHENTICATE_BY_NATURAL_PERSON_SEMANTICS_IDENTIFIER_PATH: &'static str = "/authentication/etsi";
+const PATH_SESSION_STATUS_URI: &str = "/session";
+const PATH_CERTIFICATE_CHOICE_BY_DOCUMENT_NUMBER: &str = "/certificatechoice/document";
+const PATH_CERTIFICATE_CHOICE_BY_NATURAL_PERSON_SEMANTICS_IDENTIFIER_PATH: &str = "/certificatechoice/etsi";
+const SIGNATURE_BY_DOCUMENT_NUMBER_PATH: &str = "/signature/document";
+const SIGNATURE_BY_NATURAL_PERSON_SEMANTICS_IDENTIFIER_PATH: &str = "/signature/etsi";
+const AUTHENTICATE_BY_DOCUMENT_NUMBER_PATH: &str = "/authentication/document";
+const AUTHENTICATE_BY_NATURAL_PERSON_SEMANTICS_IDENTIFIER_PATH: &str = "/authentication/etsi";
 
 fn path_session_status_uri(session_id: String) -> String {
     format!("{}/{}", PATH_SESSION_STATUS_URI, session_id)
@@ -47,31 +47,21 @@ fn path_authenticate_by_natural_person_semantics_identifier(semantic_identifier:
 }
 // endregion: Path definitions
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct SmartIdConnector {
     pub cfg: SmartIDConfig,
-}
-
-impl Default for SmartIdConnector {
-    fn default() -> Self {
-        SmartIdConnector {
-            cfg: SmartIDConfig::default(),
-        }
-    }
 }
 
 impl SmartIdConnector {
     pub async fn new_with_time_interval(cfg: SmartIDConfig) -> Self {
         SmartIdConnector {
             cfg,
-            ..Default::default()
         }
     }
 
     pub async fn new(cfg: &SmartIDConfig) -> Self {
         SmartIdConnector {
             cfg: cfg.clone(),
-            ..Default::default()
         }
     }
 

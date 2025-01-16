@@ -4,12 +4,9 @@ use rand_chacha::ChaCha20Rng;
 use rand::{thread_rng, Rng};
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
-use sha2::Sha256;
 use anyhow::Result;
-use base64::prelude::BASE64_STANDARD;
 use rsa::pkcs8::DecodePublicKey;
 use rsa::signature::digest::Digest;
-use rustls::SignatureScheme;
 use x509_parser::der_parser::asn1_rs::BitString;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]

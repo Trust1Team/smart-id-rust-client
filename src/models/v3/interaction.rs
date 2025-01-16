@@ -1,8 +1,6 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use crate::error::SmartIdClientError;
-use crate::models::v3::dynamic_link::{DynamicLink, DynamicLinkType, SessionType};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 #[skip_serializing_none]

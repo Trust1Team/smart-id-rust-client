@@ -47,25 +47,28 @@ async fn uc_authentication_request_example(cfg: &SmartIDConfig, smart_id_client:
     let authentication_request = AuthenticationRequest::new(
         &cfg,
         vec!(Interaction::DisplayTextAndPIN {
-            display_text_60: "Authenticate to Application: ReadMyCards".to_string()
+            display_text_60: "Authenticate to Application: Test".to_string()
         }),
         SignatureAlgorithm::sha512WithRSAEncryption
     )?;
-    let etsi = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
+
     smart_id_client.start_authentication_dynamic_link_anonymous_session(authentication_request).await?;
 
     // This link can be displayed as QR code
     // The user can scan the QR code with the device that has the Smart-ID app installed
     // The QR code must be refreshed every 1 second.
-    let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "en".to_string())?;
+    let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "en")?;
+    info!("{:?}", qr_code_link);
 
     // This link can be opened inside an app and redirect to the Smart-ID app
     // It also must be refreshed every 1 second.
-    let app_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::App2App, "en".to_string())?;
+    let app_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::App2App, "en")?;
+    info!("{:?}", app_to_app_link);
 
     // This link can be opened from the web browser and redirect to the Smart-ID app
     // It also must be refreshed every 1 second.
-    let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::Web2App, "en".to_string())?;
+    let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::Web2App, "en")?;
+    info!("{:?}", web_to_app_link);
 
 
     // This will long poll the session status
@@ -89,16 +92,18 @@ async fn uc_signature_request_example(cfg: &SmartIDConfig, smart_id_client: &Sma
     // This link can be displayed as QR code
     // The user can scan the QR code with the device that has the Smart-ID app installed
     // The QR code must be refreshed every 1 second.
-    let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "en".to_string())?;
+    let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "en")?;
+    info!("{:?}", qr_code_link);
 
     // This link can be opened inside an app and redirect to the Smart-ID app
     // It also must be refreshed every 1 second.
-    let app_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::App2App, "en".to_string())?;
+    let app_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::App2App, "en")?;
+    info!("{:?}", app_to_app_link);
 
     // This link can be opened from the web browser and redirect to the Smart-ID app
     // It also must be refreshed every 1 second.
-    let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::Web2App, "en".to_string())?;
-
+    let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::Web2App, "en")?;
+    info("{:?}", web_to_app_link);
 
     // This will long poll the session status
     // On successful completion the signature will be returned

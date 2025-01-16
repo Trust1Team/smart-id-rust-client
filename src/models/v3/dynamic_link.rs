@@ -66,7 +66,7 @@ impl DynamicLink {
         let result = mac.finalize();
         let code_bytes = result.into_bytes();
 
-        BASE64_STANDARD.encode(&code_bytes)
+        BASE64_STANDARD.encode(code_bytes)
     }
 
     fn elapsed_seconds(&self) -> i64 {

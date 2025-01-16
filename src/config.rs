@@ -103,10 +103,10 @@ impl SmartIDConfigBuilder {
             url: self.url.clone().ok_or(SmartIdClientError::ConfigMissingException("url"))?,
             relying_party_uuid: self.relying_party_uuid.clone().ok_or(SmartIdClientError::ConfigMissingException("relying_party_uuid"))?,
             relying_party_name: self.relying_party_name.clone().ok_or(SmartIdClientError::ConfigMissingException("relying_party_name"))?,
-            client_request_timeout: self.client_request_timeout.clone(),
-            client_retry_attempts: self.client_retry_attempts.clone(),
-            client_retry_delay: self.client_retry_delay.clone(),
-            client_enable_polling: self.client_enable_polling.clone(),
+            client_request_timeout: self.client_request_timeout,
+            client_retry_attempts: self.client_retry_attempts,
+            client_retry_delay: self.client_retry_delay,
+            client_enable_polling: self.client_enable_polling,
         })
     }
 

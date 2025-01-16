@@ -26,8 +26,8 @@ pub struct SignatureRequest {
 
 impl SignatureRequest {
     pub fn new(cfg: &SmartIDConfig, interactions: Vec<Interaction>, digest: String, signature_algorithm: SignatureAlgorithm) -> anyhow::Result<Self> {
-        /// At least one interaction is needed for every authentication request
-        if interactions.len() == 0 {
+        // At least one interaction is needed for every authentication request
+        if interactions.is_empty() {
             return Err(SmartIdClientError::ConfigMissingException("Define at least 1 interaction for an authentication request").into());
         };
 
