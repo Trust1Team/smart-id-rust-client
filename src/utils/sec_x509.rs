@@ -29,7 +29,7 @@ pub fn validate_certificate(cert_value: &str) -> Result<()> {
 
 
 	// Validate the certificate
-	let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+	let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
 	cert.verify_is_valid_tls_server_cert(
 		&[&webpki::ECDSA_P256_SHA256, &webpki::ECDSA_P384_SHA384],
