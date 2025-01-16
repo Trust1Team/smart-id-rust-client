@@ -86,9 +86,9 @@ pub enum EndResult {
 }
 
 
-impl Into<SmartIdClientError> for EndResult {
-    fn into(self) -> SmartIdClientError {
-        match self {
+impl From<EndResult> for SmartIdClientError {
+    fn from(val: EndResult) -> Self {
+        match val {
             EndResult::USER_REFUSED => SmartIdClientError::UserRefusedVerificationChoiceException,
             EndResult::TIMEOUT => SmartIdClientError::SessionTimeoutException,
             EndResult::DOCUMENT_UNUSABLE => SmartIdClientError::DocumentUnusableException,

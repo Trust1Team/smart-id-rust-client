@@ -7,7 +7,6 @@ use crate::models::v2::requests::{AuthenticationSessionRequest, CertificateReque
 use crate::models::v2::responses::{AuthenticationSessionResponse, CertificateChoiceResponse, SignatureSessionResponse};
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
-use crate::error::SmartIdClientError::SmartIdClientException;
 
 // region: Path definitions
 const PATH_SESSION_STATUS_URI: &str = "/session";

@@ -53,14 +53,11 @@ pub async fn has_key_extension_non_rep(cert: &str) -> Result<bool> {
 				return Err(anyhow::Error::from(SmartIdClientError::DecryptionError));
 			}
 			for x in cert.extensions() {
-				match x.parsed_extension() {
-					ParsedExtension::KeyUsage(k) => {
-						if k.non_repudiation() {
-							return Ok(true);
-						} //assert!(k.non_repudiation(),"{}",true)
-					}
-					_ => {}
-				}
+				if let ParsedExtension::KeyUsage(k) = x.parsed_extension() {
+    						if k.non_repudiation() {
+    							return Ok(true);
+    						} //assert!(k.non_repudiation(),"{}",true)
+    					}
 			}
 			Ok(false) //assert_eq!(cert.version(), X509Version::V3);
 		}
@@ -79,14 +76,11 @@ pub async fn has_key_extension_auth(cert: &str) -> Result<bool> {
 				return Err(anyhow::Error::from(SmartIdClientError::DecryptionError));
 			}
 			for x in cert.extensions() {
-				match x.parsed_extension() {
-					ParsedExtension::KeyUsage(k) => {
-						if k.digital_signature() {
-							return Ok(true);
-						} //assert!(k.non_repudiation(),"{}",true)
-					}
-					_ => {}
-				}
+				if let ParsedExtension::KeyUsage(k) = x.parsed_extension() {
+    						if k.digital_signature() {
+    							return Ok(true);
+    						} //assert!(k.non_repudiation(),"{}",true)
+    					}
 			}
 			Ok(false) //assert_eq!(cert.version(), X509Version::V3);
 		}
@@ -110,12 +104,9 @@ pub async fn has_key_extension_root(cert: &str) -> Result<bool> {
 			}
 			_is_root = cert.issuer().to_string() == cert.subject().to_string();
 			for x in cert.extensions() {
-				match x.parsed_extension() {
-					ParsedExtension::KeyUsage(k) => {
-						_has_issuer_properties = k.key_cert_sign() && k.crl_sign()
-					}
-					_ => {}
-				}
+				if let ParsedExtension::KeyUsage(k) = x.parsed_extension() {
+    						_has_issuer_properties = k.key_cert_sign() && k.crl_sign()
+    					}
 			}
 			if _is_root && _has_issuer_properties {
 				Ok(true)
@@ -143,12 +134,9 @@ pub async fn has_key_extension_intermediate(cert: &str) -> Result<bool> {
 			}
 			_is_root = cert.issuer().to_string() == cert.subject().to_string();
 			for x in cert.extensions() {
-				match x.parsed_extension() {
-					ParsedExtension::KeyUsage(k) => {
-						_has_issuer_properties = k.key_cert_sign() && k.crl_sign()
-					}
-					_ => {}
-				}
+				if let ParsedExtension::KeyUsage(k) = x.parsed_extension() {
+    						_has_issuer_properties = k.key_cert_sign() && k.crl_sign()
+    					}
 			}
 			if !_is_root && _has_issuer_properties {
 				Ok(true)
@@ -177,12 +165,9 @@ pub async fn has_key_extension_encryption(cert: &str) -> Result<bool> {
 			}
 			_is_root = cert.issuer().to_string() == cert.subject().to_string();
 			for x in cert.extensions() {
-				match x.parsed_extension() {
-					ParsedExtension::KeyUsage(k) => {
-						_has_issuer_properties = k.data_encipherment() || k.key_encipherment()
-					}
-					_ => {}
-				}
+				if let ParsedExtension::KeyUsage(k) = x.parsed_extension() {
+    						_has_issuer_properties = k.data_encipherment() || k.key_encipherment()
+    					}
 			}
 			if !_is_root && _has_issuer_properties {
 				Ok(true)

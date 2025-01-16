@@ -5,7 +5,6 @@ use rand::{thread_rng, Rng};
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
-use rsa::pkcs8::DecodePublicKey;
 use rsa::signature::digest::Digest;
 use x509_parser::der_parser::asn1_rs::BitString;
 

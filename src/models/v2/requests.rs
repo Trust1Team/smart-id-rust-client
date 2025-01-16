@@ -82,7 +82,7 @@ pub struct SignatureSessionRequest {
 impl SignatureSessionRequest {
     pub async fn new(cfg: &SmartIDConfig, interactions: Vec<Interaction>, hash: impl Into<String>, hash_type: HashType) -> Result<Self> {
         // At least one interaction is needed for every authentication request
-        if interactions.len() == 0 {
+        if interactions.is_empty() {
             return Err(SmartIdClientError::ConfigMissingException("Define at least 1 interaction for an authentication request").into());
         };
 
@@ -171,9 +171,9 @@ impl From<String> for InteractionFlow {
     }
 }
 
-impl Into<String> for InteractionFlow {
-    fn into(self) -> String {
-        match self {
+impl From<InteractionFlow> for String {
+    fn from(val: InteractionFlow) -> Self {
+        match val {
             InteractionFlow::DISPLAY_TEXT_AND_PIN => "displayTextAndPIN".to_string(),
             InteractionFlow::CONFIRMATION_MESSAGE => "confirmationMessage".to_string(),
             InteractionFlow::VERIFICATION_CODE_CHOICE => "verificationCodeChoice".to_string(),

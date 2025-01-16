@@ -63,6 +63,12 @@ pub struct SmartIDConfigBuilder {
     pub client_enable_polling: Option<bool>,
 }
 
+impl Default for SmartIDConfigBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SmartIDConfigBuilder {
     pub fn new() -> Self {
         SmartIDConfig::default().into() //from env

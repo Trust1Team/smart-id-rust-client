@@ -57,9 +57,9 @@ pub enum AuthenticationCertificateLevel {
     ADVANCED,
 }
 
-impl Into<CertificateLevel> for AuthenticationCertificateLevel {
-    fn into(self) -> CertificateLevel {
-        match self {
+impl From<AuthenticationCertificateLevel> for CertificateLevel {
+    fn from(val: AuthenticationCertificateLevel) -> Self {
+        match val {
             AuthenticationCertificateLevel::QUALIFIED => CertificateLevel::QUALIFIED,
             AuthenticationCertificateLevel::ADVANCED => CertificateLevel::ADVANCED,
         }
