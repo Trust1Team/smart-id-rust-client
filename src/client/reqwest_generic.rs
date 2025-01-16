@@ -14,6 +14,7 @@ const HEADER_USER_AGENT_RUST_VERSION: &str = env!("CARGO_PKG_RUST_VERSION");
 
 /// Generic get JWT based on APIKEY
 /// Not used for Smart ID client
+#[allow(dead_code)]
 pub async fn get_token<R>(url: &str, timeout_millis: Option<u64>) -> Result<R>
 where
     R: DeserializeOwned,
@@ -74,6 +75,7 @@ where
 
 /// Generic DELETE request
 /// Connection pooling is provided in reqwest
+#[allow(dead_code)]
 pub async fn delete(
     url: &str,
     timeout_millis: Option<u64>,
@@ -84,7 +86,7 @@ pub async fn delete(
         ))
         .build()
         .unwrap();
-    let res = client
+    let _res = client
         .delete(url)
         .header(HEADER_CONTENT_TYPE, HEADER_CONTENT_TYPE_DEFAULT)
         .header(HEADER_USER_AGENT, format!("smart-id-rust-client/{:?}/rust/{:?}",HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION))
@@ -135,6 +137,7 @@ where
 
 // Generic POST request
 /// Connection pooling is provided in reqwest
+#[allow(dead_code)]
 pub async fn post_json_value<T>(
     url: &str,
     req: &T,
@@ -173,6 +176,7 @@ where
 
 /// Generic PUT request
 /// Connection pooling is provided in reqwest
+#[allow(dead_code)]
 pub async fn put<T, R>(
     url: &str,
     req: &T,

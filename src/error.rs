@@ -2,14 +2,11 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 #[non_exhaustive]
+#[allow(dead_code)]
 pub enum SmartIdClientError {
     /// Config Exception
     #[error("Configuration missing: {0}")]
     ConfigMissingException(&'static str),
-
-    /// Generic
-    #[error("Smart ID Exception: {0}")]
-    SmartIdException(&'static str),
 
     /// Session not found
     #[error("Session not found: {0}")]
@@ -151,10 +148,6 @@ pub enum SmartIdClientError {
     /// Certificate Decryption error
     #[error("Certificate Decryption error")]
     DecryptionError,
-
-    /// Language code is not valid
-    #[error("Language code is not valid")]
-    LanguageCodeIncorrectException,
 
     /// Failed to generate dynamic link
     #[error("Failed to generate dynamic link: {0}")]

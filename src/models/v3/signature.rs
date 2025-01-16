@@ -5,7 +5,6 @@ use rand::{thread_rng, Rng};
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
 use anyhow::Result;
-use rsa::signature::digest::Digest;
 use x509_parser::der_parser::asn1_rs::BitString;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
@@ -145,7 +144,7 @@ mod tests {
 
     #[test]
     fn test_generate_random_challenge_input_value_is_correct_size() {
-        for i in 0..100 {
+        for _i in 0..100 {
             let random_challenge = SignatureRequestParameters::generate_random_challenge();
             assert!(!random_challenge.is_empty(), "Random challenge should not be empty");
 

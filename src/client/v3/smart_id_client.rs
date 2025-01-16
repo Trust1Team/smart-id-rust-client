@@ -25,13 +25,17 @@ const NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH: &str = "/certif
 
 const DYNAMIC_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/dynamic-link/etsi";
 const DYNAMIC_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/dynamic-link/document";
+#[allow(dead_code)]
 const NOTIFICATION_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/notification/etsi";
+#[allow(dead_code)]
 const NOTIFICATION_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/notification/document";
 
 const ANONYMOUS_DYNAMIC_LINK_AUTHENTICATION_PATH: &str = "/authentication/dynamic-link/anonymous";
 const DYNAMIC_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/authentication/dynamic-link/etsi";
 const DYNAMIC_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str = "/authentication/dynamic-link/document";
+#[allow(dead_code)]
 const NOTIFICATION_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/authentication/notification/etsi";
+#[allow(dead_code)]
 const NOTIFICATION_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str = "/authentication/notification/document";
 // endregion: Path definitions
 
@@ -304,7 +308,7 @@ impl SmartIdClientV3 {
     /// # Arguments
     ///
     /// * `dynamic_link_type` - This can be a QR, Web2App or App2App link.
-    /// * `language_code` - The language code (2-letter ISO 639-1).
+    /// * `language_code` - The language code (3-letter ISO 639-2 code).
     ///
     /// # Returns
     ///

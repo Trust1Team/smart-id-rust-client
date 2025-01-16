@@ -32,7 +32,7 @@ pub(crate) struct DynamicLink {
     pub(crate) dynamic_link_type: DynamicLinkType,
     pub(crate) session_type: SessionType,
     pub(crate) session_start_time: DateTime<Utc>, // Used to calculated elapsed seconds since session start
-    pub(crate) language_code: String,
+    pub(crate) language_code: String, // 3 letter language code according to ISO 639-2
 }
 
 impl DynamicLink {
@@ -83,9 +83,7 @@ impl DynamicLink {
 mod tests {
     use chrono::Duration;
     use super::*;
-    use tracing::{error, info};
     use tracing_test::traced_test;
-    use url::Url;
 
     fn qr_dynamic_link() -> DynamicLink {
         DynamicLink {

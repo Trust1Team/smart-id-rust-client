@@ -228,9 +228,7 @@ impl Interaction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tracing::{error, info};
     use tracing_test::traced_test;
-    use crate::models::v2::requests::InteractionFlow;
 
     #[traced_test]
     #[tokio::test]

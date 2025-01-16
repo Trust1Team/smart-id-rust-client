@@ -124,11 +124,11 @@ impl CertificateRequest {
         }
     }
 
-    pub  async fn new_with_level(cfg: &SmartIDConfig, level: CertificateLevel) -> Self {
+    pub async fn new_with_level(cfg: &SmartIDConfig, level: CertificateLevel) -> Self {
         CertificateRequest {
             relying_party_uuid: Some(cfg.relying_party_uuid.clone()),
             relying_party_name: Some(cfg.relying_party_name.clone()),
-            certificate_level: CertificateLevel::QUALIFIED.into(),
+            certificate_level: level.into(),
             ..Self::default()
         }
     }
@@ -186,7 +186,6 @@ impl From<InteractionFlow> for String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tracing::{error, info};
     use tracing_test::traced_test;
 
     #[traced_test]
