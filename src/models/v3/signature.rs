@@ -47,17 +47,18 @@ impl SignatureAlgorithm {
 }
 
 // Region SignatureRequestParameters
-
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", tag = "signatureProtocol")]
+#[serde(untagged)]
 #[non_exhaustive]
 pub enum SignatureRequestParameters {
+    #[serde(rename_all = "camelCase")]
     ACSP_V1 {
         // A random value which is calculated by generating random bits with size in the range of 32 bytes …64 bytes and applying Base64 encoding (according to rfc4648).
         random_challenge: String,
         signature_algorithm: SignatureAlgorithm,
     },
+    #[serde(rename_all = "camelCase")]
     RAW_DIGEST_SIGNATURE {
         // Base64 encoded digest to be signed (RFC 4648).
         digest: String,
