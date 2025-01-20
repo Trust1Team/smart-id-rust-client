@@ -20,15 +20,19 @@ where
     R: DeserializeOwned,
 {
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_millis(
-            timeout_millis.unwrap_or(30000),
-        ))
+        .timeout(Duration::from_millis(timeout_millis.unwrap_or(30000)))
         .build()
         .unwrap();
     client
         .get(url)
         .header(HEADER_CONTENT_TYPE, HEADER_CONTENT_TYPE_DEFAULT)
-        .header(HEADER_USER_AGENT, format!("smart-id-rust-client/{:?}/rust/{:?}",HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION))
+        .header(
+            HEADER_USER_AGENT,
+            format!(
+                "smart-id-rust-client/{:?}/rust/{:?}",
+                HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION
+            ),
+        )
         .send()
         .await?
         .json::<R>()
@@ -38,23 +42,24 @@ where
 
 /// Generic GET request
 /// Connection pooling is provided in reqwest
-pub async fn get<R>(
-    url: &str,
-    timeout_millis: Option<u64>,
-) -> Result<R>
+pub async fn get<R>(url: &str, timeout_millis: Option<u64>) -> Result<R>
 where
     R: DeserializeOwned,
 {
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_millis(
-            timeout_millis.unwrap_or(30000),
-        ))
+        .timeout(Duration::from_millis(timeout_millis.unwrap_or(30000)))
         .build()
         .unwrap();
     let send_response = client
         .get(url)
         .header(HEADER_CONTENT_TYPE, HEADER_CONTENT_TYPE_DEFAULT)
-        .header(HEADER_USER_AGENT, format!("smart-id-rust-client/{:?}/rust/{:?}",HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION))
+        .header(
+            HEADER_USER_AGENT,
+            format!(
+                "smart-id-rust-client/{:?}/rust/{:?}",
+                HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION
+            ),
+        )
         .send()
         .await?;
     let status = send_response.status().as_u16();
@@ -76,20 +81,21 @@ where
 /// Generic DELETE request
 /// Connection pooling is provided in reqwest
 #[allow(dead_code)]
-pub async fn delete(
-    url: &str,
-    timeout_millis: Option<u64>,
-) -> Result<()> {
+pub async fn delete(url: &str, timeout_millis: Option<u64>) -> Result<()> {
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_millis(
-            timeout_millis.unwrap_or(30000),
-        ))
+        .timeout(Duration::from_millis(timeout_millis.unwrap_or(30000)))
         .build()
         .unwrap();
     let _res = client
         .delete(url)
         .header(HEADER_CONTENT_TYPE, HEADER_CONTENT_TYPE_DEFAULT)
-        .header(HEADER_USER_AGENT, format!("smart-id-rust-client/{:?}/rust/{:?}",HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION))
+        .header(
+            HEADER_USER_AGENT,
+            format!(
+                "smart-id-rust-client/{:?}/rust/{:?}",
+                HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION
+            ),
+        )
         .send()
         .await?;
     Ok(())
@@ -97,25 +103,25 @@ pub async fn delete(
 
 /// Generic POST request
 /// Connection pooling is provided in reqwest
-pub async fn post<T, R>(
-    url: &str,
-    req: &T,
-    timeout_millis: Option<u64>,
-) -> Result<R>
+pub async fn post<T, R>(url: &str, req: &T, timeout_millis: Option<u64>) -> Result<R>
 where
     T: Serialize + Debug,
     R: DeserializeOwned,
 {
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_millis(
-            timeout_millis.unwrap_or(30000),
-        ))
+        .timeout(Duration::from_millis(timeout_millis.unwrap_or(30000)))
         .build()
         .unwrap();
     let send_response = client
         .post(url)
         .header(HEADER_CONTENT_TYPE, HEADER_CONTENT_TYPE_DEFAULT)
-        .header(HEADER_USER_AGENT, format!("smart-id-rust-client/{:?}/rust/{:?}",HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION))
+        .header(
+            HEADER_USER_AGENT,
+            format!(
+                "smart-id-rust-client/{:?}/rust/{:?}",
+                HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION
+            ),
+        )
         .json(req)
         .send()
         .await?;
@@ -147,15 +153,19 @@ where
     T: Serialize + Debug,
 {
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_millis(
-            timeout_millis.unwrap_or(30000),
-        ))
+        .timeout(Duration::from_millis(timeout_millis.unwrap_or(30000)))
         .build()
         .unwrap();
     let send_response = client
         .post(url)
         .header(HEADER_CONTENT_TYPE, HEADER_CONTENT_TYPE_DEFAULT)
-        .header(HEADER_USER_AGENT, format!("smart-id-rust-client/{:?}/rust/{:?}",HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION))
+        .header(
+            HEADER_USER_AGENT,
+            format!(
+                "smart-id-rust-client/{:?}/rust/{:?}",
+                HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION
+            ),
+        )
         .json(req)
         .send()
         .await?;
@@ -177,25 +187,25 @@ where
 /// Generic PUT request
 /// Connection pooling is provided in reqwest
 #[allow(dead_code)]
-pub async fn put<T, R>(
-    url: &str,
-    req: &T,
-    timeout_millis: Option<u64>,
-) -> Result<R>
+pub async fn put<T, R>(url: &str, req: &T, timeout_millis: Option<u64>) -> Result<R>
 where
     T: Serialize + Debug,
     R: DeserializeOwned,
 {
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_millis(
-            timeout_millis.unwrap_or(30000),
-        ))
+        .timeout(Duration::from_millis(timeout_millis.unwrap_or(30000)))
         .build()
         .unwrap();
     client
         .put(url)
         .header(HEADER_CONTENT_TYPE, HEADER_CONTENT_TYPE_DEFAULT)
-        .header(HEADER_USER_AGENT, format!("smart-id-rust-client/{:?}/rust/{:?}",HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION))
+        .header(
+            HEADER_USER_AGENT,
+            format!(
+                "smart-id-rust-client/{:?}/rust/{:?}",
+                HEADER_USER_AGENT_VERSION, HEADER_USER_AGENT_RUST_VERSION
+            ),
+        )
         .json(req)
         .send()
         .await?
@@ -203,5 +213,3 @@ where
         .await
         .map_err(|e| e.into())
 }
-
-

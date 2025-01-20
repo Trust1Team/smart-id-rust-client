@@ -20,7 +20,6 @@ pub struct SessionStatus {
     pub device_ip_address: Option<String>,
 }
 
-
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[skip_serializing_none]
 #[serde(rename_all = "camelCase")]
@@ -36,7 +35,7 @@ pub struct SessionCertificate {
 pub enum SessionCertificateLevel {
     #[default]
     QUALIFIED,
-    ADVANCED
+    ADVANCED,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -86,26 +85,45 @@ pub enum EndResult {
     UNKNOWN,
 }
 
-
 impl EndResult {
     pub fn is_ok(&self) -> Result<()> {
         match self {
             EndResult::OK => Ok(()),
-            EndResult::USER_REFUSED => Err(SmartIdClientError::UserRefusedVerificationChoiceException.into()),
+            EndResult::USER_REFUSED => {
+                Err(SmartIdClientError::UserRefusedVerificationChoiceException.into())
+            }
             EndResult::TIMEOUT => Err(SmartIdClientError::SessionTimeoutException.into()),
-            EndResult::DOCUMENT_UNUSABLE => Err(SmartIdClientError::DocumentUnusableException.into()),
-            EndResult::WRONG_VC => Err(SmartIdClientError::UserSelectedWrongVerificationCodeException.into()),
-            EndResult::REQUIRED_INTERACTION_NOT_SUPPORTED_BY_APP => Err(SmartIdClientError::RequiredInteractionNotSupportedByAppException.into()),
-            EndResult::USER_REFUSED_CERT_CHOICE => Err(SmartIdClientError::UserRefusedCertChoiceException.into()),
-            EndResult::USER_REFUSED_DISPLAYTEXTANDPIN => Err(SmartIdClientError::UserRefusedDisplayTextAndPinException.into()),
-            EndResult::USER_REFUSED_VC_CHOICE => Err(SmartIdClientError::UserRefusedVerificationChoiceException.into()),
-            EndResult::USER_REFUSED_CONFIRMATIONMESSAGE => Err(SmartIdClientError::UserRefusedConfirmationMessageException.into()),
-            EndResult::USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE => Err(SmartIdClientError::UserRefusedConfirmationMessageWithVerificationChoiceException.into()),
-            _ => Err(SmartIdClientError::SmartIdClientException("Unknown session end result").into()),
+            EndResult::DOCUMENT_UNUSABLE => {
+                Err(SmartIdClientError::DocumentUnusableException.into())
+            }
+            EndResult::WRONG_VC => {
+                Err(SmartIdClientError::UserSelectedWrongVerificationCodeException.into())
+            }
+            EndResult::REQUIRED_INTERACTION_NOT_SUPPORTED_BY_APP => {
+                Err(SmartIdClientError::RequiredInteractionNotSupportedByAppException.into())
+            }
+            EndResult::USER_REFUSED_CERT_CHOICE => {
+                Err(SmartIdClientError::UserRefusedCertChoiceException.into())
+            }
+            EndResult::USER_REFUSED_DISPLAYTEXTANDPIN => {
+                Err(SmartIdClientError::UserRefusedDisplayTextAndPinException.into())
+            }
+            EndResult::USER_REFUSED_VC_CHOICE => {
+                Err(SmartIdClientError::UserRefusedVerificationChoiceException.into())
+            }
+            EndResult::USER_REFUSED_CONFIRMATIONMESSAGE => {
+                Err(SmartIdClientError::UserRefusedConfirmationMessageException.into())
+            }
+            EndResult::USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE => Err(
+                SmartIdClientError::UserRefusedConfirmationMessageWithVerificationChoiceException
+                    .into(),
+            ),
+            _ => {
+                Err(SmartIdClientError::SmartIdClientException("Unknown session end result").into())
+            }
         }
     }
 }
-
 
 impl From<EndResult> for SmartIdClientError {
     fn from(val: EndResult) -> Self {
@@ -114,12 +132,24 @@ impl From<EndResult> for SmartIdClientError {
             EndResult::TIMEOUT => SmartIdClientError::SessionTimeoutException,
             EndResult::DOCUMENT_UNUSABLE => SmartIdClientError::DocumentUnusableException,
             EndResult::WRONG_VC => SmartIdClientError::UserSelectedWrongVerificationCodeException,
-            EndResult::REQUIRED_INTERACTION_NOT_SUPPORTED_BY_APP => SmartIdClientError::RequiredInteractionNotSupportedByAppException,
-            EndResult::USER_REFUSED_CERT_CHOICE => SmartIdClientError::UserRefusedCertChoiceException,
-            EndResult::USER_REFUSED_DISPLAYTEXTANDPIN => SmartIdClientError::UserRefusedDisplayTextAndPinException,
-            EndResult::USER_REFUSED_VC_CHOICE => SmartIdClientError::UserRefusedVerificationChoiceException,
-            EndResult::USER_REFUSED_CONFIRMATIONMESSAGE => SmartIdClientError::UserRefusedConfirmationMessageException,
-            EndResult::USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE => SmartIdClientError::UserRefusedConfirmationMessageWithVerificationChoiceException,
+            EndResult::REQUIRED_INTERACTION_NOT_SUPPORTED_BY_APP => {
+                SmartIdClientError::RequiredInteractionNotSupportedByAppException
+            }
+            EndResult::USER_REFUSED_CERT_CHOICE => {
+                SmartIdClientError::UserRefusedCertChoiceException
+            }
+            EndResult::USER_REFUSED_DISPLAYTEXTANDPIN => {
+                SmartIdClientError::UserRefusedDisplayTextAndPinException
+            }
+            EndResult::USER_REFUSED_VC_CHOICE => {
+                SmartIdClientError::UserRefusedVerificationChoiceException
+            }
+            EndResult::USER_REFUSED_CONFIRMATIONMESSAGE => {
+                SmartIdClientError::UserRefusedConfirmationMessageException
+            }
+            EndResult::USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE => {
+                SmartIdClientError::UserRefusedConfirmationMessageWithVerificationChoiceException
+            }
             _ => SmartIdClientError::SmartIdClientException("Unknown session end result"),
         }
     }

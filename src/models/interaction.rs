@@ -20,21 +20,13 @@ pub enum InteractionFlow {
 #[non_exhaustive]
 pub enum Interaction {
     #[serde(rename_all = "camelCase")]
-    DisplayTextAndPIN {
-        display_text_60: String,
-    },
+    DisplayTextAndPIN { display_text_60: String },
     #[serde(rename_all = "camelCase")]
-    ConfirmationMessage {
-        display_text_200: String,
-    },
+    ConfirmationMessage { display_text_200: String },
     #[serde(rename_all = "camelCase")]
-    VerificationCodeChoice {
-        display_text_60: String,
-    },
+    VerificationCodeChoice { display_text_60: String },
     #[serde(rename_all = "camelCase")]
-    ConfirmationMessageAndVerificationCodeChoice {
-        display_text_200: String,
-    },
+    ConfirmationMessageAndVerificationCodeChoice { display_text_200: String },
 }
 
 impl Interaction {
@@ -42,29 +34,40 @@ impl Interaction {
         match self {
             Interaction::DisplayTextAndPIN { display_text_60 } => {
                 if display_text_60.len() > 60 {
-                    return Err(SmartIdClientError::InvalidInteractionParametersException("Display text must be 60 characters or less").into());
+                    return Err(SmartIdClientError::InvalidInteractionParametersException(
+                        "Display text must be 60 characters or less",
+                    )
+                    .into());
                 }
-            },
+            }
             Interaction::ConfirmationMessage { display_text_200 } => {
                 if display_text_200.len() > 200 {
-                    return Err(SmartIdClientError::InvalidInteractionParametersException("Display text must be 200 characters or less").into());
+                    return Err(SmartIdClientError::InvalidInteractionParametersException(
+                        "Display text must be 200 characters or less",
+                    )
+                    .into());
                 }
-            },
+            }
             Interaction::VerificationCodeChoice { display_text_60 } => {
                 if display_text_60.len() > 60 {
-                    return Err(SmartIdClientError::InvalidInteractionParametersException("Display text must be 60 characters or less").into());
+                    return Err(SmartIdClientError::InvalidInteractionParametersException(
+                        "Display text must be 60 characters or less",
+                    )
+                    .into());
                 }
-            },
+            }
             Interaction::ConfirmationMessageAndVerificationCodeChoice { display_text_200 } => {
                 if display_text_200.len() > 200 {
-                    return Err(SmartIdClientError::InvalidInteractionParametersException("Display text must be 200 characters or less").into());
+                    return Err(SmartIdClientError::InvalidInteractionParametersException(
+                        "Display text must be 200 characters or less",
+                    )
+                    .into());
                 }
-            },
+            }
         }
         Ok(())
     }
 }
-
 
 // region: Interaction Tests
 #[cfg(test)]
@@ -80,7 +83,10 @@ mod interaction_tests {
             display_text_60: "Hello, World!".to_string(),
         };
         let serialized = serde_json::to_string(&interaction).unwrap();
-        assert_eq!(serialized, "{\"type\":\"displayTextAndPIN\",\"displayText60\":\"Hello, World!\"}");
+        assert_eq!(
+            serialized,
+            "{\"type\":\"displayTextAndPIN\",\"displayText60\":\"Hello, World!\"}"
+        );
     }
 
     #[traced_test]
@@ -138,7 +144,6 @@ mod interaction_tests {
         };
         assert!(invalid_interaction.validate_text_length().is_err());
     }
-
 }
 
 // endregion: Dynamic Link Tests

@@ -24,10 +24,18 @@ pub struct SignatureRequest {
 }
 
 impl SignatureRequest {
-    pub fn new(cfg: &SmartIDConfig, interactions: Vec<Interaction>, digest: String, signature_algorithm: SignatureAlgorithm) -> anyhow::Result<Self> {
+    pub fn new(
+        cfg: &SmartIDConfig,
+        interactions: Vec<Interaction>,
+        digest: String,
+        signature_algorithm: SignatureAlgorithm,
+    ) -> anyhow::Result<Self> {
         // At least one interaction is needed for every authentication request
         if interactions.is_empty() {
-            return Err(SmartIdClientError::ConfigMissingException("Define at least 1 interaction for an authentication request").into());
+            return Err(SmartIdClientError::ConfigMissingException(
+                "Define at least 1 interaction for an authentication request",
+            )
+            .into());
         };
 
         for interaction in &interactions {
@@ -95,18 +103,29 @@ mod tests {
         let digest = "test-digest".to_string();
         let signature_algorithm = SignatureAlgorithm::sha256WithRSAEncryption;
 
-        let sig_request = SignatureRequest::new(&cfg, interactions.clone(), digest.clone(), signature_algorithm.clone());
+        let sig_request = SignatureRequest::new(
+            &cfg,
+            interactions.clone(),
+            digest.clone(),
+            signature_algorithm.clone(),
+        );
 
         assert!(sig_request.is_ok(), "SignatureRequest::new should succeed");
         let sig_request = sig_request.unwrap();
         assert_eq!(sig_request.relying_party_uuid, "test-uuid");
         assert_eq!(sig_request.relying_party_name, "test-name");
         assert_eq!(sig_request.certificate_level, CertificateLevel::QUALIFIED);
-        assert_eq!(sig_request.signature_protocol, SignatureProtocol::RAW_DIGEST_SIGNATURE);
-        assert_eq!(sig_request.signature_protocol_parameters, SignatureRequestParameters::RAW_DIGEST_SIGNATURE {
-            digest,
-            signature_algorithm,
-        });
+        assert_eq!(
+            sig_request.signature_protocol,
+            SignatureProtocol::RAW_DIGEST_SIGNATURE
+        );
+        assert_eq!(
+            sig_request.signature_protocol_parameters,
+            SignatureRequestParameters::RAW_DIGEST_SIGNATURE {
+                digest,
+                signature_algorithm,
+            }
+        );
         assert_eq!(sig_request.allowed_interaction_order, interactions);
     }
 
@@ -123,6 +142,9 @@ mod tests {
 
         let sig_request = SignatureRequest::new(&cfg, interactions, digest, signature_algorithm);
 
-        assert!(sig_request.is_err(), "SignatureRequest::new should fail with no interactions");
+        assert!(
+            sig_request.is_err(),
+            "SignatureRequest::new should fail with no interactions"
+        );
     }
 }

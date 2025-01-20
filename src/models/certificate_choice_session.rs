@@ -29,7 +29,6 @@ impl CertificateChoiceRequest {
     }
 }
 
-
 // endregion
 
 // region CertificateChoiceSessionResponse
