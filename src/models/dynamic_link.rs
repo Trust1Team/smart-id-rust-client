@@ -1,5 +1,5 @@
-use base64::{Engine};
 use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
 use chrono::{DateTime, Utc};
 use hmac::{Hmac, Mac};
 use serde::{Deserialize, Serialize};
@@ -81,8 +81,8 @@ impl DynamicLink {
 // region: Dynamic Link Tests
 #[cfg(test)]
 mod tests {
-    use chrono::Duration;
     use super::*;
+    use chrono::Duration;
     use tracing_test::traced_test;
 
     fn qr_dynamic_link() -> DynamicLink {

@@ -1,10 +1,10 @@
+use crate::error::SmartIdClientError;
 use anyhow::{bail, Result};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fmt::Debug;
 use std::time::Duration;
-use tracing::{debug};
-use crate::error::SmartIdClientError;
+use tracing::debug;
 
 const HEADER_CONTENT_TYPE: &str = "content-type";
 const HEADER_CONTENT_TYPE_DEFAULT: &str = "application/json";

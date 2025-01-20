@@ -1,2 +1,9 @@
-pub mod v2;
-pub mod v3;
+pub mod authentication_session;
+pub mod certificate_choice_session;
+pub mod common;
+pub mod config;
+pub mod dynamic_link;
+pub mod interaction;
+pub mod session_status;
+pub mod signature;
+pub mod signature_session;

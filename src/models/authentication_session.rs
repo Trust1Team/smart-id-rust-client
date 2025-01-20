@@ -1,11 +1,11 @@
-use serde::{Deserialize, Serialize};
-use serde_with::skip_serializing_none;
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
-use crate::models::v3::common::{CertificateLevel, RequestProperties};
-use crate::models::v3::signature::{SignatureAlgorithm, SignatureRequestParameters};
-use crate::models::v3::interaction::Interaction;
+use crate::models::common::{CertificateLevel, RequestProperties};
+use crate::models::interaction::Interaction;
+use crate::models::signature::{SignatureAlgorithm, SignatureRequestParameters};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 // region AuthenticationSessionRequest
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -90,11 +90,12 @@ pub struct AuthenticationResponse {
 
 #[cfg(test)]
 mod tests {
-    use std::env;
     use super::*;
     use crate::config::SmartIDConfig;
+    use crate::models::interaction::Interaction;
     use crate::models::v3::interaction::Interaction;
     use crate::models::v3::signature::SignatureAlgorithm;
+    use std::env;
 
     fn setup() {
         env::set_var("HOST_URL", "https://sid.demo.sk.ee/smart-id-rp/v3");
