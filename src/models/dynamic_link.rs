@@ -1,4 +1,4 @@
-use base64::prelude::BASE64_STANDARD;
+use base64::prelude::{BASE64_STANDARD, BASE64_URL_SAFE};
 use base64::Engine;
 use chrono::{DateTime, Utc};
 use hmac::{Hmac, Mac};
@@ -37,17 +37,18 @@ pub(crate) struct DynamicLink {
 
 impl DynamicLink {
     pub(crate) fn payload(&self) -> String {
-        format!(
+        let link = format!(
             "{:?}.{:?}.{}",
             self.dynamic_link_type.clone(),
             self.session_type.clone(),
             self.elapsed_seconds()
-        )
+        );
+        link
     }
 
     pub fn generate_dynamic_link(&self) -> String {
         format!(
-            "{}?version={}&sessionToken=${}&dynamicLinkType={:?}&sessionType={:?}&elapsedSeconds=${}&lang={}&authCode=${}",
+            "{}?version={}&sessionToken={}&dynamicLinkType={:?}&sessionType={:?}&elapsedSeconds={}&lang={}&authCode={}",
             self.url.clone(),
             self.version.clone(),
             self.session_token.clone(),
@@ -62,17 +63,17 @@ impl DynamicLink {
     /// Generate a HMAC SHA256 code for the session
     /// As described here https://sk-eid.github.io/smart-id-documentation/rp-api/3.0.2/dynamic_link_flows.html#_dynamic_link_calculation
     pub(crate) fn generate_auth_code(&self) -> String {
-        let secret = self.session_secret.clone();
+        let secret = BASE64_STANDARD.decode(self.session_secret.clone()).unwrap();
         let payload = self.payload();
 
         let mut mac =
-            HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC can take key of any size");
+            HmacSha256::new_from_slice(secret.as_slice()).expect("HMAC can take key of any size");
         mac.update(payload.as_bytes());
 
         let result = mac.finalize();
         let code_bytes = result.into_bytes();
 
-        BASE64_STANDARD.encode(code_bytes)
+        BASE64_URL_SAFE.encode(code_bytes)
     }
 
     fn elapsed_seconds(&self) -> i64 {
@@ -123,10 +124,17 @@ mod tests {
     #[traced_test]
     #[tokio::test]
     async fn test_generate_auth_code() {
-        let dynamic_link = qr_dynamic_link();
+        let dynamic_link = DynamicLink {
+            session_secret: "ZspUAbC9eWgT3OXEu+vMyvUA".to_string(),
+            dynamic_link_type: DynamicLinkType::QR,
+            session_type: SessionType::auth,
+            ..qr_dynamic_link()
+        };
+
+        println!("{:?}", dynamic_link.generate_dynamic_link());
         assert_eq!(
             dynamic_link.generate_auth_code(),
-            "Up2D2TKv9Bm7xnaHm2+/0TKTpCQwNJNlto0r2opNmZo="
+            "WTtkXm95Hz1tImwoH96hfy8WjM2lAFg6P7d-B9Z73Ss="
         );
     }
 
@@ -147,7 +155,7 @@ mod tests {
     #[tokio::test]
     async fn test_generate_qr_code_url() {
         let dynamic_link = qr_dynamic_link();
-        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link/?version=0.1&sessionToken=$sessionToken&dynamicLinkType=QR&sessionType=auth&elapsedSeconds=$0&lang=eng&authCode=$Up2D2TKv9Bm7xnaHm2+/0TKTpCQwNJNlto0r2opNmZo=");
+        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link/?version=0.1&sessionToken=sessionToken&dynamicLinkType=QR&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=Up2D2TKv9Bm7xnaHm2+/0TKTpCQwNJNlto0r2opNmZo=");
     }
 
     #[traced_test]
@@ -157,7 +165,7 @@ mod tests {
             dynamic_link_type: DynamicLinkType::Web2App,
             ..qr_dynamic_link()
         };
-        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link/?version=0.1&sessionToken=$sessionToken&dynamicLinkType=Web2App&sessionType=auth&elapsedSeconds=$0&lang=eng&authCode=$NIzRld8sfsiG41kunWZMTv8II5dXf/g9pVwzQmFmSmA=");
+        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link/?version=0.1&sessionToken=sessionToken&dynamicLinkType=Web2App&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=NIzRld8sfsiG41kunWZMTv8II5dXf/g9pVwzQmFmSmA=");
     }
 }
 
