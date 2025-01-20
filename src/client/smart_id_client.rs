@@ -417,7 +417,7 @@ impl SmartIdClientV3 {
                 ..
             } => {
                 let dynamic_link = DynamicLink {
-                    url: self.cfg.api_url(),
+                    url: self.cfg.dynamic_link_url(),
                     version: "0.1".to_string(), //TODO: store this somewhere
                     session_token,
                     session_secret,
@@ -437,7 +437,7 @@ impl SmartIdClientV3 {
                 ..
             } => {
                 let dynamic_link = DynamicLink {
-                    url: self.cfg.api_url(),
+                    url: self.cfg.dynamic_link_url(),
                     version: "0.1".to_string(), //TODO: store this somewhere
                     session_token,
                     session_secret,
