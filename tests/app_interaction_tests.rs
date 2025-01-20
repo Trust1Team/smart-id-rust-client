@@ -13,15 +13,22 @@ use smart_id_rust_client::models::signature_session::SignatureRequest;
 use std::env;
 use tracing::info;
 
-const DOCUMENT_ID: &str = "document-id";
-const ETSI_ID: &str = "etsi-id";
-const RELYING_PARTY_NAME: &str = "DEMO Trust1";
-const RELYING_PARTY_UUID: &str = "02cea32b-7a50-4855-b804-3696573a355c";
+const ROOT_URL: &str = "https://sid.demo.sk.ee";
+const V3_API_PATH: &str = "/smart-id-rp/v3";
+const DYNAMIC_LINK_PATH: &str = "/dynamic-link";
+const RELYING_PARTY_NAME: &str = "YOUR_RELYING_PARTY_NAME";
+const RELYING_PARTY_UUID: &str = "YOUR_RELYING_PARTY_UUID";
+const DOCUMENT_ID: &str = "YOUR_DOCUMENT_ID";
+const ETSI_ID: &str = "YOUR_ETSI_ID";
+
 
 fn setup() {
-    env::set_var("HOST_URL", "https://sid.demo.sk.ee/smart-id-rp/v3");
+    env::set_var("ROOT_URL", ROOT_URL);
+    env::set_var("V3_API_PATH", V3_API_PATH);
+    env::set_var("DYNAMIC_LINK_PATH", DYNAMIC_LINK_PATH);
     env::set_var("RELYING_PARTY_NAME", RELYING_PARTY_NAME);
     env::set_var("RELYING_PARTY_UUID", RELYING_PARTY_UUID);
+    env::set_var("CLIENT_REQ_NETWORK_TIMEOUT_MILLIS", "30000");
 }
 
 #[tokio::test]
