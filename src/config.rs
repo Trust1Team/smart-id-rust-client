@@ -25,11 +25,11 @@ impl SmartIDConfig {
     }
 
     pub fn api_url(&self) -> String {
-        format!("{}/{}", self.root_url, self.api_path)
+        format!("{}{}", self.root_url, self.api_path)
     }
 
     pub fn dynamic_link_url(&self) -> String {
-        format!("{}/{}", self.root_url, self.dynamic_link_path)
+        format!("{}{}", self.root_url, self.dynamic_link_path)
     }
 }
 
