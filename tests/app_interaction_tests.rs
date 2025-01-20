@@ -1,18 +1,17 @@
-use std::env;
-use smart_id_rust_client::models::v3::authentication_session::AuthenticationRequest;
-use smart_id_rust_client::models::v3::signature_session::SignatureRequest;
-use smart_id_rust_client::models::v3::dynamic_link::DynamicLinkType;
-use smart_id_rust_client::models::v3::interaction::Interaction;
-use smart_id_rust_client::models::v3::signature::SignatureAlgorithm;
 use anyhow::Result;
 use image::Luma;
 use qrcode::QrCode;
-use tracing::info;
-use smart_id_rust_client::client::v3::smart_id_client::SmartIdClientV3;
+use smart_id_rust_client::client::smart_id_client::SmartIdClientV3;
 use smart_id_rust_client::config::SmartIDConfig;
-use smart_id_rust_client::models::APIVersion;
-use smart_id_rust_client::models::v3::certificate_choice_session::CertificateChoiceRequest;
-use smart_id_rust_client::models::v3::session_status::EndResult;
+use smart_id_rust_client::models::authentication_session::AuthenticationRequest;
+use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceRequest;
+use smart_id_rust_client::models::dynamic_link::DynamicLinkType;
+use smart_id_rust_client::models::interaction::Interaction;
+use smart_id_rust_client::models::session_status::EndResult;
+use smart_id_rust_client::models::signature_session::SignatureRequest;
+use std::env;
+use tracing::info;
+use smart_id_rust_client::models::signature::SignatureAlgorithm;
 
 const DOCUMENT_ID: &str = "document-id";
 const ETSI_ID: &str = "etsi-id";
@@ -29,7 +28,7 @@ fn setup() {
 #[ignore]
 async fn test_authentication_qr() -> Result<()> {
     setup();
-    let cfg = SmartIDConfig::load_from_env(APIVersion::V2)?;
+    let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClientV3::new(&cfg).await;
 
     let authentication_request = AuthenticationRequest::new(
@@ -64,7 +63,7 @@ async fn test_authentication_qr() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_authentication_web_to_app() -> Result<()> {
-    let cfg = SmartIDConfig::load_from_env(APIVersion::V2)?;
+    let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClientV3::new(&cfg).await;
 
     let authentication_request = AuthenticationRequest::new(
@@ -88,7 +87,7 @@ async fn test_authentication_web_to_app() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_signature_qr() -> Result<()> {
-    let cfg = SmartIDConfig::load_from_env(APIVersion::V2)?;
+    let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClientV3::new(&cfg).await;
 
     let signature_request = SignatureRequest::new(
@@ -113,7 +112,7 @@ async fn test_signature_qr() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_certificate_choice_qr() -> Result<()> {
-    let cfg = SmartIDConfig::load_from_env(APIVersion::V2)?;
+    let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClientV3::new(&cfg).await;
 
     let certificate_choice_request = CertificateChoiceRequest::new(&cfg).await;

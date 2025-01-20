@@ -1,10 +1,10 @@
+use crate::error::SmartIdClientError;
+use crate::models::authentication_session::{AuthenticationRequest, AuthenticationResponse};
+use crate::models::certificate_choice_session::{CertificateChoiceRequest, CertificateChoiceResponse};
+use crate::models::signature_session::{SignatureRequest, SignatureRequestResponse};
+use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::models::v3::authentication_session::{AuthenticationRequest, AuthenticationResponse};
-use crate::models::v3::certificate_choice_session::{CertificateChoiceResponse, CertificateChoiceRequest};
-use crate::models::v3::signature_session::{SignatureRequest, SignatureRequestResponse};
-use anyhow::Result;
-use crate::error::SmartIdClientError;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

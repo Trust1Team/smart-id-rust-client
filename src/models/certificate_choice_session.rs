@@ -1,7 +1,7 @@
+use crate::config::SmartIDConfig;
+use crate::models::common::{CertificateLevel, RequestProperties};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
-use crate::config::SmartIDConfig;
-use crate::models::v3::common::{CertificateLevel, RequestProperties};
 
 // region CertificateChoiceSessionRequest
 

@@ -1,6 +1,6 @@
+use crate::error::SmartIdClientError;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
-use crate::error::SmartIdClientError;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 #[skip_serializing_none]

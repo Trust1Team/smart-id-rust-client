@@ -1,10 +1,9 @@
-use serde::{Deserialize, Serialize};
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
-use crate::models::v2::requests::RequestProperties;
-use crate::models::v3::common::CertificateLevel;
-use crate::models::v3::interaction::Interaction;
-use crate::models::v3::signature::{SignatureAlgorithm, SignatureProtocol, SignatureRequestParameters};
+use crate::models::common::{CertificateLevel, RequestProperties};
+use crate::models::interaction::Interaction;
+use crate::models::signature::{SignatureAlgorithm, SignatureProtocol, SignatureRequestParameters};
+use serde::{Deserialize, Serialize};
 
 // region SignatureSessionRequest
 
@@ -69,11 +68,14 @@ pub struct SignatureRequestResponse {
 
 #[cfg(test)]
 mod tests {
-    use std::env;
     use super::*;
     use crate::config::SmartIDConfig;
+    use crate::models::common::CertificateLevel;
+    use crate::models::interaction::Interaction;
+    use crate::models::signature::{SignatureProtocol, SignatureRequestParameters};
     use crate::models::v3::interaction::Interaction;
     use crate::models::v3::signature::SignatureAlgorithm;
+    use std::env;
 
     fn setup() {
         env::set_var("HOST_URL", "https://sid.demo.sk.ee/smart-id-rp/v3");

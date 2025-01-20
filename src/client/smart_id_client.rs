@@ -1,21 +1,21 @@
-use std::sync::{Arc, Mutex};
 use crate::client::reqwest_generic::{get, post};
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
-use crate::error::SmartIdClientError::{NoSessionException};
-use crate::models::v3::common::SessionConfig;
-use crate::models::v3::session_status::{SessionState, SessionStatus};
-use anyhow::{Result};
-use base64::Engine;
+use crate::error::SmartIdClientError::NoSessionException;
+use crate::models::authentication_session::{AuthenticationRequest, AuthenticationResponse};
+use crate::models::certificate_choice_session::{CertificateChoiceRequest, CertificateChoiceResponse};
+use crate::models::common::SessionConfig;
+use crate::models::dynamic_link::{DynamicLink, DynamicLinkType, SessionType};
+use crate::models::session_status::{SessionState, SessionStatus};
+use crate::models::signature_session::{SignatureRequest, SignatureRequestResponse};
+use crate::utils::sec_x509::validate_certificate;
+use anyhow::Result;
 use base64::prelude::BASE64_STANDARD;
-use tracing::{debug};
+use base64::Engine;
+use std::sync::{Arc, Mutex};
+use tracing::debug;
 use x509_parser::certificate::X509Certificate;
 use x509_parser::prelude::FromDer;
-use crate::models::v3::authentication_session::{AuthenticationRequest, AuthenticationResponse};
-use crate::models::v3::certificate_choice_session::{CertificateChoiceResponse, CertificateChoiceRequest};
-use crate::models::v3::dynamic_link::{DynamicLink, DynamicLinkType, SessionType};
-use crate::models::v3::signature_session::{SignatureRequest, SignatureRequestResponse};
-use crate::utils::sec_x509::validate_certificate;
 
 // region: Path definitions
 // Copied from https://github.com/SK-EID/smart-id-java-client/blob/81e48f519bf882db8584a344b161db378b959093/src/main/java/ee/sk/smartid/v3/rest/SmartIdRestConnector.java#L79
@@ -40,7 +40,7 @@ const NOTIFICATION_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str = "/authentica
 
 // endregion: Path definitions
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct SmartIdClientV3 {
     pub cfg: SmartIDConfig,
     // This tracks session state and is used to make subsequent requests
@@ -94,7 +94,7 @@ impl SmartIdClientV3 {
 
         let path = format!(
             "{}{}/{}?timeoutMs={}",
-            self.cfg.url,
+            self.cfg.api_url(),
             SESSION_STATUS_URI,
             session_config.session_id(),
             timeout_ms
@@ -130,7 +130,7 @@ impl SmartIdClientV3 {
     pub async fn start_authentication_dynamic_link_anonymous_session(&self, authentication_request: AuthenticationRequest) -> Result<()> {
         let path = format!(
             "{}{}",
-            self.cfg.url,
+            self.cfg.api_url(),
             ANONYMOUS_DYNAMIC_LINK_AUTHENTICATION_PATH,
         );
 
@@ -153,7 +153,7 @@ impl SmartIdClientV3 {
     pub async fn start_authentication_dynamic_link_document_session(&self, authentication_request: AuthenticationRequest, document_number: String) -> Result<()> {
         let path = format!(
             "{}{}/{}",
-            self.cfg.url,
+            self.cfg.api_url(),
             DYNAMIC_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH,
             document_number,
         );
@@ -177,7 +177,7 @@ impl SmartIdClientV3 {
     pub async fn start_authentication_dynamic_link_etsi_session(&self, authentication_request: AuthenticationRequest, etsi: String) -> Result<()> {
         let path = format!(
             "{}{}/{}",
-            self.cfg.url,
+            self.cfg.api_url(),
             DYNAMIC_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH,
             etsi,
         );
@@ -205,7 +205,7 @@ impl SmartIdClientV3 {
     pub async fn start_signature_dynamic_link_etsi_session(&self, signature_request: SignatureRequest, etsi: String) -> Result<()> {
         let path = format!(
             "{}{}/{}",
-            self.cfg.url,
+            self.cfg.api_url(),
             DYNAMIC_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH,
             etsi,
         );
@@ -229,7 +229,7 @@ impl SmartIdClientV3 {
     pub async fn start_signature_dynamic_link_document_session(&self, signature_request: SignatureRequest, document_number: String) -> Result<()> {
         let path = format!(
             "{}{}/{}",
-            self.cfg.url,
+            self.cfg.api_url(),
             DYNAMIC_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH,
             document_number,
         );
@@ -256,7 +256,7 @@ impl SmartIdClientV3 {
     pub async fn start_certificate_choice_notification_etsi_session(&self, certificate_choice_request: CertificateChoiceRequest, etsi: String) -> Result<()> {
         let path = format!(
             "{}{}/{}",
-            self.cfg.url,
+            self.cfg.api_url(),
             NOTIFICATION_CERTIFICATE_CHOICE_WITH_SEMANTIC_IDENTIFIER_PATH,
             etsi,
         );
@@ -280,7 +280,7 @@ impl SmartIdClientV3 {
     pub async fn start_certificate_choice_notification_document_session(&self, certificate_choice_request: CertificateChoiceRequest, document_number: String) -> Result<()> {
         let path = format!(
             "{}{}/{}",
-            self.cfg.url,
+            self.cfg.api_url(),
             NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH,
             document_number,
         );
@@ -315,7 +315,7 @@ impl SmartIdClientV3 {
         match session {
             SessionConfig::Authentication { session_secret, session_token, session_start_time, .. } => {
                 let dynamic_link = DynamicLink {
-                    url: self.cfg.url.clone(),
+                    url: self.cfg.api_url(),
                     version: "0.1".to_string(), //TODO: store this somewhere
                     session_token,
                     session_secret,
@@ -330,7 +330,7 @@ impl SmartIdClientV3 {
             }
             SessionConfig::Signature { session_secret, session_token, session_start_time, .. } => {
                 let dynamic_link = DynamicLink {
-                    url: self.cfg.url.clone(),
+                    url: self.cfg.api_url(),
                     version: "0.1".to_string(), //TODO: store this somewhere
                     session_token,
                     session_secret,

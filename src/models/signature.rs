@@ -1,13 +1,13 @@
-use base64::Engine;
+use crate::error::SmartIdClientError;
+use anyhow::Result;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use rand_chacha::ChaCha20Rng;
+use base64::Engine;
 use rand::{thread_rng, Rng};
 use rand_chacha::rand_core::{RngCore, SeedableRng};
-use serde::{Deserialize, Serialize};
-use anyhow::Result;
+use rand_chacha::ChaCha20Rng;
 use ring::signature::{VerificationAlgorithm, RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384, RSA_PKCS1_2048_8192_SHA512};
+use serde::{Deserialize, Serialize};
 use x509_parser::der_parser::asn1_rs::BitString;
-use crate::error::SmartIdClientError;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[allow(non_camel_case_types)]
