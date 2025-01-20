@@ -3,7 +3,9 @@ use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
 use crate::error::SmartIdClientError::NoSessionException;
 use crate::models::authentication_session::{AuthenticationRequest, AuthenticationResponse};
-use crate::models::certificate_choice_session::{CertificateChoiceRequest, CertificateChoiceResponse};
+use crate::models::certificate_choice_session::{
+    CertificateChoiceRequest, CertificateChoiceResponse,
+};
 use crate::models::common::SessionConfig;
 use crate::models::dynamic_link::{DynamicLink, DynamicLinkType, SessionType};
 use crate::models::session_status::{SessionState, SessionStatus};
@@ -20,8 +22,10 @@ use x509_parser::prelude::FromDer;
 // region: Path definitions
 // Copied from https://github.com/SK-EID/smart-id-java-client/blob/81e48f519bf882db8584a344b161db378b959093/src/main/java/ee/sk/smartid/v3/rest/SmartIdRestConnector.java#L79
 const SESSION_STATUS_URI: &str = "/session";
-const NOTIFICATION_CERTIFICATE_CHOICE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/certificatechoice/notification/etsi";
-const NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH: &str = "/certificatechoice/notification/document";
+const NOTIFICATION_CERTIFICATE_CHOICE_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
+    "/certificatechoice/notification/etsi";
+const NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH: &str =
+    "/certificatechoice/notification/document";
 
 const DYNAMIC_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/dynamic-link/etsi";
 const DYNAMIC_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/dynamic-link/document";
@@ -31,12 +35,16 @@ const NOTIFICATION_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/n
 const NOTIFICATION_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/notification/document";
 
 const ANONYMOUS_DYNAMIC_LINK_AUTHENTICATION_PATH: &str = "/authentication/dynamic-link/anonymous";
-const DYNAMIC_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/authentication/dynamic-link/etsi";
-const DYNAMIC_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str = "/authentication/dynamic-link/document";
+const DYNAMIC_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
+    "/authentication/dynamic-link/etsi";
+const DYNAMIC_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str =
+    "/authentication/dynamic-link/document";
 #[allow(dead_code)]
-const NOTIFICATION_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/authentication/notification/etsi";
+const NOTIFICATION_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
+    "/authentication/notification/etsi";
 #[allow(dead_code)]
-const NOTIFICATION_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str = "/authentication/notification/document";
+const NOTIFICATION_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str =
+    "/authentication/notification/document";
 
 // endregion: Path definitions
 
@@ -100,7 +108,8 @@ impl SmartIdClientV3 {
             timeout_ms
         );
 
-        let session_status = get::<SessionStatus>(path.as_str(), self.cfg.client_request_timeout).await?;
+        let session_status =
+            get::<SessionStatus>(path.as_str(), self.cfg.client_request_timeout).await?;
 
         match session_status.state {
             SessionState::COMPLETE => {
@@ -108,7 +117,9 @@ impl SmartIdClientV3 {
                 self.clear_session();
                 Ok(session_status)
             }
-            SessionState::RUNNING => Err(SmartIdClientError::SessionDidNotCompleteInTimoutError.into())
+            SessionState::RUNNING => {
+                Err(SmartIdClientError::SessionDidNotCompleteInTimoutError.into())
+            }
         }
     }
 
@@ -127,15 +138,26 @@ impl SmartIdClientV3 {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_authentication_dynamic_link_anonymous_session(&self, authentication_request: AuthenticationRequest) -> Result<()> {
+    pub async fn start_authentication_dynamic_link_anonymous_session(
+        &self,
+        authentication_request: AuthenticationRequest,
+    ) -> Result<()> {
         let path = format!(
             "{}{}",
             self.cfg.api_url(),
             ANONYMOUS_DYNAMIC_LINK_AUTHENTICATION_PATH,
         );
 
-        let session = post::<AuthenticationRequest, AuthenticationResponse>(path.as_str(), &authentication_request, self.cfg.client_request_timeout).await?;
-        self.set_session(SessionConfig::from_authentication_response(session, authentication_request)?)
+        let session = post::<AuthenticationRequest, AuthenticationResponse>(
+            path.as_str(),
+            &authentication_request,
+            self.cfg.client_request_timeout,
+        )
+        .await?;
+        self.set_session(SessionConfig::from_authentication_response(
+            session,
+            authentication_request,
+        )?)
     }
 
     /// Starts an authentication session with a document using a dynamic link.
@@ -150,7 +172,11 @@ impl SmartIdClientV3 {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_authentication_dynamic_link_document_session(&self, authentication_request: AuthenticationRequest, document_number: String) -> Result<()> {
+    pub async fn start_authentication_dynamic_link_document_session(
+        &self,
+        authentication_request: AuthenticationRequest,
+        document_number: String,
+    ) -> Result<()> {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -158,8 +184,16 @@ impl SmartIdClientV3 {
             document_number,
         );
 
-        let session = post::<AuthenticationRequest, AuthenticationResponse>(path.as_str(), &authentication_request, self.cfg.client_request_timeout).await?;
-        self.set_session(SessionConfig::from_authentication_response(session, authentication_request)?)
+        let session = post::<AuthenticationRequest, AuthenticationResponse>(
+            path.as_str(),
+            &authentication_request,
+            self.cfg.client_request_timeout,
+        )
+        .await?;
+        self.set_session(SessionConfig::from_authentication_response(
+            session,
+            authentication_request,
+        )?)
     }
 
     /// Starts an authentication session with an etsi using a dynamic link.
@@ -174,7 +208,11 @@ impl SmartIdClientV3 {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_authentication_dynamic_link_etsi_session(&self, authentication_request: AuthenticationRequest, etsi: String) -> Result<()> {
+    pub async fn start_authentication_dynamic_link_etsi_session(
+        &self,
+        authentication_request: AuthenticationRequest,
+        etsi: String,
+    ) -> Result<()> {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -182,8 +220,16 @@ impl SmartIdClientV3 {
             etsi,
         );
 
-        let session = post::<AuthenticationRequest, AuthenticationResponse>(path.as_str(), &authentication_request, self.cfg.client_request_timeout).await?;
-        self.set_session(SessionConfig::from_authentication_response(session, authentication_request)?)
+        let session = post::<AuthenticationRequest, AuthenticationResponse>(
+            path.as_str(),
+            &authentication_request,
+            self.cfg.client_request_timeout,
+        )
+        .await?;
+        self.set_session(SessionConfig::from_authentication_response(
+            session,
+            authentication_request,
+        )?)
     }
 
     // endregion: Authentication
@@ -202,7 +248,11 @@ impl SmartIdClientV3 {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_signature_dynamic_link_etsi_session(&self, signature_request: SignatureRequest, etsi: String) -> Result<()> {
+    pub async fn start_signature_dynamic_link_etsi_session(
+        &self,
+        signature_request: SignatureRequest,
+        etsi: String,
+    ) -> Result<()> {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -210,8 +260,16 @@ impl SmartIdClientV3 {
             etsi,
         );
 
-        let session = post::<SignatureRequest, SignatureRequestResponse>(path.as_str(), &signature_request, self.cfg.client_request_timeout).await?;
-        self.set_session(SessionConfig::from_signature_request_response(session, signature_request)?)
+        let session = post::<SignatureRequest, SignatureRequestResponse>(
+            path.as_str(),
+            &signature_request,
+            self.cfg.client_request_timeout,
+        )
+        .await?;
+        self.set_session(SessionConfig::from_signature_request_response(
+            session,
+            signature_request,
+        )?)
     }
 
     /// Starts a signature session using a dynamic link and a document number.
@@ -226,7 +284,11 @@ impl SmartIdClientV3 {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_signature_dynamic_link_document_session(&self, signature_request: SignatureRequest, document_number: String) -> Result<()> {
+    pub async fn start_signature_dynamic_link_document_session(
+        &self,
+        signature_request: SignatureRequest,
+        document_number: String,
+    ) -> Result<()> {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -234,8 +296,16 @@ impl SmartIdClientV3 {
             document_number,
         );
 
-        let session = post::<SignatureRequest, SignatureRequestResponse>(path.as_str(), &signature_request, self.cfg.client_request_timeout).await?;
-        self.set_session(SessionConfig::from_signature_request_response(session, signature_request)?)
+        let session = post::<SignatureRequest, SignatureRequestResponse>(
+            path.as_str(),
+            &signature_request,
+            self.cfg.client_request_timeout,
+        )
+        .await?;
+        self.set_session(SessionConfig::from_signature_request_response(
+            session,
+            signature_request,
+        )?)
     }
 
     // endregion: Signature
@@ -253,7 +323,11 @@ impl SmartIdClientV3 {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_certificate_choice_notification_etsi_session(&self, certificate_choice_request: CertificateChoiceRequest, etsi: String) -> Result<()> {
+    pub async fn start_certificate_choice_notification_etsi_session(
+        &self,
+        certificate_choice_request: CertificateChoiceRequest,
+        etsi: String,
+    ) -> Result<()> {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -261,10 +335,17 @@ impl SmartIdClientV3 {
             etsi,
         );
 
-        let session = post::<CertificateChoiceRequest, CertificateChoiceResponse>(path.as_str(), &certificate_choice_request, self.cfg.client_request_timeout).await?;
-        self.set_session(SessionConfig::from_certificate_choice_response(session, certificate_choice_request))
+        let session = post::<CertificateChoiceRequest, CertificateChoiceResponse>(
+            path.as_str(),
+            &certificate_choice_request,
+            self.cfg.client_request_timeout,
+        )
+        .await?;
+        self.set_session(SessionConfig::from_certificate_choice_response(
+            session,
+            certificate_choice_request,
+        ))
     }
-
 
     /// Starts a certificate choice session using a notification and document id.
     /// Use the get_session_status method to poll for the result.
@@ -277,7 +358,11 @@ impl SmartIdClientV3 {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_certificate_choice_notification_document_session(&self, certificate_choice_request: CertificateChoiceRequest, document_number: String) -> Result<()> {
+    pub async fn start_certificate_choice_notification_document_session(
+        &self,
+        certificate_choice_request: CertificateChoiceRequest,
+        document_number: String,
+    ) -> Result<()> {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -285,8 +370,16 @@ impl SmartIdClientV3 {
             document_number,
         );
 
-        let session = post::<CertificateChoiceRequest, CertificateChoiceResponse>(path.as_str(), &certificate_choice_request, self.cfg.client_request_timeout).await?;
-        self.set_session(SessionConfig::from_certificate_choice_response(session, certificate_choice_request))
+        let session = post::<CertificateChoiceRequest, CertificateChoiceResponse>(
+            path.as_str(),
+            &certificate_choice_request,
+            self.cfg.client_request_timeout,
+        )
+        .await?;
+        self.set_session(SessionConfig::from_certificate_choice_response(
+            session,
+            certificate_choice_request,
+        ))
     }
 
     // endregion
@@ -309,11 +402,20 @@ impl SmartIdClientV3 {
     /// This function will return an error if:
     /// - There is no running session.
     /// - The session type is `CertificateChoice`.
-    pub fn generate_dynamic_link(&self, dynamic_link_type: DynamicLinkType, language_code: &str) -> Result<String> {
+    pub fn generate_dynamic_link(
+        &self,
+        dynamic_link_type: DynamicLinkType,
+        language_code: &str,
+    ) -> Result<String> {
         let session: SessionConfig = self.get_session()?;
 
         match session {
-            SessionConfig::Authentication { session_secret, session_token, session_start_time, .. } => {
+            SessionConfig::Authentication {
+                session_secret,
+                session_token,
+                session_start_time,
+                ..
+            } => {
                 let dynamic_link = DynamicLink {
                     url: self.cfg.api_url(),
                     version: "0.1".to_string(), //TODO: store this somewhere
@@ -328,7 +430,12 @@ impl SmartIdClientV3 {
                 debug!("Generated dynamic link: {}", dynamic_link);
                 Ok(dynamic_link)
             }
-            SessionConfig::Signature { session_secret, session_token, session_start_time, .. } => {
+            SessionConfig::Signature {
+                session_secret,
+                session_token,
+                session_start_time,
+                ..
+            } => {
                 let dynamic_link = DynamicLink {
                     url: self.cfg.api_url(),
                     version: "0.1".to_string(), //TODO: store this somewhere
@@ -343,8 +450,11 @@ impl SmartIdClientV3 {
                 debug!("Generated dynamic link: {}", dynamic_link);
                 Ok(dynamic_link)
             }
-            SessionConfig::CertificateChoice { .. }  => {
-                Err(SmartIdClientError::GenerateDynamicLinkException("Can't generate dynamic link for certificate choice session").into())
+            SessionConfig::CertificateChoice { .. } => {
+                Err(SmartIdClientError::GenerateDynamicLinkException(
+                    "Can't generate dynamic link for certificate choice session",
+                )
+                .into())
             }
         }
     }
@@ -381,7 +491,11 @@ impl SmartIdClientV3 {
     /// - The signature is missing or invalid.
     /// - The session did not complete successfully.
     /// - The session result is not OK.
-    fn validate_session_status(&self, session_status: SessionStatus, session_config: SessionConfig) -> Result<()> {
+    fn validate_session_status(
+        &self,
+        session_status: SessionStatus,
+        session_config: SessionConfig,
+    ) -> Result<()> {
         match session_status.result {
             Some(session_result) => {
                 // Return an error if the session result is not OK
@@ -389,14 +503,25 @@ impl SmartIdClientV3 {
 
                 let cert = match session_status.cert {
                     Some(cert) => cert,
-                    None => return Err(SmartIdClientError::SessionResponseMissingCertificate.into())
+                    None => {
+                        return Err(SmartIdClientError::SessionResponseMissingCertificate.into())
+                    }
                 };
 
                 // Validate the certificate chain and check for expiration
                 validate_certificate(&cert.value)?;
 
-                let decoded_cert = BASE64_STANDARD.decode(&cert.value).map_err(|_| SmartIdClientError::FailedToValidateSessionResponseCertificate("Could not decode base64 certificate"))?;
-                let (_, parsed_cert) = X509Certificate::from_der(decoded_cert.as_slice()).map_err(|_| SmartIdClientError::FailedToValidateSessionResponseCertificate("Failed to parse certificate"))?;
+                let decoded_cert = BASE64_STANDARD.decode(&cert.value).map_err(|_| {
+                    SmartIdClientError::FailedToValidateSessionResponseCertificate(
+                        "Could not decode base64 certificate",
+                    )
+                })?;
+                let (_, parsed_cert) =
+                    X509Certificate::from_der(decoded_cert.as_slice()).map_err(|_| {
+                        SmartIdClientError::FailedToValidateSessionResponseCertificate(
+                            "Failed to parse certificate",
+                        )
+                    })?;
 
                 // The identity of the authenticated person is in the subject field or subjectAltName extension of the X.509 certificate.
                 // TODO: Find the subject to validate against
@@ -409,17 +534,21 @@ impl SmartIdClientV3 {
                 // signature.value is the valid signature over the expected hash as described in Signature protocols, which was submitted by the RP verified using the public key from cert.value.
                 let signature = match session_status.signature {
                     Some(signature) => signature,
-                    None => return Err(SmartIdClientError::SessionResponseMissingSignature.into())
+                    None => return Err(SmartIdClientError::SessionResponseMissingSignature.into()),
                 };
 
                 match session_config {
-                    SessionConfig::Authentication { random_challenge, .. } => {
-                        signature.validate_acsp_v1(random_challenge, parsed_cert.public_key().clone().subject_public_key)
-                    }
-                    SessionConfig::Signature { digest, .. } => {
-                        signature.validate_raw_digest(digest, parsed_cert.public_key().clone().subject_public_key)
-                    }
-                    SessionConfig::CertificateChoice { .. }=> {
+                    SessionConfig::Authentication {
+                        random_challenge, ..
+                    } => signature.validate_acsp_v1(
+                        random_challenge,
+                        parsed_cert.public_key().clone().subject_public_key,
+                    ),
+                    SessionConfig::Signature { digest, .. } => signature.validate_raw_digest(
+                        digest,
+                        parsed_cert.public_key().clone().subject_public_key,
+                    ),
+                    SessionConfig::CertificateChoice { .. } => {
                         debug!("No validation needed for certificate choice session");
                         Ok(())
                     }
@@ -427,16 +556,12 @@ impl SmartIdClientV3 {
 
                 Ok(())
             }
-            None => {
-                match session_status.state {
-                    SessionState::RUNNING => {
-                        Ok(())
-                    }
-                    SessionState::COMPLETE => {
-                        Err(SmartIdClientError::AuthenticationSessionCompletedWithoutResult.into())
-                    }
+            None => match session_status.state {
+                SessionState::RUNNING => Ok(()),
+                SessionState::COMPLETE => {
+                    Err(SmartIdClientError::AuthenticationSessionCompletedWithoutResult.into())
                 }
-            }
+            },
         }
     }
 
@@ -481,5 +606,4 @@ impl SmartIdClientV3 {
     }
 
     // endregion: Utility functions
-
 }

@@ -38,5 +38,7 @@ fn get_env(name: &'static str) -> anyhow::Result<String> {
 }
 
 fn get_env_u64(name: &'static str) -> anyhow::Result<u64> {
-    env::var(name)?.parse().map_err(|_| SmartIdClientError::ConfigMissingException(name).into())
+    env::var(name)?
+        .parse()
+        .map_err(|_| SmartIdClientError::ConfigMissingException(name).into())
 }

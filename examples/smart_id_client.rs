@@ -4,7 +4,9 @@ use smart_id_rust_client::config::SmartIDConfig;
 use smart_id_rust_client::models::authentication_session::AuthenticationRequest;
 use smart_id_rust_client::models::dynamic_link::DynamicLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
-use smart_id_rust_client::models::semantic_identifier::{CountryCode, IdentityType, SemanticsIdentifier};
+use smart_id_rust_client::models::semantic_identifier::{
+    CountryCode, IdentityType, SemanticsIdentifier,
+};
 use smart_id_rust_client::models::signature::SignatureAlgorithm;
 use smart_id_rust_client::models::signature_session::SignatureRequest;
 use tracing::{info, Level};
@@ -44,16 +46,21 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn uc_authentication_request_example(cfg: &SmartIDConfig, smart_id_client: &SmartIdClientV3) -> Result<()> {
+async fn uc_authentication_request_example(
+    cfg: &SmartIDConfig,
+    smart_id_client: &SmartIdClientV3,
+) -> Result<()> {
     let authentication_request = AuthenticationRequest::new(
         &cfg,
-        vec!(Interaction::DisplayTextAndPIN {
-            display_text_60: "Authenticate to Application: Test".to_string()
-        }),
-        SignatureAlgorithm::sha512WithRSAEncryption
+        vec![Interaction::DisplayTextAndPIN {
+            display_text_60: "Authenticate to Application: Test".to_string(),
+        }],
+        SignatureAlgorithm::sha512WithRSAEncryption,
     )?;
 
-    smart_id_client.start_authentication_dynamic_link_anonymous_session(authentication_request).await?;
+    smart_id_client
+        .start_authentication_dynamic_link_anonymous_session(authentication_request)
+        .await?;
 
     // This link can be displayed as QR code
     // The user can scan the QR code with the device that has the Smart-ID app installed
@@ -71,24 +78,28 @@ async fn uc_authentication_request_example(cfg: &SmartIDConfig, smart_id_client:
     let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::Web2App, "en")?;
     info!("{:?}", web_to_app_link);
 
-
     // This will long poll the session status
     let result = smart_id_client.get_session_status(12000).await?;
     info!("{:?}", result.result.unwrap().end_result);
     Ok(())
 }
 
-async fn uc_signature_request_example(cfg: &SmartIDConfig, smart_id_client: &SmartIdClientV3) -> Result<String> {
+async fn uc_signature_request_example(
+    cfg: &SmartIDConfig,
+    smart_id_client: &SmartIdClientV3,
+) -> Result<String> {
     let signature_request = SignatureRequest::new(
         &cfg,
-        vec!(Interaction::DisplayTextAndPIN {
-            display_text_60: "Sign document".to_string()
-        }),
+        vec![Interaction::DisplayTextAndPIN {
+            display_text_60: "Sign document".to_string(),
+        }],
         "Digest".to_string(),
-        SignatureAlgorithm::sha512WithRSAEncryption
+        SignatureAlgorithm::sha512WithRSAEncryption,
     )?;
     let etsi = SemanticsIdentifier::new_from_enum(IdentityType::PNO, CountryCode::BE, "12345");
-    smart_id_client.start_signature_dynamic_link_etsi_session(signature_request, etsi.identifier).await?;
+    smart_id_client
+        .start_signature_dynamic_link_etsi_session(signature_request, etsi.identifier)
+        .await?;
 
     // This link can be displayed as QR code
     // The user can scan the QR code with the device that has the Smart-ID app installed
@@ -112,7 +123,6 @@ async fn uc_signature_request_example(cfg: &SmartIDConfig, smart_id_client: &Sma
     let signature = result.signature.unwrap();
     Ok(signature.get_value())
 }
-
 
 pub fn init_tracing() {
     SubscriberBuilder::default()

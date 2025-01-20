@@ -32,12 +32,17 @@ pub(crate) struct DynamicLink {
     pub(crate) dynamic_link_type: DynamicLinkType,
     pub(crate) session_type: SessionType,
     pub(crate) session_start_time: DateTime<Utc>, // Used to calculated elapsed seconds since session start
-    pub(crate) language_code: String, // 3 letter language code according to ISO 639-2
+    pub(crate) language_code: String,             // 3 letter language code according to ISO 639-2
 }
 
 impl DynamicLink {
     pub(crate) fn payload(&self) -> String {
-        format!("{:?}.{:?}.{}", self.dynamic_link_type.clone(), self.session_type.clone(), self.elapsed_seconds())
+        format!(
+            "{:?}.{:?}.{}",
+            self.dynamic_link_type.clone(),
+            self.session_type.clone(),
+            self.elapsed_seconds()
+        )
     }
 
     pub fn generate_dynamic_link(&self) -> String {
@@ -60,7 +65,8 @@ impl DynamicLink {
         let secret = self.session_secret.clone();
         let payload = self.payload();
 
-        let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC can take key of any size");
+        let mut mac =
+            HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC can take key of any size");
         mac.update(payload.as_bytes());
 
         let result = mac.finalize();
@@ -75,8 +81,6 @@ impl DynamicLink {
         duration.num_seconds()
     }
 }
-
-
 
 // region: Dynamic Link Tests
 #[cfg(test)]
@@ -120,7 +124,10 @@ mod tests {
     #[tokio::test]
     async fn test_generate_auth_code() {
         let dynamic_link = qr_dynamic_link();
-        assert_eq!(dynamic_link.generate_auth_code(), "Up2D2TKv9Bm7xnaHm2+/0TKTpCQwNJNlto0r2opNmZo=");
+        assert_eq!(
+            dynamic_link.generate_auth_code(),
+            "Up2D2TKv9Bm7xnaHm2+/0TKTpCQwNJNlto0r2opNmZo="
+        );
     }
 
     #[traced_test]
@@ -130,7 +137,10 @@ mod tests {
             session_start_time: Utc::now() - Duration::seconds(20),
             ..qr_dynamic_link()
         };
-        assert_eq!(dynamic_link.generate_auth_code(), "zQR5yqKtjlrxXVhAEsijUBhVnT7RlHgch26MB5beprQ=");
+        assert_eq!(
+            dynamic_link.generate_auth_code(),
+            "zQR5yqKtjlrxXVhAEsijUBhVnT7RlHgch26MB5beprQ="
+        );
     }
 
     #[traced_test]

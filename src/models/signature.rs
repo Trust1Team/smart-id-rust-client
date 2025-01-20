@@ -5,7 +5,10 @@ use base64::Engine;
 use rand::{thread_rng, Rng};
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha20Rng;
-use ring::signature::{VerificationAlgorithm, RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384, RSA_PKCS1_2048_8192_SHA512};
+use ring::signature::{
+    VerificationAlgorithm, RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384,
+    RSA_PKCS1_2048_8192_SHA512,
+};
 use serde::{Deserialize, Serialize};
 use x509_parser::der_parser::asn1_rs::BitString;
 
@@ -27,20 +30,35 @@ pub enum SignatureAlgorithm {
 }
 
 impl SignatureAlgorithm {
-    pub fn validate_signature(&self, public_key: BitString, digest: &[u8], value: &[u8]) -> Result<()> {
+    pub fn validate_signature(
+        &self,
+        public_key: BitString,
+        digest: &[u8],
+        value: &[u8],
+    ) -> Result<()> {
         match self {
-            SignatureAlgorithm::sha256WithRSAEncryption => {
-                RSA_PKCS1_2048_8192_SHA256.verify(public_key.as_ref().into(), digest.into(), value.into())
-            },
-            SignatureAlgorithm::sha384WithRSAEncryption => {
-                RSA_PKCS1_2048_8192_SHA384.verify(public_key.as_ref().into(), digest.into(), value.into())
-            },
-            SignatureAlgorithm::sha512WithRSAEncryption => {
-                RSA_PKCS1_2048_8192_SHA512.verify(public_key.as_ref().into(), digest.into(), value.into())
-            },
-        }.map_err(
-            |e| SmartIdClientError::InvalidResponseSignature(format!("Failed to verify signature: {}", e))
-        )?;
+            SignatureAlgorithm::sha256WithRSAEncryption => RSA_PKCS1_2048_8192_SHA256.verify(
+                public_key.as_ref().into(),
+                digest.into(),
+                value.into(),
+            ),
+            SignatureAlgorithm::sha384WithRSAEncryption => RSA_PKCS1_2048_8192_SHA384.verify(
+                public_key.as_ref().into(),
+                digest.into(),
+                value.into(),
+            ),
+            SignatureAlgorithm::sha512WithRSAEncryption => RSA_PKCS1_2048_8192_SHA512.verify(
+                public_key.as_ref().into(),
+                digest.into(),
+                value.into(),
+            ),
+        }
+        .map_err(|e| {
+            SmartIdClientError::InvalidResponseSignature(format!(
+                "Failed to verify signature: {}",
+                e
+            ))
+        })?;
 
         Ok(())
     }
@@ -67,7 +85,7 @@ pub enum SignatureRequestParameters {
 }
 
 impl SignatureRequestParameters {
-    pub fn new_acsp_v1(signature_algorithm: SignatureAlgorithm) -> SignatureRequestParameters{
+    pub fn new_acsp_v1(signature_algorithm: SignatureAlgorithm) -> SignatureRequestParameters {
         SignatureRequestParameters::ACSP_V1 {
             random_challenge: Self::generate_random_challenge(),
             signature_algorithm,
@@ -76,7 +94,9 @@ impl SignatureRequestParameters {
 
     pub(crate) fn get_random_challenge(&self) -> Option<String> {
         match self {
-            SignatureRequestParameters::ACSP_V1 { random_challenge, .. } => Some(random_challenge.clone()),
+            SignatureRequestParameters::ACSP_V1 {
+                random_challenge, ..
+            } => Some(random_challenge.clone()),
             _ => None,
         }
     }
@@ -96,7 +116,6 @@ impl SignatureRequestParameters {
         rng.fill_bytes(&mut random_bytes);
         URL_SAFE_NO_PAD.encode(&random_bytes)
     }
-
 }
 
 // endregion
@@ -122,26 +141,55 @@ pub enum SignatureResponse {
     },
 }
 
-
 impl SignatureResponse {
     pub(crate) fn validate_raw_digest(&self, digest: String, public_key: BitString) -> Result<()> {
         match self {
-            SignatureResponse::RAW_DIGEST_SIGNATURE { value, signature_algorithm } => {
-                signature_algorithm.validate_signature(public_key, digest.as_bytes(), value.as_bytes())?;
+            SignatureResponse::RAW_DIGEST_SIGNATURE {
+                value,
+                signature_algorithm,
+            } => {
+                signature_algorithm.validate_signature(
+                    public_key,
+                    digest.as_bytes(),
+                    value.as_bytes(),
+                )?;
                 Ok(())
             }
-            _ => Err(SmartIdClientError::InvalidSignatureProtocal("Expected RAW_DIGEST_SIGNATURE signature protocol").into())
+            _ => Err(SmartIdClientError::InvalidSignatureProtocal(
+                "Expected RAW_DIGEST_SIGNATURE signature protocol",
+            )
+            .into()),
         }
     }
 
-    pub(crate) fn validate_acsp_v1(&self, random_challenge: String, public_key: BitString) -> Result<()> {
+    pub(crate) fn validate_acsp_v1(
+        &self,
+        random_challenge: String,
+        public_key: BitString,
+    ) -> Result<()> {
         match self {
-            SignatureResponse::ACSP_V1 { value, server_random, signature_algorithm } => {
-                let digest = format!("{:?};{};{}", SignatureProtocol::ACSP_V1, server_random, random_challenge);
-                signature_algorithm.validate_signature(public_key, digest.as_bytes(), value.as_bytes())?;
+            SignatureResponse::ACSP_V1 {
+                value,
+                server_random,
+                signature_algorithm,
+            } => {
+                let digest = format!(
+                    "{:?};{};{}",
+                    SignatureProtocol::ACSP_V1,
+                    server_random,
+                    random_challenge
+                );
+                signature_algorithm.validate_signature(
+                    public_key,
+                    digest.as_bytes(),
+                    value.as_bytes(),
+                )?;
                 Ok(())
             }
-            _ => Err(SmartIdClientError::InvalidSignatureProtocal("Expected ACSP_V1 signature protocol").into())
+            _ => Err(SmartIdClientError::InvalidSignatureProtocal(
+                "Expected ACSP_V1 signature protocol",
+            )
+            .into()),
         }
     }
 
@@ -154,7 +202,6 @@ impl SignatureResponse {
 }
 // endregion
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -166,8 +213,15 @@ mod tests {
         let signature_algorithm = SignatureAlgorithm::sha256WithRSAEncryption;
         let params = SignatureRequestParameters::new_acsp_v1(signature_algorithm.clone());
 
-        if let SignatureRequestParameters::ACSP_V1 { random_challenge, signature_algorithm: alg } = params {
-            assert!(!random_challenge.is_empty(), "Random challenge should not be empty");
+        if let SignatureRequestParameters::ACSP_V1 {
+            random_challenge,
+            signature_algorithm: alg,
+        } = params
+        {
+            assert!(
+                !random_challenge.is_empty(),
+                "Random challenge should not be empty"
+            );
             assert_eq!(alg, signature_algorithm, "Signature algorithm should match");
         } else {
             panic!("Expected SignatureRequestParameters::ACSP_V1 variant");
@@ -180,21 +234,38 @@ mod tests {
         let params = SignatureRequestParameters::new_acsp_v1(signature_algorithm);
 
         let random_challenge = params.get_random_challenge();
-        assert!(random_challenge.is_some(), "Random challenge should be Some");
-        assert!(!random_challenge.unwrap().is_empty(), "Random challenge should not be empty");
+        assert!(
+            random_challenge.is_some(),
+            "Random challenge should be Some"
+        );
+        assert!(
+            !random_challenge.unwrap().is_empty(),
+            "Random challenge should not be empty"
+        );
     }
 
     #[test]
     fn test_generate_random_challenge_input_value_is_correct_size() {
         for _i in 0..100 {
             let random_challenge = SignatureRequestParameters::generate_random_challenge();
-            assert!(!random_challenge.is_empty(), "Random challenge should not be empty");
+            assert!(
+                !random_challenge.is_empty(),
+                "Random challenge should not be empty"
+            );
 
             // Base 64 encoding increases the size of the input, so this must be decoded before validating
-            let random_challenge_bytes = URL_SAFE_NO_PAD.decode(random_challenge.as_bytes()).expect("Failed to decode Base64");
-            assert!(random_challenge_bytes.len() >= 32, "Random challenge input should be at least 32 bytes long");
+            let random_challenge_bytes = URL_SAFE_NO_PAD
+                .decode(random_challenge.as_bytes())
+                .expect("Failed to decode Base64");
+            assert!(
+                random_challenge_bytes.len() >= 32,
+                "Random challenge input should be at least 32 bytes long"
+            );
             println!("{}", random_challenge_bytes.len());
-            assert!(random_challenge_bytes.len() <= 64, "Random challenge input should be at most 64 bytes long");
+            assert!(
+                random_challenge_bytes.len() <= 64,
+                "Random challenge input should be at most 64 bytes long"
+            );
         }
     }
 
@@ -209,7 +280,9 @@ mod tests {
             signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
         };
 
-        assert!(response.validate_raw_digest(digest.to_string(), public_key_bitstring).is_ok());
+        assert!(response
+            .validate_raw_digest(digest.to_string(), public_key_bitstring)
+            .is_ok());
     }
 
     #[test]
@@ -223,7 +296,9 @@ mod tests {
             signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
         };
 
-        assert!(response.validate_raw_digest(digest.to_string(), public_key_bitstring).is_err());
+        assert!(response
+            .validate_raw_digest(digest.to_string(), public_key_bitstring)
+            .is_err());
     }
 
     #[test]
@@ -239,7 +314,9 @@ mod tests {
             signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
         };
 
-        assert!(response.validate_acsp_v1(random_challenge.to_string(), public_key_bitstring).is_ok());
+        assert!(response
+            .validate_acsp_v1(random_challenge.to_string(), public_key_bitstring)
+            .is_ok());
     }
 
     #[test]
@@ -255,6 +332,8 @@ mod tests {
             signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
         };
 
-        assert!(response.validate_acsp_v1(random_challenge.to_string(), public_key_bitstring).is_err());
+        assert!(response
+            .validate_acsp_v1(random_challenge.to_string(), public_key_bitstring)
+            .is_err());
     }
 }

@@ -25,10 +25,17 @@ pub struct AuthenticationRequest {
 }
 
 impl AuthenticationRequest {
-    pub fn new(cfg: &SmartIDConfig, interactions: Vec<Interaction>, signature_algorithm: SignatureAlgorithm) -> Result<Self> {
+    pub fn new(
+        cfg: &SmartIDConfig,
+        interactions: Vec<Interaction>,
+        signature_algorithm: SignatureAlgorithm,
+    ) -> Result<Self> {
         // At least one interaction is needed for every authentication request
         if interactions.is_empty() {
-            return Err(SmartIdClientError::ConfigMissingException("Define at least 1 interaction for an authentication request").into());
+            return Err(SmartIdClientError::ConfigMissingException(
+                "Define at least 1 interaction for an authentication request",
+            )
+            .into());
         };
 
         for interaction in &interactions {
@@ -40,7 +47,9 @@ impl AuthenticationRequest {
             relying_party_name: cfg.relying_party_name.clone(),
             certificate_level: AuthenticationCertificateLevel::QUALIFIED,
             signature_protocol: AuthenticationSignatureProtocol::ACSP_V1,
-            signature_protocol_parameters: SignatureRequestParameters::new_acsp_v1(signature_algorithm),
+            signature_protocol_parameters: SignatureRequestParameters::new_acsp_v1(
+                signature_algorithm,
+            ),
             nonce: None,
             allowed_interactions_order: interactions,
             request_properties: None,
@@ -87,7 +96,6 @@ pub struct AuthenticationResponse {
 
 // endregion
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -114,14 +122,24 @@ mod tests {
         }];
         let signature_algorithm = SignatureAlgorithm::sha256WithRSAEncryption;
 
-        let auth_request = AuthenticationRequest::new(&cfg, interactions.clone(), signature_algorithm.clone());
+        let auth_request =
+            AuthenticationRequest::new(&cfg, interactions.clone(), signature_algorithm.clone());
 
-        assert!(auth_request.is_ok(), "AuthenticationRequest::new should succeed");
+        assert!(
+            auth_request.is_ok(),
+            "AuthenticationRequest::new should succeed"
+        );
         let auth_request = auth_request.unwrap();
         assert_eq!(auth_request.relying_party_uuid, "test-uuid");
         assert_eq!(auth_request.relying_party_name, "test-name");
-        assert_eq!(auth_request.certificate_level, AuthenticationCertificateLevel::QUALIFIED);
-        assert_eq!(auth_request.signature_protocol, AuthenticationSignatureProtocol::ACSP_V1);
+        assert_eq!(
+            auth_request.certificate_level,
+            AuthenticationCertificateLevel::QUALIFIED
+        );
+        assert_eq!(
+            auth_request.signature_protocol,
+            AuthenticationSignatureProtocol::ACSP_V1
+        );
         assert_eq!(auth_request.allowed_interactions_order, interactions);
     }
 
@@ -137,6 +155,9 @@ mod tests {
 
         let auth_request = AuthenticationRequest::new(&cfg, interactions, signature_algorithm);
 
-        assert!(auth_request.is_err(), "AuthenticationRequest::new should fail with no interactions");
+        assert!(
+            auth_request.is_err(),
+            "AuthenticationRequest::new should fail with no interactions"
+        );
     }
 }

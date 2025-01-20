@@ -164,7 +164,7 @@ pub enum SmartIdClientError {
     /// Failed to validate session response certificate
     #[error("Failed to validate session response certificate: {0}")]
     FailedToValidateSessionResponseCertificate(&'static str),
-    
+
     /// User should view Smart-ID app or portal
     #[error("User should view Smart-ID app or portal")]
     UserShouldViewSmartIDAppOrPortalException,
