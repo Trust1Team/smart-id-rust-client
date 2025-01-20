@@ -1,6 +1,6 @@
 use crate::error::SmartIdClientError;
 use anyhow::Result;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::engine::general_purpose::{STANDARD_NO_PAD};
 use base64::Engine;
 use rand::{thread_rng, Rng};
 use rand_chacha::rand_core::{RngCore, SeedableRng};
@@ -114,7 +114,7 @@ impl SignatureRequestParameters {
         let size = rng.gen_range(32..=64);
         let mut random_bytes = vec![0u8; size];
         rng.fill_bytes(&mut random_bytes);
-        URL_SAFE_NO_PAD.encode(&random_bytes)
+        STANDARD_NO_PAD.encode(&random_bytes)
     }
 }
 
@@ -204,6 +204,7 @@ impl SignatureResponse {
 
 #[cfg(test)]
 mod tests {
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
     use super::*;
     use x509_parser::der_parser::asn1_rs::BitString;
     use x509_parser::prelude::FromDer;
