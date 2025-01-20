@@ -43,19 +43,16 @@ async fn test_authentication_qr() -> Result<()> {
         vec![Interaction::ConfirmationMessage {
             display_text_200: "TEST 1".to_string(),
         }],
-        SignatureAlgorithm::sha512WithRSAEncryption,
+        SignatureAlgorithm::sha256WithRSAEncryption,
     )?;
-    info!(
-        "{}",
-        serde_json::to_string_pretty(&authentication_request).unwrap()
-    );
+    println!("{}", serde_json::to_string_pretty(&authentication_request)?);
 
     smart_id_client
         .start_authentication_dynamic_link_anonymous_session(authentication_request)
         .await?;
 
-    let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "en")?;
-    info!("{:?}", qr_code_link);
+    let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "eng")?;
+    println!("{:?}", qr_code_link);
 
     // Generate QR code
     let code = QrCode::new(qr_code_link)?;
