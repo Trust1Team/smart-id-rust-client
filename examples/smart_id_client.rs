@@ -1,35 +1,34 @@
-use tracing::{error, info, warn, Level};
-use smart_id_rust_client::{generate_verification_number, SessionSignature, SessionStatus, sha_digest};
-use smart_id_rust_client::models::v2::common::{CountryCode, HashType, IdentityType, ResultState, SemanticsIdentifier};
-use smart_id_rust_client::config::{SmartIDConfig, SmartIDConfigBuilder};
 use anyhow::Result;
-use base64::Engine;
-use tracing_subscriber::fmt::format::FmtSpan;
-use tracing_subscriber::fmt::SubscriberBuilder;
 use smart_id_rust_client::client::smart_id_client::SmartIdClientV3;
+use smart_id_rust_client::config::SmartIDConfig;
 use smart_id_rust_client::models::authentication_session::AuthenticationRequest;
 use smart_id_rust_client::models::dynamic_link::DynamicLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
+use smart_id_rust_client::models::semantic_identifier::{CountryCode, IdentityType, SemanticsIdentifier};
+use smart_id_rust_client::models::signature::SignatureAlgorithm;
 use smart_id_rust_client::models::signature_session::SignatureRequest;
-use smart_id_rust_client::models::v3::authentication_session::AuthenticationRequest;
-use smart_id_rust_client::models::v3::dynamic_link::DynamicLinkType;
-use smart_id_rust_client::models::v3::interaction::Interaction;
-use smart_id_rust_client::models::v3::signature::SignatureAlgorithm;
-use smart_id_rust_client::models::v3::signature_session::SignatureRequest;
-use smart_id_rust_client::v2::{get_certificate_by_semantic_identifier, get_config_from_env};
+use tracing::{info, Level};
+use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::fmt::SubscriberBuilder;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     init_tracing();
 
-    // TODO: Put this in a lib.rs comment
-
     info!("---Example::Smart ID Client---");
 
-    /// Get default Config (from environment variables)
-    let cfg = get_config_from_env();
+    // Get default Config (from environment variables)
+    let _cfg = SmartIDConfig::load_from_env();
     // Or Build Config using the builder
-    let cfg = SmartIDConfigBuilder::new().url("https://sid.demo.sk.ee/smart-id-rp/v3").build().expect("Error building config");
+    let cfg = SmartIDConfig {
+        root_url: "https://sid.demo.sk.ee".to_string(),
+        api_path: "/smart-id-rp/v3".to_string(),
+        dynamic_link_path: "/dynamic-link".to_string(),
+        relying_party_uuid: "test-uuid".to_string(),
+        relying_party_name: "test-name".to_string(),
+        client_request_timeout: Some(30000),
+    };
+
     info!("Config: {:?}", cfg);
 
     // Create Smart ID Client
@@ -41,8 +40,6 @@ async fn main() -> Result<()> {
 
     // Authentication Request Example
     uc_authentication_request_example(&cfg, &smart_id_client).await?;
-
-
 
     Ok(())
 }
@@ -90,7 +87,7 @@ async fn uc_signature_request_example(cfg: &SmartIDConfig, smart_id_client: &Sma
         "Digest".to_string(),
         SignatureAlgorithm::sha512WithRSAEncryption
     )?;
-    let etsi = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
+    let etsi = SemanticsIdentifier::new_from_enum(IdentityType::PNO, CountryCode::BE, "12345");
     smart_id_client.start_signature_dynamic_link_etsi_session(signature_request, etsi.identifier).await?;
 
     // This link can be displayed as QR code
@@ -107,7 +104,7 @@ async fn uc_signature_request_example(cfg: &SmartIDConfig, smart_id_client: &Sma
     // This link can be opened from the web browser and redirect to the Smart-ID app
     // It also must be refreshed every 1 second.
     let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::Web2App, "en")?;
-    info("{:?}", web_to_app_link);
+    info!("{:?}", web_to_app_link);
 
     // This will long poll the session status
     // On successful completion the signature will be returned
