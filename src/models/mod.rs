@@ -7,3 +7,4 @@ pub mod interaction;
 pub mod session_status;
 pub mod signature;
 pub mod signature_session;
+pub mod semantic_identifier;
