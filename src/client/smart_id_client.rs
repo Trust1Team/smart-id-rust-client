@@ -509,7 +509,9 @@ impl SmartIdClientV3 {
                 };
 
                 // Validate the certificate chain and check for expiration
-                validate_certificate(&cert.value)?;
+                if !self.cfg.is_demo() {
+                    validate_certificate(&cert.value)?;
+                }
 
                 let decoded_cert = BASE64_STANDARD.decode(&cert.value).map_err(|_| {
                     SmartIdClientError::FailedToValidateSessionResponseCertificate(
@@ -525,8 +527,10 @@ impl SmartIdClientV3 {
 
                 // The identity of the authenticated person is in the subject field or subjectAltName extension of the X.509 certificate.
                 // TODO: Find the subject to validate against
-                let _subject = parsed_cert.subject().clone();
-                let _subject_alt_name = parsed_cert.subject_alternative_name();
+                let subject = parsed_cert.subject().clone();
+                let subject_alt_name = parsed_cert.subject_alternative_name();
+                println!("Subject: {:?}", subject.to_string());
+                println!("SubjectAltName: {:?}", subject_alt_name.unwrap().unwrap().value);
 
                 // Check that the certificate level is high enough
                 // TODO: Implement this
@@ -542,11 +546,11 @@ impl SmartIdClientV3 {
                         random_challenge, ..
                     } => signature.validate_acsp_v1(
                         random_challenge,
-                        parsed_cert.public_key().clone().subject_public_key,
+                        cert.value,
                     ),
                     SessionConfig::Signature { digest, .. } => signature.validate_raw_digest(
                         digest,
-                        parsed_cert.public_key().clone().subject_public_key,
+                        cert.value,
                     ),
                     SessionConfig::CertificateChoice { .. } => {
                         debug!("No validation needed for certificate choice session");

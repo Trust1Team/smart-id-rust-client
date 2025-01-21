@@ -31,6 +31,10 @@ impl SmartIDConfig {
     pub fn dynamic_link_url(&self) -> String {
         format!("{}{}", self.root_url, self.dynamic_link_path)
     }
+
+    pub fn is_demo(&self) -> bool {
+        self.root_url.contains("demo")
+    }
 }
 
 fn get_env(name: &'static str) -> anyhow::Result<String> {

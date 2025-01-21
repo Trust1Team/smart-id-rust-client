@@ -31,6 +31,9 @@ fn setup() {
     env::set_var("CLIENT_REQ_NETWORK_TIMEOUT_MILLIS", "30000");
 }
 
+
+// These tests are ignored because they require manual interaction with the Smart-ID app.
+// To run these tests, follow the instructions in the comments.
 #[tokio::test]
 #[ignore]
 async fn test_authentication_qr() -> Result<()> {
@@ -64,6 +67,7 @@ async fn test_authentication_qr() -> Result<()> {
     image.save(file_path)?;
     open::that(file_path)?;
 
+    // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
     let result = smart_id_client.get_session_status(12000).await?;
     assert_eq!(result.result.unwrap().end_result, EndResult::OK);
     Ok(())
@@ -72,6 +76,7 @@ async fn test_authentication_qr() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_authentication_web_to_app() -> Result<()> {
+    setup();
     let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClientV3::new(&cfg).await;
 
@@ -87,9 +92,58 @@ async fn test_authentication_web_to_app() -> Result<()> {
         .start_authentication_dynamic_link_anonymous_session(authentication_request)
         .await?;
 
-    let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::Web2App, "en")?;
+    let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::Web2App, "eng")?;
     info!("{:?}", web_to_app_link);
 
+    let code = QrCode::new(web_to_app_link)?;
+    let image = code.render::<Luma<u8>>().build();
+
+    // Create QR code image
+    // THIS SHOULD NOT BE SCANNED WITH THE SMART-ID APP
+    // This should be scanned using a qr code app or your camera app to open the link in a browser.
+    let file_path = "qr_code.png";
+    image.save(file_path)?;
+    open::that(file_path)?;
+
+    // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
+    let result = smart_id_client.get_session_status(12000).await?;
+    assert_eq!(result.result.unwrap().end_result, EndResult::OK);
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_authentication_app_to_app() -> Result<()> {
+    setup();
+    let cfg = SmartIDConfig::load_from_env()?;
+    let smart_id_client = SmartIdClientV3::new(&cfg).await;
+
+    let authentication_request = AuthenticationRequest::new(
+        &cfg,
+        vec![Interaction::DisplayTextAndPIN {
+            display_text_60: "Authenticate to Application: Test".to_string(),
+        }],
+        SignatureAlgorithm::sha512WithRSAEncryption,
+    )?;
+
+    smart_id_client
+        .start_authentication_dynamic_link_anonymous_session(authentication_request)
+        .await?;
+
+    let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::App2App, "eng")?;
+    info!("{:?}", web_to_app_link);
+
+    let code = QrCode::new(web_to_app_link)?;
+    let image = code.render::<Luma<u8>>().build();
+
+    // Create QR code image
+    // THIS SHOULD NOT BE SCANNED WITH THE SMART-ID APP
+    // This should be scanned using a qr code app or your camera app to open the link in a browser.
+    let file_path = "qr_code.png";
+    image.save(file_path)?;
+    open::that(file_path)?;
+
+    // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
     let result = smart_id_client.get_session_status(12000).await?;
     assert_eq!(result.result.unwrap().end_result, EndResult::OK);
     Ok(())
@@ -98,6 +152,7 @@ async fn test_authentication_web_to_app() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_signature_qr() -> Result<()> {
+    setup();
     let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClientV3::new(&cfg).await;
 
@@ -125,6 +180,7 @@ async fn test_signature_qr() -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_certificate_choice_qr() -> Result<()> {
+    setup();
     let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClientV3::new(&cfg).await;
 
