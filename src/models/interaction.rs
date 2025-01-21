@@ -2,8 +2,8 @@ use crate::error::SmartIdClientError;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 #[skip_serializing_none]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub enum InteractionFlow {

@@ -5,9 +5,9 @@ use serde_with::skip_serializing_none;
 
 // region CertificateChoiceSessionRequest
 
+#[skip_serializing_none]
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[skip_serializing_none]
 pub struct CertificateChoiceRequest {
     #[serde(rename = "relyingPartyUUID")]
     pub relying_party_uuid: String,

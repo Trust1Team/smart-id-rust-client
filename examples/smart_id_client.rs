@@ -1,7 +1,7 @@
 use anyhow::Result;
 use smart_id_rust_client::client::smart_id_client::SmartIdClientV3;
 use smart_id_rust_client::config::SmartIDConfig;
-use smart_id_rust_client::models::authentication_session::AuthenticationRequest;
+use smart_id_rust_client::models::authentication_session::{AuthenticationCertificateLevel, AuthenticationRequest};
 use smart_id_rust_client::models::dynamic_link::DynamicLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
 use smart_id_rust_client::models::semantic_identifier::{
@@ -56,6 +56,7 @@ async fn uc_authentication_request_example(
             display_text_60: "Authenticate to Application: Test".to_string(),
         }],
         SignatureAlgorithm::sha512WithRSAEncryption,
+        AuthenticationCertificateLevel::QUALIFIED,
     )?;
 
     smart_id_client

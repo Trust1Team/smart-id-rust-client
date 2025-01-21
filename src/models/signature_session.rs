@@ -4,11 +4,11 @@ use crate::models::common::{CertificateLevel, RequestProperties};
 use crate::models::interaction::Interaction;
 use crate::models::signature::{SignatureAlgorithm, SignatureProtocol, SignatureRequestParameters};
 use serde::{Deserialize, Serialize};
-
+use serde_with::skip_serializing_none;
 // region SignatureSessionRequest
 
+#[skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde_with::skip_serializing_none]
 #[serde(rename_all = "camelCase")]
 pub struct SignatureRequest {
     #[serde(rename = "relyingPartyUUID")]
@@ -17,7 +17,7 @@ pub struct SignatureRequest {
     pub certificate_level: CertificateLevel,
     pub signature_protocol: SignatureProtocol,
     pub signature_protocol_parameters: SignatureRequestParameters,
-    pub allowed_interaction_order: Vec<Interaction>,
+    pub allowed_interactions_order: Vec<Interaction>,
     pub nonce: Option<String>,
     pub request_properties: Option<RequestProperties>,
     pub capabilities: Option<Vec<String>>,
@@ -52,7 +52,7 @@ impl SignatureRequest {
                 signature_algorithm,
             },
             nonce: None,
-            allowed_interaction_order: interactions,
+            allowed_interactions_order: interactions,
             request_properties: None,
             capabilities: None,
         })
