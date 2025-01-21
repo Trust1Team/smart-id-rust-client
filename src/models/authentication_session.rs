@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 // region AuthenticationSessionRequest
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[skip_serializing_none]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthenticationRequest {
     #[serde(rename = "relyingPartyUUID")]
@@ -29,6 +29,7 @@ impl AuthenticationRequest {
         cfg: &SmartIDConfig,
         interactions: Vec<Interaction>,
         signature_algorithm: SignatureAlgorithm,
+        authentication_certificate_level: AuthenticationCertificateLevel,
     ) -> Result<Self> {
         // At least one interaction is needed for every authentication request
         if interactions.is_empty() {
@@ -45,7 +46,7 @@ impl AuthenticationRequest {
         Ok(AuthenticationRequest {
             relying_party_uuid: cfg.relying_party_uuid.clone(),
             relying_party_name: cfg.relying_party_name.clone(),
-            certificate_level: AuthenticationCertificateLevel::QUALIFIED,
+            certificate_level: authentication_certificate_level,
             signature_protocol: AuthenticationSignatureProtocol::ACSP_V1,
             signature_protocol_parameters: SignatureRequestParameters::new_acsp_v1(
                 signature_algorithm,

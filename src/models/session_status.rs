@@ -5,8 +5,8 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[skip_serializing_none]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionStatus {
     pub state: SessionState,
@@ -20,8 +20,8 @@ pub struct SessionStatus {
     pub device_ip_address: Option<String>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[skip_serializing_none]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionCertificate {
     // Certificate value, DER+Base64 encoded. The certificate itself contains info on whether the certificate is QSCD-enabled, data which is not represented by certificate level.
@@ -38,8 +38,8 @@ pub enum SessionCertificateLevel {
     ADVANCED,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[skip_serializing_none]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionResult {
     pub end_result: EndResult,

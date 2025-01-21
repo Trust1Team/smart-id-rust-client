@@ -154,6 +154,7 @@ impl SmartIdClientV3 {
             self.cfg.client_request_timeout,
         )
         .await?;
+
         self.set_session(SessionConfig::from_authentication_response(
             session,
             authentication_request,
@@ -533,25 +534,32 @@ impl SmartIdClientV3 {
                 println!("SubjectAltName: {:?}", subject_alt_name.unwrap().unwrap().value);
 
                 // Check that the certificate level is high enough
-                // TODO: Implement this
+                // TODO: Implement this, check qualified/advanced against the response. This needs to be added to the session state
 
-                // signature.value is the valid signature over the expected hash as described in Signature protocols, which was submitted by the RP verified using the public key from cert.value.
-                let signature = match session_status.signature {
-                    Some(signature) => signature,
-                    None => return Err(SmartIdClientError::SessionResponseMissingSignature.into()),
-                };
 
                 match session_config {
                     SessionConfig::Authentication {
                         random_challenge, ..
-                    } => signature.validate_acsp_v1(
-                        random_challenge,
-                        cert.value,
-                    ),
-                    SessionConfig::Signature { digest, .. } => signature.validate_raw_digest(
-                        digest,
-                        cert.value,
-                    ),
+                    } => {
+                        let signature = session_status.signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+
+                        signature.validate_acsp_v1(
+                            random_challenge,
+                            cert.value,
+                        )
+                    },
+                    SessionConfig::Signature { digest, .. } => {
+                        let signature = session_status.signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+
+                        if self.cfg.is_demo() {
+                            return Ok(());
+                        }
+
+                        signature.validate_raw_digest(
+                            digest,
+                            cert.value,
+                        )
+                    },
                     SessionConfig::CertificateChoice { .. } => {
                         debug!("No validation needed for certificate choice session");
                         Ok(())
