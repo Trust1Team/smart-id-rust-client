@@ -61,6 +61,18 @@ pub enum SmartIdClientError {
     #[error("Failed to set the running session")]
     SetSessionException,
 
+    /// Failed to get user identity
+    #[error("Failed to get user identity")]
+    GetUserIdentityException,
+
+    /// Failed to set user identity
+    #[error("Failed to set user identity")]
+    SetUserIdentityException,
+
+    /// User has not been authenticated before attempting to sign or fetch certificate
+    #[error("User has not been authenticated before attempting to sign or fetch certificate")]
+    NoAuthenticatedIdentityException,
+
     /// Authentication session completed without result
     #[error("Authentication session completed without result")]
     AuthenticationSessionCompletedWithoutResult,

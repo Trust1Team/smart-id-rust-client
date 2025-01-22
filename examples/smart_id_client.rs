@@ -51,7 +51,7 @@ async fn uc_authentication_request_example(
     smart_id_client: &SmartIdClientV3,
 ) -> Result<()> {
     let authentication_request = AuthenticationRequest::new(
-        &cfg,
+        cfg,
         vec![Interaction::DisplayTextAndPIN {
             display_text_60: "Authenticate to Application: Test".to_string(),
         }],
@@ -90,7 +90,7 @@ async fn uc_signature_request_example(
     smart_id_client: &SmartIdClientV3,
 ) -> Result<String> {
     let signature_request = SignatureRequest::new(
-        &cfg,
+        cfg,
         vec![Interaction::DisplayTextAndPIN {
             display_text_60: "Sign document".to_string(),
         }],

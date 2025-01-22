@@ -11,7 +11,6 @@ use smart_id_rust_client::models::session_status::EndResult;
 use smart_id_rust_client::models::signature::SignatureAlgorithm;
 use smart_id_rust_client::models::signature_session::SignatureRequest;
 use std::env;
-use tracing::info;
 
 const ROOT_URL: &str = "https://sid.demo.sk.ee";
 const V3_API_PATH: &str = "/smart-id-rp/v3";

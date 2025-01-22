@@ -4,6 +4,7 @@ use crate::models::signature::{SignatureProtocol, SignatureResponse};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
+use crate::models::common::CertificateLevel;
 
 #[skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
@@ -26,16 +27,7 @@ pub struct SessionStatus {
 pub struct SessionCertificate {
     // Certificate value, DER+Base64 encoded. The certificate itself contains info on whether the certificate is QSCD-enabled, data which is not represented by certificate level.
     pub value: String,
-    pub certificate_level: SessionCertificateLevel,
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
-#[allow(non_camel_case_types)]
-#[non_exhaustive]
-pub enum SessionCertificateLevel {
-    #[default]
-    QUALIFIED,
-    ADVANCED,
+    pub certificate_level: CertificateLevel,
 }
 
 #[skip_serializing_none]

@@ -63,7 +63,7 @@ impl DynamicLink {
     /// Generate a HMAC SHA256 code for the session
     /// As described here https://sk-eid.github.io/smart-id-documentation/rp-api/3.0.2/dynamic_link_flows.html#_dynamic_link_calculation
     pub(crate) fn generate_auth_code(&self) -> String {
-        let secret = BASE64_STANDARD.decode(self.session_secret.clone()).unwrap();
+        let secret = BASE64_STANDARD.decode(self.session_secret.clone()).expect("Failed to decode session secret");
         let payload = self.payload();
 
         let mut mac =
