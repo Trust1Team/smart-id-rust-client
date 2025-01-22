@@ -25,6 +25,8 @@ pub enum SignatureProtocol {
     RAW_DIGEST_SIGNATURE,
 }
 
+/// The algorithm is used to verify the signature in the response.
+/// Should stay the same between authentication and signing requests. I have seen errors when using different algorithms.
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum SignatureAlgorithm {

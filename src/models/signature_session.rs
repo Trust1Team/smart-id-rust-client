@@ -1,3 +1,5 @@
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
 use crate::models::common::{CertificateLevel, RequestProperties};
@@ -7,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 // region SignatureSessionRequest
 
+/// Represents a request for a signature session.
 #[skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -20,17 +23,29 @@ pub struct SignatureRequest {
     pub allowed_interactions_order: Vec<Interaction>,
     pub nonce: Option<String>,
     pub request_properties: Option<RequestProperties>,
+    /// Used only when agreed with Smart-ID provider. When omitted request capabilities are derived from certificateLevel parameter.
     pub capabilities: Option<Vec<String>>,
 }
 
 impl SignatureRequest {
+    /// Creates a new `SignatureRequest`.
+    ///
+    /// # Arguments
+    ///
+    /// * `cfg` - The configuration for the Smart-ID service.
+    /// * `interactions` - A vector of interactions allowed during the signature session. At least one interaction is required. Interactions are limited based on the flow type, look at the Interaction documentation for more information.
+    /// * `digest` - The digest to be signed. Base64 encoded.
+    /// * `signature_algorithm` - The algorithm used for the signature.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no interactions are defined or if any interaction has invalid text length.
     pub fn new(
         cfg: &SmartIDConfig,
         interactions: Vec<Interaction>,
         digest: String,
         signature_algorithm: SignatureAlgorithm,
     ) -> anyhow::Result<Self> {
-        // At least one interaction is needed for every authentication request
         if interactions.is_empty() {
             return Err(SmartIdClientError::ConfigMissingException(
                 "Define at least 1 interaction for an authentication request",
@@ -41,6 +56,10 @@ impl SignatureRequest {
         for interaction in &interactions {
             interaction.validate_text_length()?;
         }
+
+        BASE64_STANDARD.decode(&digest).map_err(|_| {
+            SmartIdClientError::InvalidDigestException("Digest not encoded in base64")
+        })?;
 
         Ok(SignatureRequest {
             relying_party_uuid: cfg.relying_party_uuid.clone(),

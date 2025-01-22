@@ -12,6 +12,7 @@ use std::cmp::Ordering;
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestProperties {
+    /// Whether the RP API server should share user mobile device IP address with the RP. By default it is set to false. The RP must have proper privilege to use this property. See section IP sharing for details.
     pub share_md_client_ip_address: bool,
 }
 

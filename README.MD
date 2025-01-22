@@ -96,4 +96,8 @@ let cfg = SmartIDConfig {
 ```
 
 ### Examples
-Examples of the various flows can be found in [smart_id_client.rs](examples/smart_id_client.rs).
+Examples of the various flows with explanations can be found in [smart_id_client.rs](examples/smart_id_client.rs).
+You will need to update the RELYING_PARTY environment variables in [config.toml](.cargo/config.toml) for these to work.
+
+Examples of more complex auth->certificate->sign flows with instructions can be found in [app_interaction_tests.rs](tests/app_interaction_tests.rs).
+You will need to update the RELYING_PARTY variables in the test file for these to work.

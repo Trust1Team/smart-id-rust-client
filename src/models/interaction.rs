@@ -15,6 +15,15 @@ pub enum InteractionFlow {
 }
 
 /// Represents different types of interactions that can be started on the users device
+///
+/// There are limitations on which interactions can be used with which request types.
+/// For dynamic link flows, the following interactions are allowed:
+/// - DisplayTextAndPIN with display_text_60
+/// - ConfirmationMessage with display_text_200
+///
+/// For notificaiton flows, the following interactions are allowed:
+/// - VerificationCodeChoice with display_text_60
+/// - ConfirmationMessageAndVerificationCodeChoice with display_text_200
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
 #[non_exhaustive]
