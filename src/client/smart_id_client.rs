@@ -47,7 +47,7 @@ const NOTIFICATION_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str =
 // endregion: Path definitions
 
 #[derive(Debug)]
-pub struct SmartIdClientV3 {
+pub struct SmartIdClient {
     pub cfg: SmartIDConfig,
     // This tracks session state and is used to make subsequent requests
     // For example to generate QR codes or to poll for session status
@@ -56,8 +56,16 @@ pub struct SmartIdClientV3 {
     pub(crate) authenticated_identity: Arc<Mutex<Option<UserIdentity>>>,
 }
 
-impl SmartIdClientV3 {
-    /// Creates a new SmartIdClientV3 instance with the given configuration.
+/// Smart ID Client
+///
+/// This struct provides methods to interact with the Smart ID service, including starting authentication,
+/// certificate choice, and signature sessions using dynamic links. It also includes methods to generate
+/// dynamic links, retrieve session status, and validate session responses.
+///
+/// The client maintains session state and authenticated user identity to ensure the correct user is signing
+/// and to validate session responses.
+impl SmartIdClient {
+    /// Creates a new SmartIdClientV instance with the given configuration.
     ///
     /// # Arguments
     ///
@@ -66,9 +74,9 @@ impl SmartIdClientV3 {
     ///
     /// # Returns
     ///
-    /// A new instance of SmartIdClientV3.
+    /// A new instance of SmartIdClientV.
     pub async fn new(cfg: &SmartIDConfig, user_identity: Option<UserIdentity>) -> Self {
-        SmartIdClientV3 {
+        SmartIdClient {
             cfg: cfg.clone(),
             session_config: Arc::new(Mutex::new(None)),
             authenticated_identity: Arc::new(Mutex::new(user_identity)),
@@ -593,7 +601,6 @@ impl SmartIdClientV3 {
 
     // region: Utility functions
 
-
     /// Resets the current session by clearing the session configuration and the authenticated user identity.
     ///
     /// If a different user wants to log in you must call this method to clear the current session identity.
@@ -646,7 +653,7 @@ impl SmartIdClientV3 {
         match self.authenticated_identity.lock() {
             Ok(guard) => match guard.clone() {
                 Some(s) => Ok(Some(s)),
-                None => Ok(None)
+                None => Ok(None),
             },
             Err(e) => {
                 debug!("Failed to lock authenticated identity: {:?}", e);
