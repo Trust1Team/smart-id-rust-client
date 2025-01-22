@@ -1,7 +1,7 @@
 use anyhow::Result;
 use image::Luma;
 use qrcode::QrCode;
-use smart_id_rust_client::client::smart_id_client::SmartIdClientV3;
+use smart_id_rust_client::client::smart_id_client::SmartIdClient;
 use smart_id_rust_client::config::SmartIDConfig;
 use smart_id_rust_client::models::authentication_session::{
     AuthenticationCertificateLevel, AuthenticationRequest,
@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
 
     // CREATE SMART ID CLIENT
     // This will be used for all interactions with the Smart-ID service
-    let smart_id_client = SmartIdClientV3::new(&cfg, None).await;
+    let smart_id_client = SmartIdClient::new(&cfg, None).await;
 
     // AUTHENTICATION
     // Authenticate the user and set the UserIdentity on the client (This identity will be used to check certificates from future session responses)
@@ -77,7 +77,7 @@ async fn main() -> Result<()> {
 
 async fn uc_authentication_request_example(
     cfg: &SmartIDConfig,
-    smart_id_client: &SmartIdClientV3,
+    smart_id_client: &SmartIdClient,
 ) -> Result<SessionStatus> {
     let authentication_request = AuthenticationRequest::new(
         cfg,
@@ -120,7 +120,7 @@ async fn uc_authentication_request_example(
 
 async fn uc_certificate_choice_request_example(
     cfg: &SmartIDConfig,
-    smart_id_client: &SmartIdClientV3,
+    smart_id_client: &SmartIdClient,
     document_number: String,
 ) -> Result<SessionStatus> {
     let certificate_choice_request = CertificateChoiceRequest::new(
@@ -138,7 +138,7 @@ async fn uc_certificate_choice_request_example(
 
 async fn uc_signature_request_example(
     cfg: &SmartIDConfig,
-    smart_id_client: &SmartIdClientV3,
+    smart_id_client: &SmartIdClient,
     digest: String,
     document_number: String,
 ) -> Result<String> {

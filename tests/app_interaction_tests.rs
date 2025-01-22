@@ -1,7 +1,7 @@
 use anyhow::Result;
 use image::Luma;
 use qrcode::QrCode;
-use smart_id_rust_client::client::smart_id_client::SmartIdClientV3;
+use smart_id_rust_client::client::smart_id_client::SmartIdClient;
 use smart_id_rust_client::config::SmartIDConfig;
 use smart_id_rust_client::models::authentication_session::{AuthenticationCertificateLevel, AuthenticationRequest};
 use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceRequest;
@@ -36,7 +36,7 @@ fn setup() {
 async fn test_authentication_qr() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
-    let smart_id_client = SmartIdClientV3::new(&cfg, None).await;
+    let smart_id_client = SmartIdClient::new(&cfg, None).await;
 
     let authentication_request = AuthenticationRequest::new(
         &cfg,
@@ -77,7 +77,7 @@ async fn test_authentication_qr() -> Result<()> {
 async fn test_authentication_web_to_app() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
-    let smart_id_client = SmartIdClientV3::new(&cfg, None).await;
+    let smart_id_client = SmartIdClient::new(&cfg, None).await;
 
     let authentication_request = AuthenticationRequest::new(
         &cfg,
@@ -119,7 +119,7 @@ async fn test_authentication_web_to_app() -> Result<()> {
 async fn test_authentication_app_to_app() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
-    let smart_id_client = SmartIdClientV3::new(&cfg, None).await;
+    let smart_id_client = SmartIdClient::new(&cfg, None).await;
 
     let authentication_request = AuthenticationRequest::new(
         &cfg,
@@ -161,7 +161,7 @@ async fn test_authentication_app_to_app() -> Result<()> {
 async fn test_auth_then_certificate_choice_then_sign_with_qr_code() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
-    let smart_id_client = SmartIdClientV3::new(&cfg, None).await;
+    let smart_id_client = SmartIdClient::new(&cfg, None).await;
 
 
     // AUTHENTICATION

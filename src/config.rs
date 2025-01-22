@@ -4,6 +4,11 @@ use std::env;
 const DYNAMIC_LINK_PATH: &str = "/dynamic-link";
 
 /// Smart ID Client Configuration
+///
+/// This struct holds the configuration details required to interact with the Smart ID service.
+/// It includes the root URL, API path, relying party UUID, relying party name, and an optional client request timeout.
+///
+/// This can be loaded from environment variables using the `load_from_env` method.
 #[derive(Debug, Clone)]
 pub struct SmartIDConfig {
     pub root_url: String,
@@ -14,6 +19,12 @@ pub struct SmartIDConfig {
 }
 
 impl SmartIDConfig {
+    /// Loads the Smart ID configuration from environment variables.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(SmartIDConfig)` - If all required environment variables are present and valid.
+    /// * `Err(anyhow::Error)` - If any required environment variable is missing or invalid.
     pub fn load_from_env() -> anyhow::Result<SmartIDConfig> {
         Ok(SmartIDConfig {
             root_url: get_env("ROOT_URL")?,
@@ -24,15 +35,20 @@ impl SmartIDConfig {
         })
     }
 
+    /// Constructs the full API URL using the root URL and API path.
+    ///
+    /// # Returns
+    ///
+    /// * `String` - The full API URL.
     pub fn api_url(&self) -> String {
         format!("{}{}", self.root_url, self.api_path)
     }
 
-    pub fn dynamic_link_url(&self) -> String {
+    pub(crate) fn dynamic_link_url(&self) -> String {
         format!("{}{}", self.root_url, DYNAMIC_LINK_PATH)
     }
 
-    pub fn is_demo(&self) -> bool {
+    pub(crate) fn is_demo(&self) -> bool {
         self.root_url == "https://sid.demo.sk.ee"
     }
 }
