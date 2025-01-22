@@ -6,16 +6,15 @@ use smart_id_rust_client::config::SmartIDConfig;
 use smart_id_rust_client::models::authentication_session::{
     AuthenticationCertificateLevel, AuthenticationRequest,
 };
+use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceRequest;
 use smart_id_rust_client::models::dynamic_link::DynamicLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
+use smart_id_rust_client::models::session_status::SessionStatus;
 use smart_id_rust_client::models::signature::SignatureAlgorithm;
 use smart_id_rust_client::models::signature_session::SignatureRequest;
 use tracing::{info, Level};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::fmt::SubscriberBuilder;
-use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceRequest;
-use smart_id_rust_client::models::session_status::SessionStatus;
-
 
 // If you want to run this example you will need to set the RELYING_PARTY_UUID and RELYING_PARTY_NAME environment variables.
 // You will also need a qualified account (Created using an ID card) on the Smart-ID app.
@@ -47,23 +46,38 @@ async fn main() -> Result<()> {
 
     // AUTHENTICATION
     // Authenticate the user and set the UserIdentity on the client (This identity will be used to check certificates from future session responses)
-    let authentication_session_status = uc_authentication_request_example(&cfg, &smart_id_client).await?;
-    let document_number = authentication_session_status.clone().result.unwrap().document_number.unwrap();
-    info!("Authentication Result: \n {:?}", authentication_session_status);
+    let authentication_session_status =
+        uc_authentication_request_example(&cfg, &smart_id_client).await?;
+    let document_number = authentication_session_status
+        .clone()
+        .result
+        .unwrap()
+        .document_number
+        .unwrap();
+    info!(
+        "Authentication Result: \n {:?}",
+        authentication_session_status
+    );
 
     // CERTIFICATE CHOICE
     // If you are signing a *AdES scheme you will need to include the certificate in the document to be signed
     // In this case you must fetch public signing key using a certificate choice session
     // Otherwise you can skip this step
-    let certificate_choice_status = uc_certificate_choice_request_example(&cfg, &smart_id_client, document_number.clone()).await?;
+    let certificate_choice_status =
+        uc_certificate_choice_request_example(&cfg, &smart_id_client, document_number.clone())
+            .await?;
     let _signing_certificate = certificate_choice_status.clone().cert.unwrap().value;
     // let digest = combine_your_document_and_certifice_to_be_signed(signing_certificate);
-    info!("Certificate Choice Result: \n {:?}", certificate_choice_status);
+    info!(
+        "Certificate Choice Result: \n {:?}",
+        certificate_choice_status
+    );
 
     // SIGNATURE
     // Sign the document hash with the user's private key
     let digest = "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=".to_string();
-    let signature = uc_signature_request_example(&cfg, &smart_id_client, digest, document_number).await?;
+    let signature =
+        uc_signature_request_example(&cfg, &smart_id_client, digest, document_number).await?;
     info!("Signature: \n {:?}", signature);
 
     // RESET SESSION
@@ -117,17 +131,17 @@ async fn uc_authentication_request_example(
     Ok(result)
 }
 
-
 async fn uc_certificate_choice_request_example(
     cfg: &SmartIDConfig,
     smart_id_client: &SmartIdClient,
     document_number: String,
 ) -> Result<SessionStatus> {
-    let certificate_choice_request = CertificateChoiceRequest::new(
-        cfg,
-    );
+    let certificate_choice_request = CertificateChoiceRequest::new(cfg);
     smart_id_client
-        .start_certificate_choice_notification_document_session(certificate_choice_request, document_number)
+        .start_certificate_choice_notification_document_session(
+            certificate_choice_request,
+            document_number,
+        )
         .await?;
 
     // This will long poll the session status
