@@ -1,7 +1,9 @@
 use anyhow::Result;
 use smart_id_rust_client::client::smart_id_client::SmartIdClientV3;
 use smart_id_rust_client::config::SmartIDConfig;
-use smart_id_rust_client::models::authentication_session::{AuthenticationCertificateLevel, AuthenticationRequest};
+use smart_id_rust_client::models::authentication_session::{
+    AuthenticationCertificateLevel, AuthenticationRequest,
+};
 use smart_id_rust_client::models::dynamic_link::DynamicLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
 use smart_id_rust_client::models::semantic_identifier::{

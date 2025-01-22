@@ -9,13 +9,13 @@ use crate::models::certificate_choice_session::{
 use crate::models::common::SessionConfig;
 use crate::models::dynamic_link::{DynamicLink, DynamicLinkType, SessionType};
 use crate::models::session_status::{SessionCertificate, SessionState, SessionStatus};
+use crate::models::signature::SignatureResponse;
 use crate::models::signature_session::{SignatureRequest, SignatureRequestResponse};
+use crate::models::user_identity::UserIdentity;
 use crate::utils::sec_x509::validate_certificate;
 use anyhow::Result;
 use std::sync::{Arc, Mutex};
 use tracing::debug;
-use crate::models::signature::SignatureResponse;
-use crate::models::user_identity::UserIdentity;
 
 // region: Path definitions
 // Copied from https://github.com/SK-EID/smart-id-java-client/blob/81e48f519bf882db8584a344b161db378b959093/src/main/java/ee/sk/smartid/v3/rest/SmartIdRestConnector.java#L79
@@ -510,9 +510,9 @@ impl SmartIdClientV3 {
                 session_result.end_result.is_ok()?;
 
                 // Validate the certificate is present (Required for OK status)
-                let cert = session_status.cert.ok_or({
-                    SmartIdClientError::SessionResponseMissingCertificate
-                })?;
+                let cert = session_status
+                    .cert
+                    .ok_or({ SmartIdClientError::SessionResponseMissingCertificate })?;
 
                 // Validate the certificate chain and check for expiration
                 if !self.cfg.is_demo() {
@@ -521,9 +521,11 @@ impl SmartIdClientV3 {
 
                 // Check certificate level is high enough
                 if &cert.certificate_level < session_config.requested_certificate_level() {
-                    Err(SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                        "Certificate level is not high enough",
-                    ))?
+                    Err(
+                        SmartIdClientError::FailedToValidateSessionResponseCertificate(
+                            "Certificate level is not high enough",
+                        ),
+                    )?
                 };
 
                 // Validate signature is correct
@@ -543,34 +545,36 @@ impl SmartIdClientV3 {
         }
     }
 
-    fn validate_signature(&self, session_config: SessionConfig, signature: Option<SignatureResponse>, cert: SessionCertificate) -> Result<()> {
+    fn validate_signature(
+        &self,
+        session_config: SessionConfig,
+        signature: Option<SignatureResponse>,
+        cert: SessionCertificate,
+    ) -> Result<()> {
         match session_config {
             SessionConfig::Authentication {
                 random_challenge, ..
             } => {
-                let signature = signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+                let signature =
+                    signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
-                signature.validate_acsp_v1(
-                    random_challenge,
-                    cert.value,
-                )
-            },
+                signature.validate_acsp_v1(random_challenge, cert.value)
+            }
             SessionConfig::Signature { digest, .. } => {
-                let signature = signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+                let signature =
+                    signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
                 // TODO: CHeck this with prod
                 if self.cfg.is_demo() {
                     return Ok(());
                 }
 
-                signature.validate_raw_digest(
-                    digest,
-                    cert.value.clone(),
-                )?;
+                signature.validate_raw_digest(digest, cert.value.clone())?;
 
                 // Check that the identity used to authenticated matches the identity used to sign
-                self.get_user_identity()?.identity_matches_certificate(cert.value)
-            },
+                self.get_user_identity()?
+                    .identity_matches_certificate(cert.value)
+            }
             SessionConfig::CertificateChoice { .. } => {
                 debug!("No signature validation needed for certificate choice session");
                 Ok(())
@@ -597,7 +601,6 @@ impl SmartIdClientV3 {
             }
         }
     }
-
 
     fn set_session(&self, session: SessionConfig) -> Result<()> {
         match self.session_config.lock() {

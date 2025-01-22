@@ -1,10 +1,10 @@
 use crate::error::SmartIdClientError;
+use crate::models::common::CertificateLevel;
 use crate::models::interaction::InteractionFlow;
 use crate::models::signature::{SignatureProtocol, SignatureResponse};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
-use crate::models::common::CertificateLevel;
 
 #[skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
