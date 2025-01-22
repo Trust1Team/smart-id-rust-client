@@ -52,7 +52,7 @@ pub struct SmartIdClientV3 {
     // This tracks session state and is used to make subsequent requests
     // For example to generate QR codes or to poll for session status
     pub(crate) session_config: Arc<Mutex<Option<SessionConfig>>>,
-    // Is populated after a successful authentication session
+    // Is checked against returned certificates to ensure the correct user is signing
     pub(crate) authenticated_identity: Arc<Mutex<Option<UserIdentity>>>,
 }
 
@@ -66,11 +66,11 @@ impl SmartIdClientV3 {
     /// # Returns
     ///
     /// A new instance of SmartIdClientV3.
-    pub async fn new(cfg: &SmartIDConfig) -> Self {
+    pub async fn new(cfg: &SmartIDConfig, user_identity: Option<UserIdentity>) -> Self {
         SmartIdClientV3 {
             cfg: cfg.clone(),
             session_config: Arc::new(Mutex::new(None)),
-            authenticated_identity: Arc::new(Mutex::new(None)),
+            authenticated_identity: Arc::new(Mutex::new(user_identity)),
         }
     }
 
@@ -512,7 +512,7 @@ impl SmartIdClientV3 {
                 // Validate the certificate is present (Required for OK status)
                 let cert = session_status
                     .cert
-                    .ok_or({ SmartIdClientError::SessionResponseMissingCertificate })?;
+                    .ok_or(SmartIdClientError::SessionResponseMissingCertificate)?;
 
                 // Validate the certificate chain and check for expiration
                 if !self.cfg.is_demo() {
@@ -531,8 +531,10 @@ impl SmartIdClientV3 {
                 // Validate signature is correct
                 self.validate_signature(session_config, session_status.signature, cert.clone())?;
 
-                // Update the authenticated identity with this new validated identity
-                self.set_user_identity(UserIdentity::from_cert(cert.value)?)?;
+                // Check that the identity matches the certificate
+                if let Some(user_identity) = self.get_user_identity()? {
+                    user_identity.identity_matches_certificate(cert.value)?
+                }
 
                 Ok(())
             }
@@ -558,7 +560,15 @@ impl SmartIdClientV3 {
                 let signature =
                     signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
-                signature.validate_acsp_v1(random_challenge, cert.value)
+                signature.validate_acsp_v1(random_challenge, cert.value.clone())?;
+
+                // If no user identity is set, set it from the certificate
+                // This happens during all anonymous sessions
+                if self.get_user_identity()?.is_none() {
+                    self.set_user_identity(UserIdentity::from_certificate(cert.value.clone())?)?
+                };
+
+                Ok(())
             }
             SessionConfig::Signature { digest, .. } => {
                 let signature =
@@ -569,11 +579,7 @@ impl SmartIdClientV3 {
                     return Ok(());
                 }
 
-                signature.validate_raw_digest(digest, cert.value.clone())?;
-
-                // Check that the identity used to authenticated matches the identity used to sign
-                self.get_user_identity()?
-                    .identity_matches_certificate(cert.value)
+                signature.validate_raw_digest(digest, cert.value.clone())
             }
             SessionConfig::CertificateChoice { .. } => {
                 debug!("No signature validation needed for certificate choice session");
@@ -626,14 +632,11 @@ impl SmartIdClientV3 {
         }
     }
 
-    fn get_user_identity(&self) -> Result<UserIdentity> {
+    fn get_user_identity(&self) -> Result<Option<UserIdentity>> {
         match self.authenticated_identity.lock() {
             Ok(guard) => match guard.clone() {
-                Some(s) => Ok(s),
-                None => {
-                    debug!("Can't get user identity there is no authenticated identity");
-                    Err(SmartIdClientError::NoAuthenticatedIdentityException.into())
-                }
+                Some(s) => Ok(Some(s)),
+                None => Ok(None)
             },
             Err(e) => {
                 debug!("Failed to lock authenticated identity: {:?}", e);

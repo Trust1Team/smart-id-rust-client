@@ -14,7 +14,7 @@ pub struct UserIdentity {
 }
 
 impl UserIdentity {
-    pub(crate) fn from_cert(certificate: String) -> Result<Self> {
+    pub(crate) fn from_certificate(certificate: String) -> Result<Self> {
         let decoded_cert = BASE64_STANDARD.decode(&certificate).map_err(|_| {
             SmartIdClientError::FailedToValidateSessionResponseCertificate(
                 "Could not decode base64 certificate",
@@ -40,7 +40,7 @@ impl UserIdentity {
     }
 
     pub(crate) fn identity_matches_certificate(&self, certificate: String) -> Result<()> {
-        let certificate_identity = UserIdentity::from_cert(certificate)?;
+        let certificate_identity = UserIdentity::from_certificate(certificate)?;
 
         if self.given_name.to_uppercase() != certificate_identity.given_name.to_uppercase() {
             return Err(
