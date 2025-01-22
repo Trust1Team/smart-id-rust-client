@@ -1,12 +1,15 @@
 use crate::error::SmartIdClientError;
 use anyhow::Result;
-use base64::engine::general_purpose::{STANDARD_NO_PAD};
-use base64::Engine;
+use base64::engine::general_purpose::STANDARD_NO_PAD;
 use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
 use rand::{thread_rng, Rng};
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha20Rng;
-use ring::signature::{UnparsedPublicKey, RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384, RSA_PKCS1_2048_8192_SHA512};
+use ring::signature::{
+    UnparsedPublicKey, RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384,
+    RSA_PKCS1_2048_8192_SHA512,
+};
 use serde::{Deserialize, Serialize};
 use x509_parser::certificate::X509Certificate;
 use x509_parser::der_parser::asn1_rs::BitString;
@@ -39,16 +42,18 @@ impl SignatureAlgorithm {
     ) -> Result<()> {
         match self {
             SignatureAlgorithm::sha256WithRSAEncryption => {
-                let public_key = UnparsedPublicKey::new(&RSA_PKCS1_2048_8192_SHA256, public_key.as_ref());
+                let public_key =
+                    UnparsedPublicKey::new(&RSA_PKCS1_2048_8192_SHA256, public_key.as_ref());
                 public_key.verify(digest, signature).map_err(|e| {
                     SmartIdClientError::InvalidResponseSignature(format!(
                         "Failed to verify signature: {}",
                         e
                     ))
                 })
-            },
+            }
             SignatureAlgorithm::sha384WithRSAEncryption => {
-                let public_key = UnparsedPublicKey::new(&RSA_PKCS1_2048_8192_SHA384, public_key.as_ref());
+                let public_key =
+                    UnparsedPublicKey::new(&RSA_PKCS1_2048_8192_SHA384, public_key.as_ref());
                 public_key.verify(digest, signature).map_err(|e| {
                     SmartIdClientError::InvalidResponseSignature(format!(
                         "Failed to verify signature: {}",
@@ -57,7 +62,8 @@ impl SignatureAlgorithm {
                 })
             }
             SignatureAlgorithm::sha512WithRSAEncryption => {
-                let public_key = UnparsedPublicKey::new(&RSA_PKCS1_2048_8192_SHA512, public_key.as_ref());
+                let public_key =
+                    UnparsedPublicKey::new(&RSA_PKCS1_2048_8192_SHA512, public_key.as_ref());
                 public_key.verify(digest, signature).map_err(|e| {
                     SmartIdClientError::InvalidResponseSignature(format!(
                         "Failed to verify signature: {}",
@@ -137,7 +143,8 @@ impl SignatureRequestParameters {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
-#[serde(untagged)] // Without this serializes as "{ACSP_V1: { value, server_random, signature_algorithm }}", with it serializes as "{ value, server_random, signature_algorithm }"
+#[serde(untagged)]
+// Without this serializes as "{ACSP_V1: { value, server_random, signature_algorithm }}", with it serializes as "{ value, server_random, signature_algorithm }"
 #[non_exhaustive]
 pub enum SignatureResponse {
     #[serde(rename_all = "camelCase")]
@@ -177,8 +184,12 @@ impl SignatureResponse {
 
                 let public_key = parsed_cert.public_key().clone().subject_public_key;
 
-                let digest = BASE64_STANDARD.decode(digest).expect("Failed to decode base64 digest");
-                let signature = BASE64_STANDARD.decode(value).expect("Failed to decode base64 signature");
+                let digest = BASE64_STANDARD
+                    .decode(digest)
+                    .expect("Failed to decode base64 digest");
+                let signature = BASE64_STANDARD
+                    .decode(value)
+                    .expect("Failed to decode base64 signature");
 
                 signature_algorithm.validate_signature(
                     public_key,
@@ -194,11 +205,7 @@ impl SignatureResponse {
         }
     }
 
-    pub(crate) fn validate_acsp_v1(
-        &self,
-        random_challenge: String,
-        cert: String,
-    ) -> Result<()> {
+    pub(crate) fn validate_acsp_v1(&self, random_challenge: String, cert: String) -> Result<()> {
         match self {
             SignatureResponse::ACSP_V1 {
                 value,
@@ -209,13 +216,15 @@ impl SignatureResponse {
                 if server_random.len() < 24 {
                     return Err(SmartIdClientError::InvalidResponseSignature(
                         "server_random length is less than 24 characters".to_string(),
-                    ).into());
+                    )
+                    .into());
                 }
 
                 if BASE64_STANDARD.decode(server_random).is_err() {
                     return Err(SmartIdClientError::InvalidResponseSignature(
                         "server_random contains invalid Base64 characters".to_string(),
-                    ).into());
+                    )
+                    .into());
                 }
 
                 // signature validation
@@ -230,7 +239,7 @@ impl SignatureResponse {
                         SmartIdClientError::FailedToValidateSessionResponseCertificate(
                             "Failed to parse certificate",
                         )
-                })?;
+                    })?;
 
                 let public_key = parsed_cert.public_key().clone().subject_public_key;
 
@@ -241,7 +250,9 @@ impl SignatureResponse {
                     random_challenge
                 );
 
-                let signature = BASE64_STANDARD.decode(value).expect("Failed to decode base64 signature");
+                let signature = BASE64_STANDARD
+                    .decode(value)
+                    .expect("Failed to decode base64 signature");
 
                 signature_algorithm.validate_signature(
                     public_key,
@@ -376,7 +387,6 @@ mod tests {
             signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
         };
 
-
         assert!(response
             .validate_acsp_v1(random_challenge.to_string(), VALID_CERTIFICATE.to_string())
             .is_ok());
@@ -395,7 +405,10 @@ mod tests {
         };
 
         assert!(response
-            .validate_acsp_v1(random_challenge.to_string(), INVALID_CERTIFICATE.to_string())
+            .validate_acsp_v1(
+                random_challenge.to_string(),
+                INVALID_CERTIFICATE.to_string()
+            )
             .is_err());
     }
 }
