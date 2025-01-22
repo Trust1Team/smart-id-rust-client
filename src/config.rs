@@ -1,12 +1,13 @@
 use crate::error::SmartIdClientError;
 use std::env;
 
+const DYNAMIC_LINK_PATH: &str = "/dynamic-link";
+
 /// Smart ID Client Configuration
 #[derive(Debug, Clone)]
 pub struct SmartIDConfig {
     pub root_url: String,
     pub api_path: String,
-    pub dynamic_link_path: String,
     pub relying_party_uuid: String,
     pub relying_party_name: String,
     pub client_request_timeout: Option<u64>,
@@ -17,7 +18,6 @@ impl SmartIDConfig {
         Ok(SmartIDConfig {
             root_url: get_env("ROOT_URL")?,
             api_path: get_env("V3_API_PATH")?,
-            dynamic_link_path: get_env("DYNAMIC_LINK_PATH")?,
             relying_party_uuid: get_env("RELYING_PARTY_UUID")?,
             relying_party_name: get_env("RELYING_PARTY_NAME")?,
             client_request_timeout: get_env_u64("CLIENT_REQ_NETWORK_TIMEOUT_MILLIS").ok(),
@@ -29,7 +29,7 @@ impl SmartIDConfig {
     }
 
     pub fn dynamic_link_url(&self) -> String {
-        format!("{}{}", self.root_url, self.dynamic_link_path)
+        format!("{}{}", self.root_url, DYNAMIC_LINK_PATH)
     }
 
     pub fn is_demo(&self) -> bool {
