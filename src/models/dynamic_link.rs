@@ -97,7 +97,7 @@ mod tests {
             url: "https://sid.demo.sk.ee/dynamic-link/".to_string(),
             version: "0.1".to_string(),
             session_token: "sessionToken".to_string(),
-            session_secret: "sessionSecret".to_string(),
+            session_secret: "qKzzHX6SG0ovfEdMuDEzCgTu".to_string(),
             dynamic_link_type: DynamicLinkType::QR,
             session_type: SessionType::auth,
             session_start_time: Utc::now(),
@@ -149,7 +149,7 @@ mod tests {
         };
         assert_eq!(
             dynamic_link.generate_auth_code(),
-            "zQR5yqKtjlrxXVhAEsijUBhVnT7RlHgch26MB5beprQ="
+            "IoJzCv6p28yRiOmKFlxFkCINPCXbhkiJWq7zWiaE580="
         );
     }
 
@@ -157,17 +157,17 @@ mod tests {
     #[tokio::test]
     async fn test_generate_qr_code_url() {
         let dynamic_link = qr_dynamic_link();
-        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link/?version=0.1&sessionToken=sessionToken&dynamicLinkType=QR&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=Up2D2TKv9Bm7xnaHm2+/0TKTpCQwNJNlto0r2opNmZo=");
+        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link/?version=0.1&sessionToken=sessionToken&dynamicLinkType=QR&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=E4xBQkwfmyspaZAfJoY5Pdz6-bAWytBe-wyiX3SQS5o=");
     }
 
     #[traced_test]
     #[tokio::test]
-    async fn test_generate_web1app_url() {
+    async fn test_generate_web2app_url() {
         let dynamic_link = DynamicLink {
             dynamic_link_type: DynamicLinkType::Web2App,
             ..qr_dynamic_link()
         };
-        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link/?version=0.1&sessionToken=sessionToken&dynamicLinkType=Web2App&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=NIzRld8sfsiG41kunWZMTv8II5dXf/g9pVwzQmFmSmA=");
+        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link/?version=0.1&sessionToken=sessionToken&dynamicLinkType=Web2App&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=ofcBeca9ATRjdO5Dr17RRvGnamYA5s5C3rmKXyuDN4g=");
     }
 }
 

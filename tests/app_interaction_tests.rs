@@ -18,6 +18,7 @@ const DYNAMIC_LINK_PATH: &str = "/dynamic-link";
 const RELYING_PARTY_NAME: &str = "YOUR_RELYING_PARTY_NAME";
 const RELYING_PARTY_UUID: &str = "YOUR_RELYING_PARTY_UUID";
 const DOCUMENT_ID: &str = "YOUR_DOCUMENT_ID";
+#[allow(dead_code)]
 const ETSI_ID: &str = "YOUR_ETSI_ID";
 const EXAMPLE_SIGNING_TEXT: &str = "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=";
 
