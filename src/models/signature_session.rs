@@ -1,10 +1,10 @@
-use base64::Engine;
-use base64::prelude::BASE64_STANDARD;
 use crate::config::SmartIDConfig;
 use crate::error::SmartIdClientError;
 use crate::models::common::{CertificateLevel, RequestProperties};
 use crate::models::interaction::Interaction;
 use crate::models::signature::{SignatureAlgorithm, SignatureProtocol, SignatureRequestParameters};
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 // region SignatureSessionRequest
