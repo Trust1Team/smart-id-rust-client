@@ -177,6 +177,10 @@ pub enum SmartIdClientError {
     #[error("Failed to validate session response certificate: {0}")]
     FailedToValidateSessionResponseCertificate(&'static str),
 
+    /// Digest is not in valid format
+    #[error("Digest is not in valid format: {0}")]
+    InvalidDigestException(&'static str),
+
     /// User should view Smart-ID app or portal
     #[error("User should view Smart-ID app or portal")]
     UserShouldViewSmartIDAppOrPortalException,

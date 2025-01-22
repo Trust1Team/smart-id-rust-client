@@ -19,18 +19,15 @@ const RELYING_PARTY_NAME: &str = "YOUR_RELYING_PARTY_NAME";
 const RELYING_PARTY_UUID: &str = "YOUR_RELYING_PARTY_UUID";
 const DOCUMENT_ID: &str = "YOUR_DOCUMENT_ID";
 const ETSI_ID: &str = "YOUR_ETSI_ID";
-const EXAMPLE_SIGNING_TEXT: &str = "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE="; // Base64 encoded "Test document of stuff"
-
+const EXAMPLE_SIGNING_TEXT: &str = "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=";
 
 fn setup() {
     env::set_var("ROOT_URL", ROOT_URL);
     env::set_var("V3_API_PATH", V3_API_PATH);
-    env::set_var("DYNAMIC_LINK_PATH", DYNAMIC_LINK_PATH);
     env::set_var("RELYING_PARTY_NAME", RELYING_PARTY_NAME);
     env::set_var("RELYING_PARTY_UUID", RELYING_PARTY_UUID);
     env::set_var("CLIENT_REQ_NETWORK_TIMEOUT_MILLIS", "30000");
 }
-
 
 // These tests are ignored because they require manual interaction with the Smart-ID app.
 // To run these tests, follow the instructions in the comments.
@@ -39,7 +36,7 @@ fn setup() {
 async fn test_authentication_qr() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
-    let smart_id_client = SmartIdClientV3::new(&cfg).await;
+    let smart_id_client = SmartIdClientV3::new(&cfg, None).await;
 
     let authentication_request = AuthenticationRequest::new(
         &cfg,
@@ -49,7 +46,10 @@ async fn test_authentication_qr() -> Result<()> {
         SignatureAlgorithm::sha256WithRSAEncryption,
         AuthenticationCertificateLevel::QUALIFIED,
     )?;
-    println!("Authentication Request:\n{}", serde_json::to_string_pretty(&authentication_request)?);
+    println!(
+        "Authentication Request:\n{}",
+        serde_json::to_string_pretty(&authentication_request)?
+    );
 
     smart_id_client
         .start_authentication_dynamic_link_anonymous_session(authentication_request)
@@ -63,7 +63,10 @@ async fn test_authentication_qr() -> Result<()> {
 
     // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
     let result = smart_id_client.get_session_status(120000).await?;
-    println!("Authentication Session Status \n{:}", serde_json::to_string_pretty(&result)?);
+    println!(
+        "Authentication Session Status \n{:}",
+        serde_json::to_string_pretty(&result)?
+    );
 
     assert_eq!(result.result.unwrap().end_result, EndResult::OK);
     Ok(())
@@ -74,7 +77,7 @@ async fn test_authentication_qr() -> Result<()> {
 async fn test_authentication_web_to_app() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
-    let smart_id_client = SmartIdClientV3::new(&cfg).await;
+    let smart_id_client = SmartIdClientV3::new(&cfg, None).await;
 
     let authentication_request = AuthenticationRequest::new(
         &cfg,
@@ -84,7 +87,10 @@ async fn test_authentication_web_to_app() -> Result<()> {
         SignatureAlgorithm::sha512WithRSAEncryption,
         AuthenticationCertificateLevel::QUALIFIED,
     )?;
-    println!("Authentication Request: \n{}", serde_json::to_string_pretty(&authentication_request)?);
+    println!(
+        "Authentication Request: \n{}",
+        serde_json::to_string_pretty(&authentication_request)?
+    );
 
     smart_id_client
         .start_authentication_dynamic_link_anonymous_session(authentication_request)
@@ -99,7 +105,10 @@ async fn test_authentication_web_to_app() -> Result<()> {
 
     // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
     let result = smart_id_client.get_session_status(120000).await?;
-    println!("Authentication Session Status \n{:}", serde_json::to_string_pretty(&result)?);
+    println!(
+        "Authentication Session Status \n{:}",
+        serde_json::to_string_pretty(&result)?
+    );
 
     assert_eq!(result.result.unwrap().end_result, EndResult::OK);
     Ok(())
@@ -110,7 +119,7 @@ async fn test_authentication_web_to_app() -> Result<()> {
 async fn test_authentication_app_to_app() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
-    let smart_id_client = SmartIdClientV3::new(&cfg).await;
+    let smart_id_client = SmartIdClientV3::new(&cfg, None).await;
 
     let authentication_request = AuthenticationRequest::new(
         &cfg,
@@ -120,7 +129,10 @@ async fn test_authentication_app_to_app() -> Result<()> {
         SignatureAlgorithm::sha512WithRSAEncryption,
         AuthenticationCertificateLevel::QUALIFIED,
     )?;
-    println!("Authentication Request: \n{}", serde_json::to_string_pretty(&authentication_request)?);
+    println!(
+        "Authentication Request: \n{}",
+        serde_json::to_string_pretty(&authentication_request)?
+    );
 
     smart_id_client
         .start_authentication_dynamic_link_anonymous_session(authentication_request)
@@ -135,7 +147,10 @@ async fn test_authentication_app_to_app() -> Result<()> {
 
     // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
     let result = smart_id_client.get_session_status(120000).await?;
-    println!("Authentication Session Status \n{:}", serde_json::to_string_pretty(&result)?);
+    println!(
+        "Authentication Session Status \n{:}",
+        serde_json::to_string_pretty(&result)?
+    );
 
     assert_eq!(result.result.unwrap().end_result, EndResult::OK);
     Ok(())
@@ -146,7 +161,7 @@ async fn test_authentication_app_to_app() -> Result<()> {
 async fn test_auth_then_certificate_choice_then_sign_with_qr_code() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
-    let smart_id_client = SmartIdClientV3::new(&cfg).await;
+    let smart_id_client = SmartIdClientV3::new(&cfg, None).await;
 
 
     // AUTHENTICATION
@@ -158,7 +173,10 @@ async fn test_auth_then_certificate_choice_then_sign_with_qr_code() -> Result<()
         SignatureAlgorithm::sha256WithRSAEncryption,
         AuthenticationCertificateLevel::QUALIFIED,
     )?;
-    println!("Authentication Request:\n{}", serde_json::to_string_pretty(&authentication_request)?);
+    println!(
+        "Authentication Request:\n{}",
+        serde_json::to_string_pretty(&authentication_request)?
+    );
 
     smart_id_client
         .start_authentication_dynamic_link_anonymous_session(authentication_request)
@@ -172,14 +190,19 @@ async fn test_auth_then_certificate_choice_then_sign_with_qr_code() -> Result<()
 
     // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
     let result = smart_id_client.get_session_status(120000).await?;
-    println!("Authentication Session Status \n{:}", serde_json::to_string_pretty(&result)?);
-
+    println!(
+        "Authentication Session Status \n{:}",
+        serde_json::to_string_pretty(&result)?
+    );
 
     // CERTIFICATE CHOICE (Only needed if we want to include the user's certificate in the digest for the signature)
     let document_number = result.result.unwrap().document_number.unwrap();
 
-    let certificate_choice_request = CertificateChoiceRequest::new(&cfg).await;
-    println!("Certificate Choice Request: \n{}", serde_json::to_string_pretty(&certificate_choice_request)?);
+    let certificate_choice_request = CertificateChoiceRequest::new(&cfg);
+    println!(
+        "Certificate Choice Request: \n{}",
+        serde_json::to_string_pretty(&certificate_choice_request)?
+    );
 
     smart_id_client
         .start_certificate_choice_notification_document_session(
@@ -189,7 +212,10 @@ async fn test_auth_then_certificate_choice_then_sign_with_qr_code() -> Result<()
         .await?;
 
     let result = smart_id_client.get_session_status(120000).await?;
-    println!("Certificate Choice Session Status\n{}", serde_json::to_string_pretty(&result)?);
+    println!(
+        "Certificate Choice Session Status\n{}",
+        serde_json::to_string_pretty(&result)?
+    );
 
     // SIGNATURE
     let signature_request = SignatureRequest::new(
@@ -200,10 +226,16 @@ async fn test_auth_then_certificate_choice_then_sign_with_qr_code() -> Result<()
         EXAMPLE_SIGNING_TEXT.to_string(),
         SignatureAlgorithm::sha256WithRSAEncryption,
     )?;
-    println!("Signature Request: \n{}", serde_json::to_string_pretty(&signature_request)?);
+    println!(
+        "Signature Request: \n{}",
+        serde_json::to_string_pretty(&signature_request)?
+    );
 
     smart_id_client
-        .start_signature_dynamic_link_document_session(signature_request, document_number.to_string())
+        .start_signature_dynamic_link_document_session(
+            signature_request,
+            document_number.to_string(),
+        )
         .await?;
 
     let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "eng")?;
@@ -213,12 +245,14 @@ async fn test_auth_then_certificate_choice_then_sign_with_qr_code() -> Result<()
     open_qr_in_computer_image_viewer(qr_code_link, "qr_sign_code")?;
 
     let result = smart_id_client.get_session_status(120000).await?;
-    println!("Signature Session Status \n{:}", serde_json::to_string_pretty(&result)?);
+    println!(
+        "Signature Session Status \n{:}",
+        serde_json::to_string_pretty(&result)?
+    );
 
     assert_eq!(result.result.unwrap().end_result, EndResult::OK);
     Ok(())
 }
-
 
 // Helper function to open the QR code in the computer's default image viewer
 // This allows the tester to scan the QR code with a mobile device during maunal testing.

@@ -19,7 +19,7 @@ pub struct CertificateChoiceRequest {
 }
 
 impl CertificateChoiceRequest {
-    pub async fn new(cfg: &SmartIDConfig) -> Self {
+    pub fn new(cfg: &SmartIDConfig) -> Self {
         CertificateChoiceRequest {
             relying_party_uuid: cfg.relying_party_uuid.clone(),
             relying_party_name: cfg.relying_party_name.clone(),
