@@ -33,7 +33,7 @@ impl SmartIDConfig {
     }
 
     pub fn is_demo(&self) -> bool {
-        self.root_url.contains("demo")
+        self.root_url == "https://sid.demo.sk.ee"
     }
 }
 

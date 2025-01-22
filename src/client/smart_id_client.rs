@@ -8,16 +8,14 @@ use crate::models::certificate_choice_session::{
 };
 use crate::models::common::SessionConfig;
 use crate::models::dynamic_link::{DynamicLink, DynamicLinkType, SessionType};
-use crate::models::session_status::{SessionState, SessionStatus};
+use crate::models::session_status::{SessionCertificate, SessionState, SessionStatus};
 use crate::models::signature_session::{SignatureRequest, SignatureRequestResponse};
 use crate::utils::sec_x509::validate_certificate;
 use anyhow::Result;
-use base64::prelude::BASE64_STANDARD;
-use base64::Engine;
 use std::sync::{Arc, Mutex};
 use tracing::debug;
-use x509_parser::certificate::X509Certificate;
-use x509_parser::prelude::FromDer;
+use crate::models::signature::SignatureResponse;
+use crate::models::user_identity::UserIdentity;
 
 // region: Path definitions
 // Copied from https://github.com/SK-EID/smart-id-java-client/blob/81e48f519bf882db8584a344b161db378b959093/src/main/java/ee/sk/smartid/v3/rest/SmartIdRestConnector.java#L79
@@ -54,6 +52,8 @@ pub struct SmartIdClientV3 {
     // This tracks session state and is used to make subsequent requests
     // For example to generate QR codes or to poll for session status
     pub(crate) session_config: Arc<Mutex<Option<SessionConfig>>>,
+    // Is populated after a successful authentication session
+    pub(crate) authenticated_identity: Arc<Mutex<Option<UserIdentity>>>,
 }
 
 impl SmartIdClientV3 {
@@ -70,6 +70,7 @@ impl SmartIdClientV3 {
         SmartIdClientV3 {
             cfg: cfg.clone(),
             session_config: Arc::new(Mutex::new(None)),
+            authenticated_identity: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -383,7 +384,9 @@ impl SmartIdClientV3 {
         ))
     }
 
-    // endregion
+    // endregion: Certificate Choice
+
+    // region: Dynamic Link
 
     /// Generates a dynamic link for the current session.
     /// The link will redirect the device to the Smart-ID app.
@@ -460,7 +463,9 @@ impl SmartIdClientV3 {
         }
     }
 
-    // region: Utility functions
+    // endregion: Dynamic Link
+
+    // Region: Validation
 
     /// Validates the session status and ensures that the session has completed successfully.
     ///
@@ -478,6 +483,7 @@ impl SmartIdClientV3 {
     ///
     /// * `session_status` - The status of the session to be validated.
     /// * `session_config` - The configuration of the session.
+    /// * `user_identity` - The subject of the certificate.
     ///
     /// # Returns
     ///
@@ -492,6 +498,7 @@ impl SmartIdClientV3 {
     /// - The signature is missing or invalid.
     /// - The session did not complete successfully.
     /// - The session result is not OK.
+    /// - The provided identity does not match the certificate.
     fn validate_session_status(
         &self,
         session_status: SessionStatus,
@@ -499,72 +506,31 @@ impl SmartIdClientV3 {
     ) -> Result<()> {
         match session_status.result {
             Some(session_result) => {
-                // Return an error if the session result is not OK
+                // Check the result is OK
                 session_result.end_result.is_ok()?;
 
-                let cert = match session_status.cert {
-                    Some(cert) => cert,
-                    None => {
-                        return Err(SmartIdClientError::SessionResponseMissingCertificate.into())
-                    }
-                };
+                // Validate the certificate is present (Required for OK status)
+                let cert = session_status.cert.ok_or({
+                    SmartIdClientError::SessionResponseMissingCertificate
+                })?;
 
                 // Validate the certificate chain and check for expiration
                 if !self.cfg.is_demo() {
                     validate_certificate(&cert.value)?;
                 }
 
-                let decoded_cert = BASE64_STANDARD.decode(&cert.value).map_err(|_| {
-                    SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                        "Could not decode base64 certificate",
-                    )
-                })?;
-                let (_, parsed_cert) =
-                    X509Certificate::from_der(decoded_cert.as_slice()).map_err(|_| {
-                        SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                            "Failed to parse certificate",
-                        )
-                    })?;
+                // Check certificate level is high enough
+                if &cert.certificate_level < session_config.requested_certificate_level() {
+                    Err(SmartIdClientError::FailedToValidateSessionResponseCertificate(
+                        "Certificate level is not high enough",
+                    ))?
+                };
 
-                // The identity of the authenticated person is in the subject field or subjectAltName extension of the X.509 certificate.
-                // TODO: Find the subject to validate against
-                let subject = parsed_cert.subject().clone();
-                let subject_alt_name = parsed_cert.subject_alternative_name();
-                println!("Subject: {:?}", subject.to_string());
-                println!("SubjectAltName: {:?}", subject_alt_name.unwrap().unwrap().value);
+                // Validate signature is correct
+                self.validate_signature(session_config, session_status.signature, cert.clone())?;
 
-                // Check that the certificate level is high enough
-                // TODO: Implement this, check qualified/advanced against the response. This needs to be added to the session state
-
-
-                match session_config {
-                    SessionConfig::Authentication {
-                        random_challenge, ..
-                    } => {
-                        let signature = session_status.signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
-
-                        signature.validate_acsp_v1(
-                            random_challenge,
-                            cert.value,
-                        )
-                    },
-                    SessionConfig::Signature { digest, .. } => {
-                        let signature = session_status.signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
-
-                        if self.cfg.is_demo() {
-                            return Ok(());
-                        }
-
-                        signature.validate_raw_digest(
-                            digest,
-                            cert.value,
-                        )
-                    },
-                    SessionConfig::CertificateChoice { .. } => {
-                        debug!("No validation needed for certificate choice session");
-                        Ok(())
-                    }
-                }?;
+                // Update the authenticated identity with this new validated identity
+                self.set_user_identity(UserIdentity::from_cert(cert.value)?)?;
 
                 Ok(())
             }
@@ -576,6 +542,45 @@ impl SmartIdClientV3 {
             },
         }
     }
+
+    fn validate_signature(&self, session_config: SessionConfig, signature: Option<SignatureResponse>, cert: SessionCertificate) -> Result<()> {
+        match session_config {
+            SessionConfig::Authentication {
+                random_challenge, ..
+            } => {
+                let signature = signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+
+                signature.validate_acsp_v1(
+                    random_challenge,
+                    cert.value,
+                )
+            },
+            SessionConfig::Signature { digest, .. } => {
+                let signature = signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+
+                // TODO: CHeck this with prod
+                if self.cfg.is_demo() {
+                    return Ok(());
+                }
+
+                signature.validate_raw_digest(
+                    digest,
+                    cert.value.clone(),
+                )?;
+
+                // Check that the identity used to authenticated matches the identity used to sign
+                self.get_user_identity()?.identity_matches_certificate(cert.value)
+            },
+            SessionConfig::CertificateChoice { .. } => {
+                debug!("No signature validation needed for certificate choice session");
+                Ok(())
+            }
+        }
+    }
+
+    // endregion: Validation
+
+    // region: Utility functions
 
     fn get_session(&self) -> Result<SessionConfig> {
         match self.session_config.lock() {
@@ -592,6 +597,7 @@ impl SmartIdClientV3 {
             }
         }
     }
+
 
     fn set_session(&self, session: SessionConfig) -> Result<()> {
         match self.session_config.lock() {
@@ -613,6 +619,47 @@ impl SmartIdClientV3 {
             }
             Err(e) => {
                 debug!("Failed to lock session config: {:?}", e);
+            }
+        }
+    }
+
+    fn get_user_identity(&self) -> Result<UserIdentity> {
+        match self.authenticated_identity.lock() {
+            Ok(guard) => match guard.clone() {
+                Some(s) => Ok(s),
+                None => {
+                    debug!("Can't get user identity there is no authenticated identity");
+                    Err(SmartIdClientError::NoAuthenticatedIdentityException.into())
+                }
+            },
+            Err(e) => {
+                debug!("Failed to lock authenticated identity: {:?}", e);
+                Err(SmartIdClientError::GetUserIdentityException.into())
+            }
+        }
+    }
+
+    fn set_user_identity(&self, user_identity: UserIdentity) -> Result<()> {
+        match self.authenticated_identity.lock() {
+            Ok(mut guard) => {
+                *guard = Some(user_identity);
+                Ok(())
+            }
+            Err(e) => {
+                debug!("Failed to lock authenticated identity: {:?}", e);
+                Err(SmartIdClientError::SetUserIdentityException.into())
+            }
+        }
+    }
+
+    #[allow(dead_code)]
+    fn clear_user_identity(&self) {
+        match self.authenticated_identity.lock() {
+            Ok(mut guard) => {
+                *guard = None;
+            }
+            Err(e) => {
+                debug!("Failed to lock authenticated identity: {:?}", e);
             }
         }
     }

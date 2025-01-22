@@ -1,10 +1,10 @@
 pub mod authentication_session;
 pub mod certificate_choice_session;
 pub mod common;
-pub mod config;
 pub mod dynamic_link;
 pub mod interaction;
 pub mod semantic_identifier;
 pub mod session_status;
 pub mod signature;
 pub mod signature_session;
+pub mod user_identity;
