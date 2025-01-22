@@ -62,6 +62,7 @@ impl SmartIdClientV3 {
     /// # Arguments
     ///
     /// * `cfg` - A reference to the SmartIDConfig.
+    /// * `user_identity` - An optional UserIdentity. This will be compared with the certificate subject to ensure the correct user is signing. If not provided, the UserIdentity will be set from the certificate during the first successful authentication.
     ///
     /// # Returns
     ///
@@ -465,7 +466,7 @@ impl SmartIdClientV3 {
 
     // endregion: Dynamic Link
 
-    // Region: Validation
+    // region: Validation
 
     /// Validates the session status and ensures that the session has completed successfully.
     ///
@@ -591,6 +592,15 @@ impl SmartIdClientV3 {
     // endregion: Validation
 
     // region: Utility functions
+
+
+    /// Resets the current session by clearing the session configuration and the authenticated user identity.
+    ///
+    /// If a different user wants to log in you must call this method to clear the current session identity.
+    pub fn reset_session(&self) {
+        self.clear_session();
+        self.clear_user_identity();
+    }
 
     fn get_session(&self) -> Result<SessionConfig> {
         match self.session_config.lock() {
