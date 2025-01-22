@@ -143,7 +143,6 @@ pub enum SignatureResponse {
     #[serde(rename_all = "camelCase")]
     ACSP_V1 {
         value: String,
-        // TODO: RP must validate that the value contains only valid Base64 characters, and that the length is not less than 24 characters.
         // A random value of 24 or more characters from Base64 alphabet, which is generated at RP API service side.
         // There are not any guarantees that the returned value length is the same in each call of the RP API.
         server_random: String,
@@ -206,6 +205,20 @@ impl SignatureResponse {
                 server_random,
                 signature_algorithm,
             } => {
+                // server_random validation as specified in the Smart-ID API documentation
+                if server_random.len() < 24 {
+                    return Err(SmartIdClientError::InvalidResponseSignature(
+                        "server_random length is less than 24 characters".to_string(),
+                    ).into());
+                }
+
+                if BASE64_STANDARD.decode(server_random).is_err() {
+                    return Err(SmartIdClientError::InvalidResponseSignature(
+                        "server_random contains invalid Base64 characters".to_string(),
+                    ).into());
+                }
+
+                // signature validation
                 let decoded_cert = BASE64_STANDARD.decode(&cert).map_err(|_| {
                     SmartIdClientError::FailedToValidateSessionResponseCertificate(
                         "Could not decode base64 certificate",
@@ -375,7 +388,7 @@ mod tests {
     fn validate_acsp_v1_invalid_signature() {
         let random_challenge = "random-challenge";
         let server_random = "server-random";
-        let signature = "invalid-signature"; // TODO: Replace with actual invalid signature
+        let signature = "invalid-signature";
 
         let response = SignatureResponse::ACSP_V1 {
             value: signature.to_string(),
