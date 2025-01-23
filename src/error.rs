@@ -26,8 +26,8 @@ pub enum SmartIdClientError {
     RelyingPartyAccountConfigurationException(&'static str),
 
     ///ServerMaintenanceException
-    #[error("Server maintenance exception: {0}")]
-    ServerMaintenanceException(&'static str),
+    #[error("Server maintenance exception")]
+    ServerMaintenanceException,
 
     ///SmartIdClientException
     #[error("Smart ID client exception: {0}")]
@@ -190,4 +190,16 @@ pub enum SmartIdClientError {
     /// User should view Smart-ID app or portal
     #[error("User should view Smart-ID app or portal")]
     UserShouldViewSmartIDAppOrPortalException,
+
+    /// Not found exception from Smart ID API
+    #[error("Not found exception from Smart ID API")]
+    SmartIdAPINotFoundException,
+
+    /// Bad request exception from Smart ID API
+    #[error("Bad request exception from Smart ID API")]
+    SmartIdAPIBadRequestException,
+
+    /// Smart ID client is outdated
+    #[error("Smart ID client is outdated")]
+    SmartIdClientOutdatedException,
 }

@@ -147,7 +147,7 @@ impl SignatureRequestParameters {
 #[allow(non_camel_case_types)]
 #[serde(untagged)]
 #[non_exhaustive]
-pub enum SignatureResponse {
+pub enum ResponseSignature {
     #[serde(rename_all = "camelCase")]
     ACSP_V1 {
         value: String,
@@ -163,10 +163,10 @@ pub enum SignatureResponse {
     },
 }
 
-impl SignatureResponse {
+impl ResponseSignature {
     pub(crate) fn validate_raw_digest(&self, digest: String, cert: String) -> Result<()> {
         match self {
-            SignatureResponse::RAW_DIGEST_SIGNATURE {
+            ResponseSignature::RAW_DIGEST_SIGNATURE {
                 value,
                 signature_algorithm,
             } => {
@@ -208,7 +208,7 @@ impl SignatureResponse {
 
     pub(crate) fn validate_acsp_v1(&self, random_challenge: String, cert: String) -> Result<()> {
         match self {
-            SignatureResponse::ACSP_V1 {
+            ResponseSignature::ACSP_V1 {
                 value,
                 server_random,
                 signature_algorithm,
@@ -270,8 +270,8 @@ impl SignatureResponse {
 
     pub fn get_value(&self) -> String {
         match self {
-            SignatureResponse::ACSP_V1 { value, .. } => value.clone(),
-            SignatureResponse::RAW_DIGEST_SIGNATURE { value, .. } => value.clone(),
+            ResponseSignature::ACSP_V1 { value, .. } => value.clone(),
+            ResponseSignature::RAW_DIGEST_SIGNATURE { value, .. } => value.clone(),
         }
     }
 }
@@ -351,7 +351,7 @@ mod tests {
         let digest = "YW9ldWFvZXVhb2V1YW9ldWFvZXVhb2V1YW9ldWFvZXU=";
         let signature = "fkNNZNwDynK7kiVean4HhyDNvJNppzqs5t8cGmy2TJkULlj7FnEatjxKyNsysYVjxKm8EQ/kHBm99tgoxjShcsI4ibDClDH3oIGsCzzlEqYtx+TIFglvqwVlo2jTd1IXZ9qu+NXC/ln3IN8V8HuRspSHoJGvGCoAmYuqrOF+2hs4+vzsMq5jbtbjaHb+LYzNBm/zJMr2Vpw5MY14jFN1tqp1le0OFTaUJmD/omKww0I5l1fkLjr1t4zGu5VoVGg4qzZoGNGiWublQKwS0nsxvcnVq2E3nLR+VD7kQqcmdgLK9XvBnpFb8ff3WXRqwlgyTiFP61s2RfqPQ8FoKjPpZhJMLaxV+4fitDuMmX9tjpvZ71bqXBIqpWDeLv+LU3uwmsop6Eg4uFsiRrfrRG9TsbbMnapfZ6qjPyXpUYcdeu3O29XbsTYxKvLjZ2DU4ePMfBEUWXgF7BHci03FC3Og8vflv0PJzyzCYJgWIdwisim1yJtFSrD3u9so7749D2D9IW8r5zA4pw7qAkBNqMO6udhlRh+IlYb//HwaNlLhHXcx2XuAV9fYwPSvghqB32jEheV2Lhs6nQ7+0qp09xLmakIxaJ+WFWYfYuPnTVNv6KnsgRtcrDFqe9e9wVIHlEy8Hhri1+fsr0IlBrtkS/tO4Z7imufQrCfXnxMGyhCb6f8UJqfisNnj3GE3N8JL+fg2BrYbONCCOvHcqW0gYvgMOzNNpp/rILgtQcHg2md9DFO8Bukz+EKqHw4IlxnqWgl2WqplPLWksOrP2oxMxF0PleYnTWoOF1I7WhY4ff98Mmtsn0zEr83cqOqAazYHdpSSzcG+BdWrlbV5D8bK8EdNVLli766QUOJQZnAKF7ZepuSjyACewnohsmg7qfRAKgCDzvLip2M9uEsS0lhkvLLJz7ksPmuACdCn8vPgQRV1HxYeS2+NTOy1SYGum5SfqsAxaki/K5Sl64BySb7W7ULCKdW+My+b4F7zUkjMeML5+08uU/KHL++pBij6IM2UK0Yy";
 
-        let response = SignatureResponse::RAW_DIGEST_SIGNATURE {
+        let response = ResponseSignature::RAW_DIGEST_SIGNATURE {
             value: signature.to_string(),
             signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
         };
@@ -366,7 +366,7 @@ mod tests {
         let digest = "test-digest";
         let signature = "invalid-signature";
 
-        let response = SignatureResponse::RAW_DIGEST_SIGNATURE {
+        let response = ResponseSignature::RAW_DIGEST_SIGNATURE {
             value: signature.to_string(),
             signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
         };
@@ -382,7 +382,7 @@ mod tests {
         let server_random = "pAdXc1vgSHfaPzkn+nZfcaI/";
         let signature = "FiT0lbpQouGso/mAx+GpcJYJFdIiNLwBbliNjgq9H3daiUqPqAhn3sYFgM98q5DS7kQGix1Wx4kQItx1hqj0Bd6tnUgAxcv0BHf1Gxn3FygVxqtStVoYgVHsNjp7nMXJuKHgOR6YqNbxbO+fO+a/4t/YYkQlWd+MF0arY4QJ+jbRj8F13a57eQeZ8NEOVlZQq3FaeB0bcl8AsA32bRGQayKM6aBxTLHMmViaRMw5vMblVw/7GT6AKY1DlmNtw8/VvC/gkc6vtUVmfKbQNXc672jgrFZcOBJzkyW6oejbHO79g6N+jeTUo+1BF1Ao3zTpU4XyS5ArMy1+XoHN22wlnFw2diWXjMBKA/hDAIFQmgmeuc308O+CfFGoEhnQ6BknaMxabDJntjmxD+Hs4QxriSgk7rAGYpw1ZHBC/f+00Cr7EQ1RTaGX+beEroQtIa0/TeS4buRlM7SxiYXa6WZJKVP7oEmBk+aUMw6QnmbSl/mC1Vl6Mh7LtZ6jULDV40hvmfhrXdVYs9Ycyu9qLUE3GSuT7btV/WR7Hbpt0AowC/T6seH4wP4fihXtmA/IX4ount9+/Lk5g3AYyYK5iCBwL+yfKgwiw3kVfX9mT2d5iPY0m+ot6t6CrHoA33LeOX70n1xpNSfLsGWk5/2XtZgvrG+HcvJlbKv3fZbuoRsMKhU7hUQn5uhO7C4ewQzhMieCBwh1Sk3PNLFsnvx+eDgT7rUCVJXFnRPg6Slg2fwfCA1IC6zo4qL7uuO9OXE1Mx4saZta38ibmAkArRwAtG4meovqCF0APNcyrlwiqvnCJTJMOiv1nV1ZOM4RMVUOB1cI2LkqtzHRJUl9GMy8GLAuIGHLxZDl5IIYB6pn06N5XBlNs6z/x+VVqpNzWBBuAZUmyeizBjkab7Uac9H0WiH93J4K6QL+H+Zul+wp4Z9hfUyaWMzQoVEfVq/FySsudclDXx0HAupmEKDlo15S+o7dISC0JwvyXqjVTgKpONeKgRTrzxxbL/bNSfSFWXmAmZBM";
 
-        let response = SignatureResponse::ACSP_V1 {
+        let response = ResponseSignature::ACSP_V1 {
             value: signature.to_string(),
             server_random: server_random.to_string(),
             signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
@@ -399,7 +399,7 @@ mod tests {
         let server_random = "server-random";
         let signature = "invalid-signature";
 
-        let response = SignatureResponse::ACSP_V1 {
+        let response = ResponseSignature::ACSP_V1 {
             value: signature.to_string(),
             server_random: server_random.to_string(),
             signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,

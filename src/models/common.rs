@@ -1,10 +1,10 @@
 use crate::error::Result;
 use crate::error::SmartIdClientError;
-use crate::models::authentication_session::{AuthenticationRequest, AuthenticationResponse};
+use crate::models::authentication_session::{AuthenticationRequest, AuthenticationSession};
 use crate::models::certificate_choice_session::{
-    CertificateChoiceRequest, CertificateChoiceResponse,
+    CertificateChoiceRequest, CertificateChoiceSession,
 };
-use crate::models::signature_session::{SignatureRequest, SignatureRequestResponse};
+use crate::models::signature_session::{SignatureRequest, SignatureSession};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -108,7 +108,7 @@ impl SessionConfig {
     }
 
     pub fn from_authentication_response(
-        authentication_response: AuthenticationResponse,
+        authentication_response: AuthenticationSession,
         authentication_request: AuthenticationRequest,
     ) -> Result<SessionConfig> {
         Ok(SessionConfig::Authentication {
@@ -127,7 +127,7 @@ impl SessionConfig {
     }
 
     pub fn from_signature_request_response(
-        signature_request_response: SignatureRequestResponse,
+        signature_request_response: SignatureSession,
         signature_request: SignatureRequest,
     ) -> Result<SessionConfig> {
         Ok(SessionConfig::Signature {
@@ -146,7 +146,7 @@ impl SessionConfig {
     }
 
     pub fn from_certificate_choice_response(
-        certificate_choice_response: CertificateChoiceResponse,
+        certificate_choice_response: CertificateChoiceSession,
         certificate_choice_request: CertificateChoiceRequest,
     ) -> SessionConfig {
         SessionConfig::CertificateChoice {

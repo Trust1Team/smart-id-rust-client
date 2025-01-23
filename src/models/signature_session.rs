@@ -3,11 +3,13 @@ use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::models::common::{CertificateLevel, RequestProperties};
 use crate::models::interaction::Interaction;
+use crate::models::response::SmartIdAPIResponse;
 use crate::models::signature::{SignatureAlgorithm, SignatureProtocol, SignatureRequestParameters};
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
+
 // region SignatureSessionRequest
 
 /// Signature Request
@@ -34,7 +36,7 @@ use serde_with::skip_serializing_none;
 /// use smart_id_rust_client::models::signature_session::SignatureRequest;
 /// use smart_id_rust_client::models::interaction::Interaction;
 /// use smart_id_rust_client::models::signature::SignatureAlgorithm;
-/// use crate::error::Result;
+/// use smart_id_rust_client::error::Result;
 ///
 /// fn create_signature_request(cfg: &SmartIDConfig) -> Result<SignatureRequest> {
 ///     let interactions = vec![Interaction::DisplayTextAndPIN {
@@ -120,9 +122,11 @@ impl SignatureRequest {
 
 // region SignatureSessionResponse
 
+pub(crate) type SignatureResponse = SmartIdAPIResponse<SignatureSession>;
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SignatureRequestResponse {
+pub struct SignatureSession {
     #[serde(rename = "sessionID")]
     pub session_id: String,
     pub session_secret: String,

@@ -3,10 +3,10 @@ use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::models::common::{CertificateLevel, RequestProperties};
 use crate::models::interaction::Interaction;
+use crate::models::response::SmartIdAPIResponse;
 use crate::models::signature::{SignatureAlgorithm, SignatureRequestParameters};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
-
 // region AuthenticationSessionRequest
 
 /// Authentication Request
@@ -29,7 +29,7 @@ use serde_with::skip_serializing_none;
 /// # Example
 ///
 /// ```rust
-/// use crate::error::Result;
+/// use smart_id_rust_client::error::Result;
 /// use smart_id_rust_client::config::SmartIDConfig;
 /// use smart_id_rust_client::models::authentication_session::{AuthenticationCertificateLevel, AuthenticationRequest};
 /// use smart_id_rust_client::models::interaction::Interaction;
@@ -79,7 +79,7 @@ pub struct AuthenticationRequest {
 /// # Example
 ///
 /// ```rust
-/// use crate::error::Result;
+/// use smart_id_rust_client::error::Result;
 /// use smart_id_rust_client::config::SmartIDConfig;
 /// use smart_id_rust_client::models::authentication_session::{AuthenticationRequest, AuthenticationCertificateLevel};
 /// use smart_id_rust_client::models::interaction::Interaction;
@@ -159,9 +159,12 @@ pub enum AuthenticationSignatureProtocol {
 // endregion
 
 // region AuthenticationSessionResponse
+
+pub(crate) type AuthenticationResponse = SmartIdAPIResponse<AuthenticationSession>;
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AuthenticationResponse {
+pub struct AuthenticationSession {
     #[serde(rename = "sessionID")]
     pub session_id: String,
     pub session_secret: String,

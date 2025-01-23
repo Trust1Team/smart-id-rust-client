@@ -3,6 +3,7 @@ pub mod certificate_choice_session;
 pub mod common;
 pub mod dynamic_link;
 pub mod interaction;
+mod response;
 pub mod semantic_identifier;
 pub mod session_status;
 pub mod signature;
