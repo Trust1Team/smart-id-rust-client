@@ -14,19 +14,19 @@ use smart_id_rust_client::models::signature::SignatureAlgorithm;
 use smart_id_rust_client::models::signature_session::SignatureRequest;
 use std::env;
 
-const ROOT_URL: &str = "https://sid.demo.sk.ee";
-const V3_API_PATH: &str = "/smart-id-rp/v3";
-const DYNAMIC_LINK_PATH: &str = "/dynamic-link";
-const RELYING_PARTY_NAME: &str = "YOUR_RELYING_PARTY_NAME";
-const RELYING_PARTY_UUID: &str = "YOUR_RELYING_PARTY_UUID";
+const SMART_ID_ROOT_URL: &str = "https://sid.demo.sk.ee";
+const SMART_ID_V3_API_PATH: &str = "/smart-id-rp/v3";
+const RELYING_PARTY_NAME: &str = "YOUR_RELYING_PARTY_NAME"; // Must be updated to your own relying party name
+const RELYING_PARTY_UUID: &str = "YOUR_RELYING_PARTY_UUID"; // Must be updated to your own relying party UUID
+#[allow(dead_code)]
 const DOCUMENT_ID: &str = "YOUR_DOCUMENT_ID";
 #[allow(dead_code)]
 const ETSI_ID: &str = "YOUR_ETSI_ID";
 const EXAMPLE_SIGNING_TEXT: &str = "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=";
 
 fn setup() {
-    env::set_var("ROOT_URL", ROOT_URL);
-    env::set_var("V3_API_PATH", V3_API_PATH);
+    env::set_var("SMART_ID_ROOT_URL", SMART_ID_ROOT_URL);
+    env::set_var("SMART_ID_V3_API_PATH", SMART_ID_V3_API_PATH);
     env::set_var("RELYING_PARTY_NAME", RELYING_PARTY_NAME);
     env::set_var("RELYING_PARTY_UUID", RELYING_PARTY_UUID);
     env::set_var("CLIENT_REQ_NETWORK_TIMEOUT_MILLIS", "30000");
