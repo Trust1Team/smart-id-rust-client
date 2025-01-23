@@ -47,7 +47,7 @@ fn setup() {
 async fn test_authentication_qr() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
-    let smart_id_client = SmartIdClient::new(&cfg, None).await;
+    let smart_id_client = SmartIdClient::new(&cfg, None);
 
     let authentication_request = AuthenticationRequest::new(
         &cfg,
@@ -88,7 +88,7 @@ async fn test_authentication_qr() -> Result<()> {
 async fn test_authentication_web_to_app() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
-    let smart_id_client = SmartIdClient::new(&cfg, None).await;
+    let smart_id_client = SmartIdClient::new(&cfg, None);
 
     let authentication_request = AuthenticationRequest::new(
         &cfg,
@@ -130,7 +130,7 @@ async fn test_authentication_web_to_app() -> Result<()> {
 async fn test_authentication_app_to_app() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
-    let smart_id_client = SmartIdClient::new(&cfg, None).await;
+    let smart_id_client = SmartIdClient::new(&cfg, None);
 
     let authentication_request = AuthenticationRequest::new(
         &cfg,
@@ -172,7 +172,7 @@ async fn test_authentication_app_to_app() -> Result<()> {
 async fn test_auth_then_certificate_choice_then_sign_with_qr_code() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
-    let smart_id_client = SmartIdClient::new(&cfg, None).await;
+    let smart_id_client = SmartIdClient::new(&cfg, None);
 
 
     // AUTHENTICATION
