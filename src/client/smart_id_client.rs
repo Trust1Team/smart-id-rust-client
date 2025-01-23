@@ -9,9 +9,11 @@ use crate::models::certificate_choice_session::{
 };
 use crate::models::common::SessionConfig;
 use crate::models::dynamic_link::{DynamicLink, DynamicLinkType, SessionType};
-use crate::models::session_status::{SessionCertificate, SessionState, SessionStatus};
-use crate::models::signature::SignatureResponse;
-use crate::models::signature_session::{SignatureRequest, SignatureRequestResponse};
+use crate::models::session_status::{
+    SessionCertificate, SessionResponse, SessionState, SessionStatus,
+};
+use crate::models::signature::ResponseSignature;
+use crate::models::signature_session::{SignatureRequest, SignatureResponse};
 use crate::models::user_identity::UserIdentity;
 use crate::utils::sec_x509::validate_certificate;
 use std::sync::{Arc, Mutex};
@@ -118,8 +120,10 @@ impl SmartIdClient {
             timeout_ms
         );
 
-        let session_status =
-            get::<SessionStatus>(path.as_str(), self.cfg.client_request_timeout).await?;
+        let session_response =
+            get::<SessionResponse>(path.as_str(), self.cfg.client_request_timeout).await?;
+
+        let session_status = session_response.into_result()?;
 
         match session_status.state {
             SessionState::COMPLETE => {
@@ -158,12 +162,14 @@ impl SmartIdClient {
             ANONYMOUS_DYNAMIC_LINK_AUTHENTICATION_PATH,
         );
 
-        let session = post::<AuthenticationRequest, AuthenticationResponse>(
+        let authentication_response = post::<AuthenticationRequest, AuthenticationResponse>(
             path.as_str(),
             &authentication_request,
             self.cfg.client_request_timeout,
         )
         .await?;
+
+        let session = authentication_response.into_result()?;
 
         self.set_session(SessionConfig::from_authentication_response(
             session,
@@ -195,12 +201,15 @@ impl SmartIdClient {
             document_number,
         );
 
-        let session = post::<AuthenticationRequest, AuthenticationResponse>(
+        let authentication_response = post::<AuthenticationRequest, AuthenticationResponse>(
             path.as_str(),
             &authentication_request,
             self.cfg.client_request_timeout,
         )
         .await?;
+
+        let session = authentication_response.into_result()?;
+
         self.set_session(SessionConfig::from_authentication_response(
             session,
             authentication_request,
@@ -231,12 +240,15 @@ impl SmartIdClient {
             etsi,
         );
 
-        let session = post::<AuthenticationRequest, AuthenticationResponse>(
+        let authentication_response = post::<AuthenticationRequest, AuthenticationResponse>(
             path.as_str(),
             &authentication_request,
             self.cfg.client_request_timeout,
         )
         .await?;
+
+        let session = authentication_response.into_result()?;
+
         self.set_session(SessionConfig::from_authentication_response(
             session,
             authentication_request,
@@ -271,12 +283,15 @@ impl SmartIdClient {
             etsi,
         );
 
-        let session = post::<SignatureRequest, SignatureRequestResponse>(
+        let signature_response = post::<SignatureRequest, SignatureResponse>(
             path.as_str(),
             &signature_request,
             self.cfg.client_request_timeout,
         )
         .await?;
+
+        let session = signature_response.into_result()?;
+
         self.set_session(SessionConfig::from_signature_request_response(
             session,
             signature_request,
@@ -307,12 +322,15 @@ impl SmartIdClient {
             document_number,
         );
 
-        let session = post::<SignatureRequest, SignatureRequestResponse>(
+        let signature_response = post::<SignatureRequest, SignatureResponse>(
             path.as_str(),
             &signature_request,
             self.cfg.client_request_timeout,
         )
         .await?;
+
+        let session = signature_response.into_result()?;
+
         self.set_session(SessionConfig::from_signature_request_response(
             session,
             signature_request,
@@ -346,12 +364,16 @@ impl SmartIdClient {
             etsi,
         );
 
-        let session = post::<CertificateChoiceRequest, CertificateChoiceResponse>(
-            path.as_str(),
-            &certificate_choice_request,
-            self.cfg.client_request_timeout,
-        )
-        .await?;
+        let certificate_choice_response =
+            post::<CertificateChoiceRequest, CertificateChoiceResponse>(
+                path.as_str(),
+                &certificate_choice_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
+
+        let session = certificate_choice_response.into_result()?;
+
         self.set_session(SessionConfig::from_certificate_choice_response(
             session,
             certificate_choice_request,
@@ -381,12 +403,16 @@ impl SmartIdClient {
             document_number,
         );
 
-        let session = post::<CertificateChoiceRequest, CertificateChoiceResponse>(
-            path.as_str(),
-            &certificate_choice_request,
-            self.cfg.client_request_timeout,
-        )
-        .await?;
+        let certificate_choice_response =
+            post::<CertificateChoiceRequest, CertificateChoiceResponse>(
+                path.as_str(),
+                &certificate_choice_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
+
+        let session = certificate_choice_response.into_result()?;
+
         self.set_session(SessionConfig::from_certificate_choice_response(
             session,
             certificate_choice_request,
@@ -559,7 +585,7 @@ impl SmartIdClient {
     fn validate_signature(
         &self,
         session_config: SessionConfig,
-        signature: Option<SignatureResponse>,
+        signature: Option<ResponseSignature>,
         cert: SessionCertificate,
     ) -> Result<()> {
         match session_config {

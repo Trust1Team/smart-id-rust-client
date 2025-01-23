@@ -1,8 +1,8 @@
 use crate::config::SmartIDConfig;
 use crate::models::common::{CertificateLevel, RequestProperties};
+use crate::models::response::SmartIdAPIResponse;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
-
 // region CertificateChoiceSessionRequest
 
 /// Certificate Choice Request
@@ -57,9 +57,11 @@ impl CertificateChoiceRequest {
 
 // region CertificateChoiceSessionResponse
 
+pub(crate) type CertificateChoiceResponse = SmartIdAPIResponse<CertificateChoiceSession>;
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CertificateChoiceResponse {
+pub struct CertificateChoiceSession {
     #[serde(rename = "sessionID")]
     pub session_id: String,
 }

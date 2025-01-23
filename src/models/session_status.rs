@@ -2,9 +2,12 @@ use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::models::common::CertificateLevel;
 use crate::models::interaction::InteractionFlow;
-use crate::models::signature::{SignatureProtocol, SignatureResponse};
+use crate::models::response::SmartIdAPIResponse;
+use crate::models::signature::{ResponseSignature, SignatureProtocol};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
+
+pub(crate) type SessionResponse = SmartIdAPIResponse<SessionStatus>;
 
 /// Session Status
 ///
@@ -28,7 +31,7 @@ pub struct SessionStatus {
     pub state: SessionState,
     pub result: Option<SessionResult>,
     pub signature_protocol: Option<SignatureProtocol>,
-    pub signature: Option<SignatureResponse>,
+    pub signature: Option<ResponseSignature>,
     pub cert: Option<SessionCertificate>,
     pub ignored_properties: Option<Vec<String>>,
     pub interaction_flow_used: Option<InteractionFlow>,
