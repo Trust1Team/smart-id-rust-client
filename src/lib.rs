@@ -17,7 +17,7 @@
 //! use crate::smart_id_rust_client::models::dynamic_link::DynamicLinkType;
 //! use crate::smart_id_rust_client::models::user_identity::UserIdentity;
 //! use smart_id_rust_client::models::interaction::Interaction;
-//! use anyhow::Result;
+//! use crate::error::Result;
 //! use smart_id_rust_client::models::authentication_session::AuthenticationCertificateLevel;
 //! use smart_id_rust_client::models::signature::SignatureAlgorithm;
 //! #[tokio::main]

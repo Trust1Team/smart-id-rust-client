@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+pub type Result<T> = std::result::Result<T, SmartIdClientError>;
+
 #[derive(Error, Debug)]
 #[non_exhaustive]
 #[allow(dead_code)]
@@ -30,6 +32,10 @@ pub enum SmartIdClientError {
     ///SmartIdClientException
     #[error("Smart ID client exception: {0}")]
     SmartIdClientException(&'static str),
+
+    ///SmartIDAPIException
+    #[error("Smart ID API Exception: {0}")]
+    SmartIDAPIException(String),
 
     /// Client-side integration or how Relying Party account has been configured by Smart-ID operator or Smart-ID server is under maintenance
     /// With these types of errors there is not recommended to ask the user for immediate retry

@@ -1,5 +1,5 @@
+use crate::error::Result;
 use crate::error::SmartIdClientError;
-use anyhow::Result;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use rustls_native_certs::load_native_certs;
@@ -31,7 +31,10 @@ pub(crate) fn validate_certificate(cert_value: &str) -> Result<()> {
     let trust_anchors = webpki::TlsServerTrustAnchors(&trust_anchors);
 
     // Validate the certificate
-    let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Duration incorrect")
+        .as_secs();
 
     cert.verify_is_valid_tls_server_cert(
         &[&webpki::ECDSA_P256_SHA256, &webpki::ECDSA_P384_SHA384],

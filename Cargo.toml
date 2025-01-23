@@ -23,7 +23,7 @@ crate-type = ["lib"]
 tokio = { version = "1.36.0", features = ["full"] }
 
 # Error handling, logging
-anyhow = "1.0.81"
+anyhow = "1.0.95"
 thiserror = "1.0.59"
 serde_with = "3.8.0"
 tracing = "0.1.40"

@@ -1,5 +1,6 @@
 use crate::client::reqwest_generic::{get, post};
 use crate::config::SmartIDConfig;
+use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::error::SmartIdClientError::NoSessionException;
 use crate::models::authentication_session::{AuthenticationRequest, AuthenticationResponse};
@@ -13,7 +14,6 @@ use crate::models::signature::SignatureResponse;
 use crate::models::signature_session::{SignatureRequest, SignatureRequestResponse};
 use crate::models::user_identity::UserIdentity;
 use crate::utils::sec_x509::validate_certificate;
-use anyhow::Result;
 use std::sync::{Arc, Mutex};
 use tracing::debug;
 

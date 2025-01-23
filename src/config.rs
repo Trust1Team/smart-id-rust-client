@@ -1,3 +1,4 @@
+use crate::error::Result;
 use crate::error::SmartIdClientError;
 use std::env;
 
@@ -33,7 +34,7 @@ impl SmartIDConfig {
     ///
     /// * `Ok(SmartIDConfig)` - If all required environment variables are present and valid.
     /// * `Err(anyhow::Error)` - If any required environment variable is missing or invalid.
-    pub fn load_from_env() -> anyhow::Result<SmartIDConfig> {
+    pub fn load_from_env() -> Result<SmartIDConfig> {
         Ok(SmartIDConfig {
             root_url: get_env("SMART_ID_ROOT_URL")?,
             api_path: get_env("SMART_ID_V3_API_PATH")?,
@@ -61,12 +62,15 @@ impl SmartIDConfig {
     }
 }
 
-fn get_env(name: &'static str) -> anyhow::Result<String> {
+fn get_env(name: &'static str) -> Result<String> {
     env::var(name).map_err(|_| SmartIdClientError::ConfigMissingException(name).into())
 }
 
-fn get_env_u64(name: &'static str) -> anyhow::Result<u64> {
-    env::var(name)?
-        .parse()
+fn get_env_u64(name: &'static str) -> Result<u64> {
+    env::var(name)
         .map_err(|_| SmartIdClientError::ConfigMissingException(name).into())
+        .and_then(|val| {
+            val.parse()
+                .map_err(|_| SmartIdClientError::ConfigMissingException(name).into())
+        })
 }

@@ -1,5 +1,5 @@
+use crate::error::Result;
 use crate::error::SmartIdClientError;
-use anyhow::Result;
 use base64::engine::general_purpose::STANDARD_NO_PAD;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
