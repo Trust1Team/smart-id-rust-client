@@ -36,7 +36,7 @@ pub enum SignatureAlgorithm {
 }
 
 impl SignatureAlgorithm {
-    pub fn validate_signature(
+    pub(crate) fn validate_signature(
         &self,
         public_key: BitString,
         digest: &[u8],
@@ -146,7 +146,6 @@ impl SignatureRequestParameters {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
 #[serde(untagged)]
-// Without this serializes as "{ACSP_V1: { value, server_random, signature_algorithm }}", with it serializes as "{ value, server_random, signature_algorithm }"
 #[non_exhaustive]
 pub enum SignatureResponse {
     #[serde(rename_all = "camelCase")]

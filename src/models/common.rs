@@ -9,6 +9,15 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
+/// Request Properties
+///
+/// This struct represents the properties of a request to the Smart ID service.
+/// Currently, it only includes one property, `share_md_client_ip_address`.
+///
+/// # Properties
+///
+/// * `share_md_client_ip_address` - A boolean flag indicating whether the RP API server should share the user's mobile device IP address with the RP. By default, it is set to false. The RP must have proper privilege to use this property. See section IP sharing for details.
+#[non_exhaustive]
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestProperties {

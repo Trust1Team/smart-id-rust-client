@@ -7,7 +7,7 @@ use std::convert::TryFrom;
 use std::time::{SystemTime, UNIX_EPOCH};
 use webpki::{EndEntityCert, TrustAnchor};
 
-pub fn validate_certificate(cert_value: &str) -> Result<()> {
+pub(crate) fn validate_certificate(cert_value: &str) -> Result<()> {
     let cert_der = BASE64_STANDARD.decode(cert_value).map_err(|_| {
         SmartIdClientError::FailedToValidateSessionResponseCertificate(
             "Could not decode base64 certificate",

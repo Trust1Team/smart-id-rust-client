@@ -3,7 +3,9 @@ use image::Luma;
 use qrcode::QrCode;
 use smart_id_rust_client::client::smart_id_client::SmartIdClient;
 use smart_id_rust_client::config::SmartIDConfig;
-use smart_id_rust_client::models::authentication_session::{AuthenticationCertificateLevel, AuthenticationRequest};
+use smart_id_rust_client::models::authentication_session::{
+    AuthenticationCertificateLevel, AuthenticationRequest,
+};
 use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceRequest;
 use smart_id_rust_client::models::dynamic_link::DynamicLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
@@ -32,6 +34,14 @@ fn setup() {
 
 // These tests are ignored because they require manual interaction with the Smart-ID app.
 // To run these tests, follow the instructions in the comments.
+//
+// If you want to run this example you will need to set the RELYING_PARTY_UUID and RELYING_PARTY_NAME environment variables.
+// You will also need a qualified account (Created using an ID card) on the Smart-ID app.
+// By default, this uses the demo environment, so you will need to create an account using "SmartID demo - TESTING only" a seperate app in the play store.
+// Consult the docs for more information https://github.com/SK-EID/smart-id-documentation/wiki/Smart-ID-demo
+//
+// This test will open QR codes as images, you can scan these with the app to progress the flow
+// You have to scan them quickly otherwise they will become invalid, and you will have to restart the flow.
 #[tokio::test]
 #[ignore]
 async fn test_authentication_qr() -> Result<()> {

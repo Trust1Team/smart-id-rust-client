@@ -9,6 +9,14 @@ const DYNAMIC_LINK_PATH: &str = "/dynamic-link";
 /// It includes the root URL, API path, relying party UUID, relying party name, and an optional client request timeout.
 ///
 /// This can be loaded from environment variables using the `load_from_env` method.
+///
+/// # Properties
+///
+/// * `root_url` - The base URL of the Smart ID service, e.g., `https://sid.sk.ee`.
+/// * `api_path` - The API path to be appended to the root URL, e.g., `/v3`.
+/// * `relying_party_uuid` - The UUID of the relying party, obtained from Smart ID.
+/// * `relying_party_name` - The name of the relying party, obtained from Smart ID.
+/// * `client_request_timeout` - An optional timeout for client requests, in milliseconds. This is not used for the long-polling status request.
 #[derive(Debug, Clone)]
 pub struct SmartIDConfig {
     pub root_url: String,

@@ -6,6 +6,21 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
+/// Session Status
+///
+/// This struct represents the status of a session with the Smart ID service.
+/// It is returned from the Smart ID service session status endpoint.
+///
+/// # Properties
+///
+/// * `state` - The current state of the session, either `RUNNING` or `COMPLETE`.
+/// * `result` - The result of the session, if available. result.endResult will be `OK` if the session was successful.
+/// * `signature_protocol` - The protocol used for the signature, if available.
+/// * `signature` - The signature response, if available.
+/// * `cert` - The session certificate, if available. Contains the level of the certificate and the certificate value DER+Base64 encoded.
+/// * `ignored_properties` - Any values from requestProperties that were unsupported or ignored.
+/// * `interaction_flow_used` - The interaction flow used during the session, if available.
+/// * `device_ip_address` - The IP address of the mobile device, if it was requested using "shareMdClientIpAddress" in the session creation parameters.
 #[skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -17,10 +32,18 @@ pub struct SessionStatus {
     pub cert: Option<SessionCertificate>,
     pub ignored_properties: Option<Vec<String>>,
     pub interaction_flow_used: Option<InteractionFlow>,
-    // IP address of the mobile device. Is present only when it has been previously requested by the RelyingParty within the session creation parameters.
     pub device_ip_address: Option<String>,
 }
 
+/// Session Certificate
+///
+/// This struct represents the certificate used in a session with the Smart ID service.
+/// During an auth flow a certificate that is non-repudiation capable is returned, for signing flows a certificate that is digital signature capable is returned.
+///
+/// # Properties
+///
+/// * `value` - The certificate value, DER+Base64 encoded. The certificate itself contains info on whether the certificate is QSCD-enabled, data which is not represented by certificate level.
+/// * `certificate_level` - The level of the certificate.
 #[skip_serializing_none]
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -30,6 +53,15 @@ pub struct SessionCertificate {
     pub certificate_level: CertificateLevel,
 }
 
+/// Session Result
+///
+/// This struct represents the result of a session with the Smart ID service.
+/// It is part of the session status response.
+///
+/// # Properties
+///
+/// * `end_result` - The end result of the session. OK for success, otherwise an error.
+/// * `document_number` - The document number associated with the session, if available. Can be used in further signature and authentication requests.
 #[skip_serializing_none]
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

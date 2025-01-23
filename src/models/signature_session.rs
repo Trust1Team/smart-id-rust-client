@@ -9,7 +9,44 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 // region SignatureSessionRequest
 
-/// Represents a request for a signature session.
+/// Signature Request
+///
+/// This struct represents a request for a signature session with the Smart ID service.
+/// It includes various parameters required for the signature process.
+///
+/// # Properties
+///
+/// * `relying_party_uuid` - The UUID of the relying party, provided by Smart ID.
+/// * `relying_party_name` - The name of the relying party, provided by Smart ID.
+/// * `certificate_level` - The level of the certificate required for the signature.
+/// * `signature_protocol` - The protocol used for the signature.
+/// * `signature_protocol_parameters` - The parameters for the signature protocol.
+/// * `allowed_interactions_order` - A list of allowed interactions for the signature session, at least one is required.
+/// * `nonce` - An optional nonce for the request.
+/// * `request_properties` - Optional properties for the request.
+/// * `capabilities` - Used only when agreed with Smart-ID provider. When omitted, request capabilities are derived from the `certificate_level` parameter.
+///
+/// # Example
+///
+/// ```rust
+/// use smart_id_rust_client::config::SmartIDConfig;
+/// use smart_id_rust_client::models::signature_session::SignatureRequest;
+/// use smart_id_rust_client::models::interaction::Interaction;
+/// use smart_id_rust_client::models::signature::SignatureAlgorithm;
+/// use anyhow::Result;
+///
+/// fn create_signature_request(cfg: &SmartIDConfig) -> Result<SignatureRequest> {
+///     let interactions = vec![Interaction::DisplayTextAndPIN {
+///         display_text_60: "Sign document".to_string(),
+///     }];
+///     SignatureRequest::new(
+///         cfg,
+///         interactions,
+///         "base64-encoded-digest".to_string(),
+///         SignatureAlgorithm::sha256WithRSAEncryption,
+///     )
+/// }
+/// ```
 #[skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
