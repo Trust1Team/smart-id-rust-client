@@ -35,8 +35,8 @@ impl SmartIDConfig {
     /// * `Err(anyhow::Error)` - If any required environment variable is missing or invalid.
     pub fn load_from_env() -> anyhow::Result<SmartIDConfig> {
         Ok(SmartIDConfig {
-            root_url: get_env("ROOT_URL")?,
-            api_path: get_env("V3_API_PATH")?,
+            root_url: get_env("SMART_ID_ROOT_URL")?,
+            api_path: get_env("SMART_ID_V3_API_PATH")?,
             relying_party_uuid: get_env("RELYING_PARTY_UUID")?,
             relying_party_name: get_env("RELYING_PARTY_NAME")?,
             client_request_timeout: get_env_u64("CLIENT_REQ_NETWORK_TIMEOUT_MILLIS").ok(),

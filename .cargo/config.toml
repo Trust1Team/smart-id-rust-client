@@ -1,9 +1,8 @@
 [env]
 RUST_LOG = "hyper=none,smart_id_rust_client=debug,smart_id_client=debug"
 
-ROOT_URL = "https://sid.demo.sk.ee"
-V3_API_PATH = "/smart-id-rp/v3"
-DYNAMIC_LINK_PATH = "/dynamic-link"
+SMART_ID_ROOT_URL = "https://sid.demo.sk.ee"
+SMART_ID_V3_API_PATH = "/smart-id-rp/v3"
 RELYING_PARTY_UUID = "00000000-0000-0000-0000-000000000000"
 RELYING_PARTY_NAME = "DEMO"
 CLIENT_REQ_NETWORK_TIMEOUT_MILLIS= "30000"
