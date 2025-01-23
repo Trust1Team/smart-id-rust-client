@@ -169,7 +169,74 @@ async fn test_authentication_app_to_app() -> Result<()> {
 
 #[tokio::test]
 #[ignore]
-async fn test_auth_then_certificate_choice_then_sign_with_qr_code() -> Result<()> {
+async fn test_notification_auth_then_sign_with_qr_code() -> Result<()> {
+    setup();
+    let cfg = SmartIDConfig::load_from_env()?;
+    let smart_id_client = SmartIdClient::new(&cfg, None);
+
+    // AUTHENTICATION
+    let authentication_request = AuthenticationRequest::new(
+        &cfg,
+        vec![Interaction::ConfirmationMessage {
+            display_text_200: "TEST".to_string(),
+        }],
+        SignatureAlgorithm::sha256WithRSAEncryption,
+        AuthenticationCertificateLevel::QUALIFIED,
+    )?;
+    let vc = smart_id_client
+        .start_authentication_notification_document_session(
+            authentication_request,
+            DOCUMENT_NUMBER.to_string(),
+        )
+        .await?;
+
+    // This code should match the code displayed in the Smart-ID app
+    println!("Verification Code Auth: {}", vc.value);
+
+    // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
+    let result = smart_id_client.get_session_status(120000).await?;
+    println!(
+        "Authentication Session Status \n{:}",
+        serde_json::to_string_pretty(&result)?
+    );
+
+    // SIGNATURE
+    let signature_request = SignatureRequest::new(
+        &cfg,
+        vec![Interaction::DisplayTextAndPIN {
+            display_text_60: "Sign document".to_string(),
+        }],
+        EXAMPLE_SIGNING_TEXT.to_string(),
+        SignatureAlgorithm::sha256WithRSAEncryption,
+    )?;
+    println!(
+        "Signature Request: \n{}",
+        serde_json::to_string_pretty(&signature_request)?
+    );
+
+    let vc = smart_id_client
+        .start_signature_notification_document_session(
+            signature_request,
+            DOCUMENT_NUMBER.to_string(),
+        )
+        .await?;
+
+    // This code should match the code displayed in the Smart-ID app
+    println!("Verification Code Sign: {}", vc.value);
+
+    let result = smart_id_client.get_session_status(120000).await?;
+    println!(
+        "Signature Session Status \n{:}",
+        serde_json::to_string_pretty(&result)?
+    );
+
+    assert_eq!(result.result.unwrap().end_result, EndResult::OK);
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClient::new(&cfg, None);

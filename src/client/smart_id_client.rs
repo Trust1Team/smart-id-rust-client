@@ -3,17 +3,21 @@ use crate::config::SmartIDConfig;
 use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::error::SmartIdClientError::NoSessionException;
-use crate::models::authentication_session::{AuthenticationRequest, AuthenticationResponse};
+use crate::models::authentication_session::{
+    AuthenticationDynamicLinkResponse, AuthenticationNotificationResponse, AuthenticationRequest,
+};
 use crate::models::certificate_choice_session::{
     CertificateChoiceRequest, CertificateChoiceResponse,
 };
-use crate::models::common::SessionConfig;
+use crate::models::common::{SessionConfig, VCCode};
 use crate::models::dynamic_link::{DynamicLink, DynamicLinkType, SessionType};
 use crate::models::session_status::{
     SessionCertificate, SessionResponse, SessionState, SessionStatus,
 };
 use crate::models::signature::ResponseSignature;
-use crate::models::signature_session::{SignatureRequest, SignatureResponse};
+use crate::models::signature_session::{
+    SignatureNotificationResponse, SignatureRequest, SignatureResponse,
+};
 use crate::models::user_identity::UserIdentity;
 use crate::utils::sec_x509::validate_certificate;
 use std::sync::{Arc, Mutex};
@@ -162,16 +166,17 @@ impl SmartIdClient {
             ANONYMOUS_DYNAMIC_LINK_AUTHENTICATION_PATH,
         );
 
-        let authentication_response = post::<AuthenticationRequest, AuthenticationResponse>(
-            path.as_str(),
-            &authentication_request,
-            self.cfg.client_request_timeout,
-        )
-        .await?;
+        let authentication_response =
+            post::<AuthenticationRequest, AuthenticationDynamicLinkResponse>(
+                path.as_str(),
+                &authentication_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
 
         let session = authentication_response.into_result()?;
 
-        self.set_session(SessionConfig::from_authentication_response(
+        self.set_session(SessionConfig::from_authentication_dynamic_link_response(
             session,
             authentication_request,
         )?)
@@ -201,16 +206,17 @@ impl SmartIdClient {
             document_number,
         );
 
-        let authentication_response = post::<AuthenticationRequest, AuthenticationResponse>(
-            path.as_str(),
-            &authentication_request,
-            self.cfg.client_request_timeout,
-        )
-        .await?;
+        let authentication_response =
+            post::<AuthenticationRequest, AuthenticationDynamicLinkResponse>(
+                path.as_str(),
+                &authentication_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
 
         let session = authentication_response.into_result()?;
 
-        self.set_session(SessionConfig::from_authentication_response(
+        self.set_session(SessionConfig::from_authentication_dynamic_link_response(
             session,
             authentication_request,
         )?)
@@ -240,19 +246,102 @@ impl SmartIdClient {
             etsi,
         );
 
-        let authentication_response = post::<AuthenticationRequest, AuthenticationResponse>(
-            path.as_str(),
-            &authentication_request,
-            self.cfg.client_request_timeout,
-        )
-        .await?;
+        let authentication_response =
+            post::<AuthenticationRequest, AuthenticationDynamicLinkResponse>(
+                path.as_str(),
+                &authentication_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
 
         let session = authentication_response.into_result()?;
 
-        self.set_session(SessionConfig::from_authentication_response(
+        self.set_session(SessionConfig::from_authentication_dynamic_link_response(
             session,
             authentication_request,
         )?)
+    }
+
+    /// Starts an authentication session using a notification.
+    /// Use the `get_session_status` method to poll for the result.
+    ///
+    /// # Arguments
+    ///
+    /// * `authentication_request` - The authentication request.
+    /// * `etsi` - The ETSI identifier of the user.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the verification code the user will see on screen.
+    pub async fn start_authentication_notification_etsi_session(
+        &self,
+        authentication_request: AuthenticationRequest,
+        etsi: String,
+    ) -> Result<VCCode> {
+        let path = format!(
+            "{}{}/{}",
+            self.cfg.api_url(),
+            NOTIFICATION_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH,
+            etsi,
+        );
+
+        let authentication_response =
+            post::<AuthenticationRequest, AuthenticationNotificationResponse>(
+                path.as_str(),
+                &authentication_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
+
+        let session = authentication_response.into_result()?;
+
+        self.set_session(SessionConfig::from_authentication_notification_response(
+            session.clone(),
+            authentication_request,
+        )?)?;
+
+        Ok(session.vc)
+    }
+
+    /// Starts an authentication session using a notification.
+    /// Use the `get_session_status` method to poll for the result.
+    ///
+    /// # Arguments
+    ///
+    /// * `authentication_request` - The authentication request.
+    /// * `document_number` - The document number.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the verification code the user will see on screen.
+    pub async fn start_authentication_notification_document_session(
+        &self,
+        authentication_request: AuthenticationRequest,
+        document_number: String,
+    ) -> Result<VCCode> {
+        let path = format!(
+            "{}{}/{}",
+            self.cfg.api_url(),
+            NOTIFICATION_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH,
+            document_number,
+        );
+
+        let authentication_response =
+            post::<AuthenticationRequest, AuthenticationNotificationResponse>(
+                path.as_str(),
+                &authentication_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
+
+        let session = authentication_response.into_result()?;
+
+        self.set_session(SessionConfig::from_authentication_notification_response(
+            session.clone(),
+            authentication_request,
+        )?)?;
+
+        Ok(session.vc)
     }
 
     // endregion: Authentication
@@ -292,7 +381,7 @@ impl SmartIdClient {
 
         let session = signature_response.into_result()?;
 
-        self.set_session(SessionConfig::from_signature_request_response(
+        self.set_session(SessionConfig::from_signature_dynamic_link_request_response(
             session,
             signature_request,
         )?)
@@ -331,10 +420,90 @@ impl SmartIdClient {
 
         let session = signature_response.into_result()?;
 
-        self.set_session(SessionConfig::from_signature_request_response(
+        self.set_session(SessionConfig::from_signature_dynamic_link_request_response(
             session,
             signature_request,
         )?)
+    }
+
+    /// Starts a signature session using a notification.
+    /// Use the `get_session_status` method to poll for the result.
+    ///
+    /// # Arguments
+    ///
+    /// * `signature_request` - The signature request.
+    /// * `etsi` - The ETSI identifier.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the verification code the user will see on screen.
+    pub async fn start_signature_notification_etsi_session(
+        &self,
+        signature_request: SignatureRequest,
+        etsi: String,
+    ) -> Result<VCCode> {
+        let path = format!(
+            "{}{}/{}",
+            self.cfg.api_url(),
+            NOTIFICATION_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH,
+            etsi,
+        );
+
+        let signature_response = post::<SignatureRequest, SignatureNotificationResponse>(
+            path.as_str(),
+            &signature_request,
+            self.cfg.client_request_timeout,
+        )
+        .await?;
+
+        let session = signature_response.into_result()?;
+
+        self.set_session(SessionConfig::from_signature_notification_response(
+            session.clone(),
+            signature_request,
+        )?)?;
+
+        Ok(session.vc)
+    }
+
+    /// Starts a signature session using a notification.
+    /// Use the `get_session_status` method to poll for the result.
+    ///
+    /// # Arguments
+    ///
+    /// * `signature_request` - The signature request.
+    /// * `document_number` - The document number.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the verification code the user will see on screen.
+    pub async fn start_signature_notification_document_session(
+        &self,
+        signature_request: SignatureRequest,
+        document_number: String,
+    ) -> Result<VCCode> {
+        let path = format!(
+            "{}{}/{}",
+            self.cfg.api_url(),
+            NOTIFICATION_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH,
+            document_number,
+        );
+
+        let signature_response = post::<SignatureRequest, SignatureNotificationResponse>(
+            path.as_str(),
+            &signature_request,
+            self.cfg.client_request_timeout,
+        )
+        .await?;
+
+        let session = signature_response.into_result()?;
+
+        self.set_session(SessionConfig::from_signature_notification_response(
+            session.clone(),
+            signature_request,
+        )?)?;
+
+        Ok(session.vc)
     }
 
     // endregion: Signature
@@ -449,7 +618,7 @@ impl SmartIdClient {
         let session: SessionConfig = self.get_session()?;
 
         match session {
-            SessionConfig::Authentication {
+            SessionConfig::AuthenticationDynamicLink {
                 session_secret,
                 session_token,
                 session_start_time,
@@ -489,12 +658,13 @@ impl SmartIdClient {
                 debug!("Generated dynamic link: {}", dynamic_link);
                 Ok(dynamic_link)
             }
-            SessionConfig::CertificateChoice { .. } => {
+            _ => {
                 Err(SmartIdClientError::GenerateDynamicLinkException(
-                    "Can't generate dynamic link for certificate choice session",
+                    "Can only generate dynamic links for authentication or signature dynamic link sessions",
                 )
                 .into())
             }
+
         }
     }
 
@@ -589,7 +759,7 @@ impl SmartIdClient {
         cert: SessionCertificate,
     ) -> Result<()> {
         match session_config {
-            SessionConfig::Authentication {
+            SessionConfig::AuthenticationDynamicLink {
                 random_challenge, ..
             } => {
                 let signature =
@@ -616,8 +786,8 @@ impl SmartIdClient {
 
                 signature.validate_raw_digest(digest, cert.value.clone())
             }
-            SessionConfig::CertificateChoice { .. } => {
-                debug!("No signature validation needed for certificate choice session");
+            _ => {
+                debug!("Signature validation only needed for dynamic link authentication and signature sessions");
                 Ok(())
             }
         }

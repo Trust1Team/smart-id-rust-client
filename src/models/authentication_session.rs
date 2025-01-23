@@ -1,7 +1,7 @@
 use crate::config::SmartIDConfig;
 use crate::error::Result;
 use crate::error::SmartIdClientError;
-use crate::models::common::{CertificateLevel, RequestProperties};
+use crate::models::common::{CertificateLevel, RequestProperties, VCCode};
 use crate::models::interaction::Interaction;
 use crate::models::response::SmartIdAPIResponse;
 use crate::models::signature::{SignatureAlgorithm, SignatureRequestParameters};
@@ -160,15 +160,26 @@ pub enum AuthenticationSignatureProtocol {
 
 // region AuthenticationSessionResponse
 
-pub(crate) type AuthenticationResponse = SmartIdAPIResponse<AuthenticationSession>;
+pub(crate) type AuthenticationDynamicLinkResponse =
+    SmartIdAPIResponse<AuthenticationDynamicLinkSession>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AuthenticationSession {
+pub struct AuthenticationDynamicLinkSession {
     #[serde(rename = "sessionID")]
     pub session_id: String,
     pub session_secret: String,
     pub session_token: String,
+}
+
+pub(crate) type AuthenticationNotificationResponse =
+    SmartIdAPIResponse<AuthenticationNotificationSession>;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AuthenticationNotificationSession {
+    #[serde(rename = "sessionID")]
+    pub session_id: String,
+    pub vc: VCCode,
 }
 
 // endregion

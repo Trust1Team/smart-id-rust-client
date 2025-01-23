@@ -1,7 +1,7 @@
 use crate::config::SmartIDConfig;
 use crate::error::Result;
 use crate::error::SmartIdClientError;
-use crate::models::common::{CertificateLevel, RequestProperties};
+use crate::models::common::{CertificateLevel, RequestProperties, VCCode};
 use crate::models::interaction::Interaction;
 use crate::models::response::SmartIdAPIResponse;
 use crate::models::signature::{SignatureAlgorithm, SignatureProtocol, SignatureRequestParameters};
@@ -131,6 +131,15 @@ pub struct SignatureSession {
     pub session_id: String,
     pub session_secret: String,
     pub session_token: String,
+}
+
+pub(crate) type SignatureNotificationResponse = SmartIdAPIResponse<SignatureNotificationSession>;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SignatureNotificationSession {
+    #[serde(rename = "sessionID")]
+    pub session_id: String,
+    pub vc: VCCode,
 }
 
 // endregion

@@ -1,10 +1,14 @@
 use crate::error::Result;
 use crate::error::SmartIdClientError;
-use crate::models::authentication_session::{AuthenticationRequest, AuthenticationSession};
+use crate::models::authentication_session::{
+    AuthenticationDynamicLinkSession, AuthenticationNotificationSession, AuthenticationRequest,
+};
 use crate::models::certificate_choice_session::{
     CertificateChoiceRequest, CertificateChoiceSession,
 };
-use crate::models::signature_session::{SignatureRequest, SignatureSession};
+use crate::models::signature_session::{
+    SignatureNotificationSession, SignatureRequest, SignatureSession,
+};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -58,7 +62,7 @@ impl Ord for CertificateLevel {
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum SessionConfig {
-    Authentication {
+    AuthenticationDynamicLink {
         session_id: String,
         session_secret: String,
         session_token: String,
@@ -74,6 +78,16 @@ pub(crate) enum SessionConfig {
         requested_certificate_level: CertificateLevel,
         session_start_time: DateTime<Utc>,
     },
+    AuthenticationNotification {
+        session_id: String,
+        requested_certificate_level: CertificateLevel,
+        vc: VCCode,
+    },
+    SignatureNotification {
+        session_id: String,
+        requested_certificate_level: CertificateLevel,
+        vccode: VCCode,
+    },
     CertificateChoice {
         session_id: String,
         requested_certificate_level: CertificateLevel,
@@ -84,15 +98,17 @@ pub(crate) enum SessionConfig {
 impl SessionConfig {
     pub fn session_id(&self) -> &String {
         match self {
-            SessionConfig::Authentication { session_id, .. } => session_id,
+            SessionConfig::AuthenticationDynamicLink { session_id, .. } => session_id,
             SessionConfig::Signature { session_id, .. } => session_id,
             SessionConfig::CertificateChoice { session_id, .. } => session_id,
+            SessionConfig::AuthenticationNotification { session_id, .. } => session_id,
+            SessionConfig::SignatureNotification { session_id, .. } => session_id,
         }
     }
 
     pub(crate) fn requested_certificate_level(&self) -> &CertificateLevel {
         match self {
-            SessionConfig::Authentication {
+            SessionConfig::AuthenticationDynamicLink {
                 requested_certificate_level,
                 ..
             } => requested_certificate_level,
@@ -104,14 +120,22 @@ impl SessionConfig {
                 requested_certificate_level,
                 ..
             } => requested_certificate_level,
+            SessionConfig::AuthenticationNotification {
+                requested_certificate_level,
+                ..
+            } => requested_certificate_level,
+            SessionConfig::SignatureNotification {
+                requested_certificate_level,
+                ..
+            } => requested_certificate_level,
         }
     }
 
-    pub fn from_authentication_response(
-        authentication_response: AuthenticationSession,
+    pub fn from_authentication_dynamic_link_response(
+        authentication_response: AuthenticationDynamicLinkSession,
         authentication_request: AuthenticationRequest,
     ) -> Result<SessionConfig> {
-        Ok(SessionConfig::Authentication {
+        Ok(SessionConfig::AuthenticationDynamicLink {
             session_id: authentication_response.session_id,
             session_secret: authentication_response.session_secret,
             session_token: authentication_response.session_token,
@@ -126,7 +150,18 @@ impl SessionConfig {
         })
     }
 
-    pub fn from_signature_request_response(
+    pub fn from_authentication_notification_response(
+        authentication_notification_response: AuthenticationNotificationSession,
+        authentication_request: AuthenticationRequest,
+    ) -> Result<SessionConfig> {
+        Ok(SessionConfig::AuthenticationNotification {
+            session_id: authentication_notification_response.session_id,
+            vc: authentication_notification_response.vc,
+            requested_certificate_level: authentication_request.certificate_level.into(),
+        })
+    }
+
+    pub fn from_signature_dynamic_link_request_response(
         signature_request_response: SignatureSession,
         signature_request: SignatureRequest,
     ) -> Result<SessionConfig> {
@@ -145,6 +180,17 @@ impl SessionConfig {
         })
     }
 
+    pub fn from_signature_notification_response(
+        signature_notification_response: SignatureNotificationSession,
+        signature_request: SignatureRequest,
+    ) -> Result<SessionConfig> {
+        Ok(SessionConfig::SignatureNotification {
+            session_id: signature_notification_response.session_id,
+            vccode: signature_notification_response.vc,
+            requested_certificate_level: signature_request.certificate_level,
+        })
+    }
+
     pub fn from_certificate_choice_response(
         certificate_choice_response: CertificateChoiceSession,
         certificate_choice_request: CertificateChoiceRequest,
@@ -155,4 +201,26 @@ impl SessionConfig {
             session_start_time: Utc::now(),
         }
     }
+}
+
+/// Represents a VC (Verification Code) used in the notification-based authentication session.
+/// This code is displayed to the user in their Smart ID app.
+///
+/// # Fields
+///
+/// * `vc_type` - The type of the VC code. Currently, the only allowed type is `alphaNumeric4`.
+/// * `value` - The value of the VC code.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct VCCode {
+    #[serde(rename = "type")]
+    pub vc_type: VCCodeType,
+    pub value: String,
+}
+
+/// Enum representing the type of the VC code.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[allow(non_camel_case_types)]
+#[non_exhaustive]
+pub enum VCCodeType {
+    alphaNumeric4,
 }
