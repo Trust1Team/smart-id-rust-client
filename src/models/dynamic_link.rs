@@ -94,7 +94,7 @@ mod tests {
 
     fn qr_dynamic_link() -> DynamicLink {
         DynamicLink {
-            url: "https://sid.demo.sk.ee/dynamic-link/".to_string(),
+            url: "https://sid.demo.sk.ee/dynamic-link".to_string(),
             version: "0.1".to_string(),
             session_token: "sessionToken".to_string(),
             session_secret: "qKzzHX6SG0ovfEdMuDEzCgTu".to_string(),
@@ -157,7 +157,7 @@ mod tests {
     #[tokio::test]
     async fn test_generate_qr_code_url() {
         let dynamic_link = qr_dynamic_link();
-        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link/?version=0.1&sessionToken=sessionToken&dynamicLinkType=QR&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=E4xBQkwfmyspaZAfJoY5Pdz6-bAWytBe-wyiX3SQS5o=");
+        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link?version=0.1&sessionToken=sessionToken&dynamicLinkType=QR&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=E4xBQkwfmyspaZAfJoY5Pdz6-bAWytBe-wyiX3SQS5o=");
     }
 
     #[traced_test]
@@ -167,7 +167,7 @@ mod tests {
             dynamic_link_type: DynamicLinkType::Web2App,
             ..qr_dynamic_link()
         };
-        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link/?version=0.1&sessionToken=sessionToken&dynamicLinkType=Web2App&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=ofcBeca9ATRjdO5Dr17RRvGnamYA5s5C3rmKXyuDN4g=");
+        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link?version=0.1&sessionToken=sessionToken&dynamicLinkType=Web2App&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=ofcBeca9ATRjdO5Dr17RRvGnamYA5s5C3rmKXyuDN4g=");
     }
 }
 

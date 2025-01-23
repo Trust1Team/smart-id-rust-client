@@ -46,6 +46,14 @@ const NOTIFICATION_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str =
 
 // endregion: Path definitions
 
+/// Smart ID Client
+///
+/// This struct provides methods to interact with the Smart ID service, including starting authentication,
+/// certificate choice, and signature sessions using dynamic links. It also includes methods to generate
+/// dynamic links, retrieve session status, and validate session responses.
+///
+/// The client maintains session state and authenticated user identity to ensure the correct user is signing
+/// and to validate session responses.
 #[derive(Debug)]
 pub struct SmartIdClient {
     pub cfg: SmartIDConfig,
@@ -56,16 +64,8 @@ pub struct SmartIdClient {
     pub(crate) authenticated_identity: Arc<Mutex<Option<UserIdentity>>>,
 }
 
-/// Smart ID Client
-///
-/// This struct provides methods to interact with the Smart ID service, including starting authentication,
-/// certificate choice, and signature sessions using dynamic links. It also includes methods to generate
-/// dynamic links, retrieve session status, and validate session responses.
-///
-/// The client maintains session state and authenticated user identity to ensure the correct user is signing
-/// and to validate session responses.
 impl SmartIdClient {
-    /// Creates a new SmartIdClientV instance with the given configuration.
+    /// Creates a new SmartIdClient instance with the given configuration.
     ///
     /// # Arguments
     ///
@@ -74,7 +74,7 @@ impl SmartIdClient {
     ///
     /// # Returns
     ///
-    /// A new instance of SmartIdClientV.
+    /// A new instance of SmartIdClient.
     pub async fn new(cfg: &SmartIDConfig, user_identity: Option<UserIdentity>) -> Self {
         SmartIdClient {
             cfg: cfg.clone(),

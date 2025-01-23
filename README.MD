@@ -53,6 +53,10 @@ cargo run --example smart_id_client
 cargo test
 ```
 
+## Manual Tests
+To fully test the libraries interactions with the Smart-ID API, you will need to run the tests in [app_interaction_tests.rs](tests/app_interaction_tests.rs).
+These tests require a Qualified Smart-ID account and a mobile device with the Smart-ID app installed.
+
 ## Documentation
 
 ```zsh

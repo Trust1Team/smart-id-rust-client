@@ -2,6 +2,17 @@ use crate::error::SmartIdClientError;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
+/// Interaction Flow
+///
+/// This enum represents the different types of interaction flows that can be started on the user's device.
+/// Each variant corresponds to a specific interaction type.
+///
+/// # Variants
+///
+/// * `DisplayTextAndPIN` - Displays a text message and prompts the user to enter a PIN.
+/// * `ConfirmationMessage` - Displays a confirmation message with confirm and cancel buttons, then prompts the user to enter a pin.
+/// * `VerificationCodeChoice` - Prompts the user to choose a verification code, then enter a pin.
+/// * `ConfirmationMessageAndVerificationCodeChoice` - Displays a confirmation message and prompts the user to choose a verification code.
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 #[serde(rename_all = "camelCase")]
