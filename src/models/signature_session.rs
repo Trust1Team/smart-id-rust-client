@@ -1,4 +1,5 @@
 use crate::config::SmartIDConfig;
+use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::models::common::{CertificateLevel, RequestProperties};
 use crate::models::interaction::Interaction;
@@ -33,7 +34,7 @@ use serde_with::skip_serializing_none;
 /// use smart_id_rust_client::models::signature_session::SignatureRequest;
 /// use smart_id_rust_client::models::interaction::Interaction;
 /// use smart_id_rust_client::models::signature::SignatureAlgorithm;
-/// use anyhow::Result;
+/// use crate::error::Result;
 ///
 /// fn create_signature_request(cfg: &SmartIDConfig) -> Result<SignatureRequest> {
 ///     let interactions = vec![Interaction::DisplayTextAndPIN {
@@ -82,7 +83,7 @@ impl SignatureRequest {
         interactions: Vec<Interaction>,
         digest: String,
         signature_algorithm: SignatureAlgorithm,
-    ) -> anyhow::Result<Self> {
+    ) -> Result<Self> {
         if interactions.is_empty() {
             return Err(SmartIdClientError::ConfigMissingException(
                 "Define at least 1 interaction for an authentication request",

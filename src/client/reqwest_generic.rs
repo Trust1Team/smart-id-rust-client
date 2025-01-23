@@ -1,5 +1,5 @@
+use crate::error::Result;
 use crate::error::SmartIdClientError;
-use anyhow::{bail, Result};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fmt::Debug;
@@ -34,10 +34,11 @@ where
             ),
         )
         .send()
-        .await?
+        .await
+        .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string()))?
         .json::<R>()
         .await
-        .map_err(|e| e.into())
+        .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string()))
 }
 
 /// Generic GET request
@@ -61,19 +62,26 @@ where
             ),
         )
         .send()
-        .await?;
+        .await
+        .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string()))?;
     let status = send_response.status().as_u16();
     match status {
-        200..=299 => send_response.json::<R>().await.map_err(|e| e.into()),
+        200..=299 => send_response
+            .json::<R>()
+            .await
+            .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string())),
         404 => Err(SmartIdClientError::SessionDoesNotExistOrHasExpired.into()),
         472 => Err(SmartIdClientError::UserShouldViewSmartIDAppOrPortalException.into()),
         480 => Err(SmartIdClientError::ApiClientIsTooOldException.into()),
         580 => Err(SmartIdClientError::SystemIsUnderMaintenanceException.into()),
         _ => {
-            let response = send_response.bytes().await?;
+            let response = send_response
+                .bytes()
+                .await
+                .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string()))?;
             let text = String::from_utf8(response.to_vec()).unwrap();
             debug!("{:?}", text);
-            bail!(text)
+            Err(SmartIdClientError::SmartIDAPIException(text))
         }
     }
 }
@@ -97,7 +105,8 @@ pub async fn delete(url: &str, timeout_millis: Option<u64>) -> Result<()> {
             ),
         )
         .send()
-        .await?;
+        .await
+        .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string()))?;
     Ok(())
 }
 
@@ -124,19 +133,26 @@ where
         )
         .json(req)
         .send()
-        .await?;
+        .await
+        .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string()))?;
     let status = send_response.status().as_u16();
     match status {
-        200..=299 => send_response.json::<R>().await.map_err(|e| e.into()),
+        200..=299 => send_response
+            .json::<R>()
+            .await
+            .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string())),
         404 => Err(SmartIdClientError::SessionDoesNotExistOrHasExpired.into()),
         472 => Err(SmartIdClientError::UserShouldViewSmartIDAppOrPortalException.into()),
         480 => Err(SmartIdClientError::ApiClientIsTooOldException.into()),
         580 => Err(SmartIdClientError::SystemIsUnderMaintenanceException.into()),
         _ => {
-            let response = send_response.bytes().await?;
+            let response = send_response
+                .bytes()
+                .await
+                .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string()))?;
             let text = String::from_utf8(response.to_vec()).unwrap();
             debug!("{:?}", text);
-            bail!(text)
+            Err(SmartIdClientError::SmartIDAPIException(text.to_string()))
         }
     }
 }
@@ -168,18 +184,22 @@ where
         )
         .json(req)
         .send()
-        .await?;
+        .await
+        .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string()))?;
     let status = send_response.status().as_u16();
     match status {
         200..=299 => send_response
             .json::<serde_json::Value>()
             .await
-            .map_err(|e| e.into()),
+            .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string())),
         _ => {
-            let response = send_response.bytes().await?;
+            let response = send_response
+                .bytes()
+                .await
+                .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string()))?;
             let text = String::from_utf8(response.to_vec()).unwrap();
             debug!("{:?}", text);
-            bail!(text)
+            Err(SmartIdClientError::SmartIDAPIException(text.to_string()))
         }
     }
 }
@@ -208,8 +228,9 @@ where
         )
         .json(req)
         .send()
-        .await?
+        .await
+        .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string()))?
         .json::<R>()
         .await
-        .map_err(|e| e.into())
+        .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string()))
 }

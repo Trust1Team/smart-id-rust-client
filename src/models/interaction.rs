@@ -1,3 +1,4 @@
+use crate::error::Result;
 use crate::error::SmartIdClientError;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -50,7 +51,7 @@ pub enum Interaction {
 }
 
 impl Interaction {
-    pub fn validate_text_length(&self) -> anyhow::Result<()> {
+    pub fn validate_text_length(&self) -> Result<()> {
         match self {
             Interaction::DisplayTextAndPIN { display_text_60 } => {
                 if display_text_60.len() > 60 {

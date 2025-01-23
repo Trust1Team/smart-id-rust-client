@@ -1,10 +1,10 @@
+use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::models::authentication_session::{AuthenticationRequest, AuthenticationResponse};
 use crate::models::certificate_choice_session::{
     CertificateChoiceRequest, CertificateChoiceResponse,
 };
 use crate::models::signature_session::{SignatureRequest, SignatureRequestResponse};
-use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;

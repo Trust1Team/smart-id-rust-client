@@ -1,9 +1,9 @@
 use crate::config::SmartIDConfig;
+use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::models::common::{CertificateLevel, RequestProperties};
 use crate::models::interaction::Interaction;
 use crate::models::signature::{SignatureAlgorithm, SignatureRequestParameters};
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
@@ -29,7 +29,7 @@ use serde_with::skip_serializing_none;
 /// # Example
 ///
 /// ```rust
-/// use anyhow::Result;
+/// use crate::error::Result;
 /// use smart_id_rust_client::config::SmartIDConfig;
 /// use smart_id_rust_client::models::authentication_session::{AuthenticationCertificateLevel, AuthenticationRequest};
 /// use smart_id_rust_client::models::interaction::Interaction;
@@ -79,7 +79,7 @@ pub struct AuthenticationRequest {
 /// # Example
 ///
 /// ```rust
-/// use anyhow::Result;
+/// use crate::error::Result;
 /// use smart_id_rust_client::config::SmartIDConfig;
 /// use smart_id_rust_client::models::authentication_session::{AuthenticationRequest, AuthenticationCertificateLevel};
 /// use smart_id_rust_client::models::interaction::Interaction;

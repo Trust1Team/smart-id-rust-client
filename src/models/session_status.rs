@@ -1,8 +1,8 @@
+use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::models::common::CertificateLevel;
 use crate::models::interaction::InteractionFlow;
 use crate::models::signature::{SignatureProtocol, SignatureResponse};
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
