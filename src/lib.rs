@@ -23,7 +23,7 @@
 //! #[tokio::main]
 //! async fn main() -> Result<()> {
 //!     let cfg = SmartIDConfig::load_from_env()?;
-//!     let smart_id_client = SmartIdClient::new(&cfg, None).await;
+//!     let smart_id_client = SmartIdClient::new(&cfg, None);
 //!
 //!     // Example: Start an authentication session
 //!     let authentication_request = AuthenticationRequest::new(

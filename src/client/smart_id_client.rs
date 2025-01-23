@@ -75,7 +75,7 @@ impl SmartIdClient {
     /// # Returns
     ///
     /// A new instance of SmartIdClient.
-    pub async fn new(cfg: &SmartIDConfig, user_identity: Option<UserIdentity>) -> Self {
+    pub fn new(cfg: &SmartIDConfig, user_identity: Option<UserIdentity>) -> Self {
         SmartIdClient {
             cfg: cfg.clone(),
             session_config: Arc::new(Mutex::new(None)),
