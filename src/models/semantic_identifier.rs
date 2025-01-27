@@ -1,6 +1,7 @@
 use crate::error::Result;
 use crate::error::SmartIdClientError;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 use std::str::FromStr;
 use strum_macros::{Display, EnumString};
 
@@ -40,13 +41,19 @@ impl SemanticsIdentifier {
         })
     }
 
-    pub fn identity(&self) -> String {
+    pub fn identifier(&self) -> String {
         format!(
             "{}{}-{}",
             self.identity_type.clone(),
             self.country_code.clone(),
             self.identity_number.clone(),
         )
+    }
+}
+
+impl Display for SemanticsIdentifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.identifier())
     }
 }
 
@@ -79,7 +86,7 @@ mod tests {
     fn test_new() {
         let identifier =
             SemanticsIdentifier::new(IdentityType::PAS, CountryCode::EE, "1234567890".to_string());
-        assert_eq!(identifier.identity(), "PASEE-1234567890");
+        assert_eq!(identifier.identifier(), "PASEE-1234567890");
     }
 
     #[test]
@@ -90,7 +97,7 @@ mod tests {
             "1234567890".to_string(),
         )
         .unwrap();
-        assert_eq!(identifier.identity(), "PASEE-1234567890");
+        assert_eq!(identifier.identifier(), "PASEE-1234567890");
     }
 
     #[test]
@@ -101,6 +108,6 @@ mod tests {
             "1234567890".to_string(),
         )
         .unwrap();
-        assert_eq!(identifier.identity(), "PASEE-1234567890");
+        assert_eq!(identifier.identifier(), "PASEE-1234567890");
     }
 }
