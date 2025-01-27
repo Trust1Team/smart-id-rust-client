@@ -89,6 +89,36 @@ impl SmartIdClient {
         }
     }
 
+    /// Creates a new SmartIdClient instance with the given session configuration.
+    /// This should not be used to start a new session!
+    /// This should be used when you need to cache the session configuration in a serialized form between requests.
+    ///
+    /// Example Use Case:
+    /// After starting an authentication session, you can cache the session_configuration (serialized).
+    /// Then, when you receive a request for session status, you rebuild the client. After you cache the session_configuration again.
+    /// Then, when you receive a request for a Dynamic Link, you can rebuild the client from the session_configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `cfg` - A reference to the SmartIDConfig.
+    /// * `session_config` - The session configuration from a previous session.
+    /// * `user_identity` - An optional UserIdentity. This will be compared with the certificate subject to ensure the correct user is signing. If not provided, the UserIdentity will be set from the certificate during the first successful authentication.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of SmartIdClient.
+    pub fn from_session(
+        cfg: &SmartIDConfig,
+        session_config: SessionConfig,
+        user_identity: Option<UserIdentity>,
+    ) -> Self {
+        SmartIdClient {
+            cfg: cfg.clone(),
+            session_config: Arc::new(Mutex::new(Some(session_config))),
+            authenticated_identity: Arc::new(Mutex::new(user_identity)),
+        }
+    }
+
     // region: Session Status
 
     /// Retrieves the session status with a specified timeout.

@@ -60,8 +60,8 @@ impl Ord for CertificateLevel {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) enum SessionConfig {
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum SessionConfig {
     AuthenticationDynamicLink {
         session_id: String,
         session_secret: String,
