@@ -202,4 +202,8 @@ pub enum SmartIdClientError {
     /// Smart ID client is outdated
     #[error("Smart ID client is outdated")]
     SmartIdClientOutdatedException,
+
+    /// Invalid semantic identifier
+    #[error("Invalid semantic identifier: {0}")]
+    InvalidSemanticIdentifierException(String),
 }
