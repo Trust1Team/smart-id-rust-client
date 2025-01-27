@@ -38,6 +38,11 @@ impl<T> SmartIdAPIResponse<T> {
                         "Request is unauthorized",
                     ),
                 ),
+                403 => Err(
+                    SmartIdClientError::RelyingPartyAccountConfigurationException(
+                        "Request is forbidden",
+                    ),
+                ),
                 404 => Err(SmartIdClientError::SmartIdAPINotFoundException),
                 471 => Err(SmartIdClientError::NoSuitableAccountOfRequestedTypeFoundException),
                 472 => Err(SmartIdClientError::PersonShouldViewSmartIdPortalException),
