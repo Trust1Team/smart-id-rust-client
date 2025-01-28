@@ -835,7 +835,7 @@ impl SmartIdClient {
         self.clear_user_identity();
     }
 
-    fn get_session(&self) -> Result<SessionConfig> {
+    pub fn get_session(&self) -> Result<SessionConfig> {
         match self.session_config.lock() {
             Ok(guard) => match guard.clone() {
                 Some(s) => Ok(s),
@@ -875,7 +875,7 @@ impl SmartIdClient {
         }
     }
 
-    fn get_user_identity(&self) -> Result<Option<UserIdentity>> {
+    pub fn get_user_identity(&self) -> Result<Option<UserIdentity>> {
         match self.authenticated_identity.lock() {
             Ok(guard) => match guard.clone() {
                 Some(s) => Ok(Some(s)),
