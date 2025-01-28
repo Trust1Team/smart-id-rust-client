@@ -25,6 +25,7 @@ pub struct SmartIDConfig {
     pub relying_party_uuid: String,
     pub relying_party_name: String,
     pub client_request_timeout: Option<u64>,
+    pub long_polling_timeout: u64,
 }
 
 impl SmartIDConfig {
@@ -41,6 +42,8 @@ impl SmartIDConfig {
             relying_party_uuid: get_env("RELYING_PARTY_UUID")?,
             relying_party_name: get_env("RELYING_PARTY_NAME")?,
             client_request_timeout: get_env_u64("CLIENT_REQ_NETWORK_TIMEOUT_MILLIS").ok(),
+            long_polling_timeout: get_env_u64("CLIENT_LONG_POLLING_TIMEOUT_MILLIS")
+                .unwrap_or(120000),
         })
     }
 

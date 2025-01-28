@@ -73,7 +73,7 @@ async fn test_authentication_qr() -> Result<()> {
     open_qr_in_computer_image_viewer(qr_code_link, "qr_code")?;
 
     // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
-    let result = smart_id_client.get_session_status(120000).await?;
+    let result = smart_id_client.get_session_status().await?;
     println!(
         "Authentication Session Status \n{:}",
         serde_json::to_string_pretty(&result)?
@@ -115,7 +115,7 @@ async fn test_authentication_web_to_app() -> Result<()> {
     open_qr_in_computer_image_viewer(web_to_app_link, "qr_code")?;
 
     // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
-    let result = smart_id_client.get_session_status(120000).await?;
+    let result = smart_id_client.get_session_status().await?;
     println!(
         "Authentication Session Status \n{:}",
         serde_json::to_string_pretty(&result)?
@@ -157,7 +157,7 @@ async fn test_authentication_app_to_app() -> Result<()> {
     open_qr_in_computer_image_viewer(web_to_app_link, "qr_code")?;
 
     // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
-    let result = smart_id_client.get_session_status(120000).await?;
+    let result = smart_id_client.get_session_status().await?;
     println!(
         "Authentication Session Status \n{:}",
         serde_json::to_string_pretty(&result)?
@@ -194,7 +194,7 @@ async fn test_notification_auth_then_sign_with_qr_code() -> Result<()> {
     println!("Verification Code Auth: {}", vc.value);
 
     // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
-    let result = smart_id_client.get_session_status(120000).await?;
+    let result = smart_id_client.get_session_status().await?;
     println!(
         "Authentication Session Status \n{:}",
         serde_json::to_string_pretty(&result)?
@@ -224,7 +224,7 @@ async fn test_notification_auth_then_sign_with_qr_code() -> Result<()> {
     // This code should match the code displayed in the Smart-ID app
     println!("Verification Code Sign: {}", vc.value);
 
-    let result = smart_id_client.get_session_status(120000).await?;
+    let result = smart_id_client.get_session_status().await?;
     println!(
         "Signature Session Status \n{:}",
         serde_json::to_string_pretty(&result)?
@@ -267,7 +267,7 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
     open_qr_in_computer_image_viewer(qr_code_link, "qr_code")?;
 
     // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
-    let result = smart_id_client.get_session_status(120000).await?;
+    let result = smart_id_client.get_session_status().await?;
     println!(
         "Authentication Session Status \n{:}",
         serde_json::to_string_pretty(&result)?
@@ -289,7 +289,7 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
         )
         .await?;
 
-    let result = smart_id_client.get_session_status(120000).await?;
+    let result = smart_id_client.get_session_status().await?;
     println!(
         "Certificate Choice Session Status\n{}",
         serde_json::to_string_pretty(&result)?
@@ -322,7 +322,7 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
     // Scan the QR code with the Smart-ID app
     open_qr_in_computer_image_viewer(qr_code_link, "qr_sign_code")?;
 
-    let result = smart_id_client.get_session_status(120000).await?;
+    let result = smart_id_client.get_session_status().await?;
     println!(
         "Signature Session Status \n{:}",
         serde_json::to_string_pretty(&result)?
