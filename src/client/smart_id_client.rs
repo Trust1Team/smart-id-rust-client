@@ -143,7 +143,7 @@ impl SmartIdClient {
     /// - The session response is missing a signature.
     /// - The session response certificate is invalid.
     /// - The session response signature is invalid.
-    pub async fn get_session_status(&self, timeout_ms: i32) -> Result<SessionStatus> {
+    pub async fn get_session_status(&self) -> Result<SessionStatus> {
         let session_config = self.get_session()?;
 
         let path = format!(
@@ -151,7 +151,7 @@ impl SmartIdClient {
             self.cfg.api_url(),
             SESSION_STATUS_URI,
             session_config.session_id(),
-            timeout_ms
+            self.cfg.long_polling_timeout,
         );
 
         let session_response =

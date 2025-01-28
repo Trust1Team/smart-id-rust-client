@@ -35,6 +35,7 @@ async fn main() -> Result<()> {
         relying_party_uuid: "test-uuid".to_string(),
         relying_party_name: "test-name".to_string(),
         client_request_timeout: Some(30000),
+        long_polling_timeout: 120000,
     };
     // Get config from environment variables
     let cfg = SmartIDConfig::load_from_env()?;
@@ -126,7 +127,7 @@ async fn uc_authentication_request_example(
     open_qr_in_computer_image_viewer(qr_code_link.clone(), "auth_qr_code")?;
 
     // This will long poll the session status
-    let result = smart_id_client.get_session_status(12000).await?;
+    let result = smart_id_client.get_session_status().await?;
     info!("{:?}", result.clone().result.unwrap().end_result);
     Ok(result)
 }
@@ -145,7 +146,7 @@ async fn uc_certificate_choice_request_example(
         .await?;
 
     // This will long poll the session status
-    let result = smart_id_client.get_session_status(12000).await?;
+    let result = smart_id_client.get_session_status().await?;
     info!("{:?}", result.clone().result.unwrap().end_result);
     Ok(result)
 }
@@ -189,7 +190,7 @@ async fn uc_signature_request_example(
 
     // This will long poll the session status
     // On successful completion the signature will be returned
-    let result = smart_id_client.get_session_status(12000).await?;
+    let result = smart_id_client.get_session_status().await?;
     let signature = result.signature.unwrap();
     Ok(signature.get_value())
 }
