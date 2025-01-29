@@ -155,7 +155,7 @@ impl SmartIdClient {
         );
 
         let session_response =
-            get::<SessionResponse>(path.as_str(), self.cfg.client_request_timeout).await?;
+            get::<SessionResponse>(path.as_str(), Some(self.cfg.long_polling_timeout)).await?;
 
         let session_status = session_response.into_result()?;
 
