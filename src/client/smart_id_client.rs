@@ -155,7 +155,8 @@ impl SmartIdClient {
         );
 
         let session_response =
-            get::<SessionResponse>(path.as_str(), Some(self.cfg.long_polling_timeout)).await?;
+            get::<SessionResponse>(path.as_str(), Some(self.cfg.long_polling_timeout + 100))
+                .await?; // Add 100ms to allow SmartId to respond with a long polling timeout error instead of reqwest creating a connection error
 
         let session_status = session_response.into_result()?;
 

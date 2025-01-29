@@ -63,7 +63,13 @@ where
         )
         .send()
         .await
-        .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string()))?;
+        .map_err(|e| {
+            if e.is_timeout() {
+                SmartIdClientError::StatusRequestLongPollingTimeoutException
+            } else {
+                SmartIdClientError::SmartIDAPIException(e.to_string())
+            }
+        })?;
     let status = send_response.status().as_u16();
     match status {
         200..=299 => send_response
