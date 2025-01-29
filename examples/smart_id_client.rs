@@ -63,7 +63,8 @@ async fn main() -> Result<()> {
     // CERTIFICATE CHOICE
     // If you are signing a *AdES scheme you will need to include the certificate in the document to be signed
     // In this case you must fetch public signing key using a certificate choice session
-    // Otherwise you can skip this step
+    // If you are signing without going through the auth flow first, but you have the users semantic id you should use this flow as well (ETSI endpoint NOT document!)
+    // Otherwise, you can skip this step by using the document number returned from the authentication session
     let certificate_choice_status =
         uc_certificate_choice_request_example(&cfg, &smart_id_client, document_number.clone())
             .await?;
@@ -80,12 +81,6 @@ async fn main() -> Result<()> {
     let signature =
         uc_signature_request_example(&cfg, &smart_id_client, digest, document_number).await?;
     info!("Signature: \n {:?}", signature);
-
-    // RESET SESSION
-    // This is very import if you plan to reuse this client for a different user.
-    // The client will have the user identity set if it is passed in on creation or after the first successful authentication.
-    // The user identity is used to validate session responses. If you do not reset the session the client will not be able to authenticate a different user.
-    smart_id_client.reset_session();
 
     Ok(())
 }
