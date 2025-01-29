@@ -141,7 +141,7 @@ where
             .json::<R>()
             .await
             .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string())),
-        404 => Err(SmartIdClientError::SessionDoesNotExistOrHasExpired.into()),
+        404 => Err(SmartIdClientError::NotFoundException.into()),
         472 => Err(SmartIdClientError::UserShouldViewSmartIDAppOrPortalException.into()),
         480 => Err(SmartIdClientError::ApiClientIsTooOldException.into()),
         580 => Err(SmartIdClientError::SystemIsUnderMaintenanceException.into()),
