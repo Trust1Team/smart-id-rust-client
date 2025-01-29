@@ -32,7 +32,7 @@ impl<T> SmartIdAPIResponse<T> {
         match self {
             SmartIdAPIResponse::Success(data) => Ok(data),
             SmartIdAPIResponse::Error(error) => match error.status {
-                400 => Err(SmartIdClientError::SmartIdAPIBadRequestException),
+                400 => Err(SmartIdClientError::BadRequestException),
                 401 => Err(
                     SmartIdClientError::RelyingPartyAccountConfigurationException(
                         "Request is unauthorized",
@@ -43,11 +43,11 @@ impl<T> SmartIdAPIResponse<T> {
                         "Request is forbidden",
                     ),
                 ),
-                404 => Err(SmartIdClientError::SmartIdAPINotFoundException),
+                404 => Err(SmartIdClientError::NotFoundException),
                 471 => Err(SmartIdClientError::NoSuitableAccountOfRequestedTypeFoundException),
                 472 => Err(SmartIdClientError::PersonShouldViewSmartIdPortalException),
-                480 => Err(SmartIdClientError::SmartIdClientOutdatedException),
-                580 => Err(SmartIdClientError::ServerMaintenanceException),
+                480 => Err(SmartIdClientError::ClientOutdatedException),
+                580 => Err(SmartIdClientError::SystemIsUnderMaintenanceException),
                 _ => Err(SmartIdClientError::SmartIDAPIException(format!(
                     "Unknown error: {}",
                     error.status

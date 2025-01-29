@@ -10,24 +10,9 @@ pub enum SmartIdClientError {
     #[error("Configuration missing: {0}")]
     ConfigMissingException(&'static str),
 
-    /// Session not found
-    #[error("Session not found: {0}")]
-    SessionNotFound(String),
-
-    #[error("Invalid request")]
-    InvalidRequest,
-
-    /// Unprocessable
-    #[error("Unprocessable exception: {0}")]
-    UnprocessableSmartIdResponseException(&'static str),
-
     ///RelyingPartyAccountConfigurationException
     #[error("Relying Party account configuration exception: {0}")]
     RelyingPartyAccountConfigurationException(&'static str),
-
-    ///ServerMaintenanceException
-    #[error("Server maintenance exception")]
-    ServerMaintenanceException,
 
     ///SmartIdClientException
     #[error("Smart ID client exception: {0}")]
@@ -37,23 +22,9 @@ pub enum SmartIdClientError {
     #[error("Smart ID API Exception: {0}")]
     SmartIDAPIException(String),
 
-    /// Client-side integration or how Relying Party account has been configured by Smart-ID operator or Smart-ID server is under maintenance
-    /// With these types of errors there is not recommended to ask the user for immediate retry
-    #[error("Enduring Smart ID exception: {0}")]
-    EnduringSmartIdException(&'static str),
-
-    /// User's action triggered ending session.
-    /// General practise is to ask the user to try again.
-    #[error("User action exception: {0}, try use case again")]
-    UserActionException(&'static str),
-
     /// Session timed out without getting any response from user
     #[error("Session timed out without getting any response from user")]
     SessionTimeoutException,
-
-    /// Session exception when Retry is required
-    #[error("Session exception when Retry is required")]
-    SessionRetryException,
 
     /// There is no running session
     #[error("There is no running session")]
@@ -74,10 +45,6 @@ pub enum SmartIdClientError {
     /// Failed to set user identity
     #[error("Failed to set user identity")]
     SetUserIdentityException,
-
-    /// User has not been authenticated before attempting to sign or fetch certificate
-    #[error("User has not been authenticated before attempting to sign or fetch certificate")]
-    NoAuthenticatedIdentityException,
 
     /// Authentication session completed without result
     #[error("Authentication session completed without result")]
@@ -135,15 +102,6 @@ pub enum SmartIdClientError {
     #[error("User selected wrong verification code")]
     UserSelectedWrongVerificationCodeException,
 
-    /// Something is wrong with user's Smart-ID account (or app) configuration.
-    /// General practise is to ask the user to try again.
-    #[error("User action exception: {0}")]
-    UserAccountException(&'static str),
-
-    /// Signer's certificate is below requested certificate level
-    #[error("Signer's certificate is below requested certificate level")]
-    CertificateLevelMismatchException,
-
     /// DOCUMENT_UNUSABLE. User must either check his/her Smart-ID mobile application or turn to customer support for getting the exact reason.
     #[error("DOCUMENT_UNUSABLE. User must either check his/her Smart-ID mobile application or turn to customer support for getting the exact reason")]
     DocumentUnusableException,
@@ -160,16 +118,9 @@ pub enum SmartIdClientError {
     #[error("User app version does not support any of the allowedInteractionsOrder interactions")]
     RequiredInteractionNotSupportedByAppException,
 
+    /// Interaction parameters are invalid
     #[error("Interaction parameters are invalid: {0}")]
     InvalidInteractionParametersException(&'static str),
-
-    /// User account not found
-    #[error("User account not found")]
-    UserAccountNotFoundException,
-
-    /// Certificate Decryption error
-    #[error("Certificate Decryption error")]
-    DecryptionError,
 
     /// Failed to generate dynamic link
     #[error("Failed to generate dynamic link: {0}")]
@@ -193,15 +144,15 @@ pub enum SmartIdClientError {
 
     /// Not found exception from Smart ID API
     #[error("Not found exception from Smart ID API")]
-    SmartIdAPINotFoundException,
+    NotFoundException,
 
     /// Bad request exception from Smart ID API
     #[error("Bad request exception from Smart ID API")]
-    SmartIdAPIBadRequestException,
+    BadRequestException,
 
     /// Smart ID client is outdated
     #[error("Smart ID client is outdated")]
-    SmartIdClientOutdatedException,
+    ClientOutdatedException,
 
     /// Invalid semantic identifier
     #[error("Invalid semantic identifier: {0}")]
