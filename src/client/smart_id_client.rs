@@ -166,7 +166,7 @@ impl SmartIdClient {
                 Ok(session_status)
             }
             SessionState::RUNNING => {
-                Err(SmartIdClientError::SessionDidNotCompleteInTimoutError.into())
+                Err(SmartIdClientError::StatusRequestLongPollingTimeoutException.into())
             }
         }
     }

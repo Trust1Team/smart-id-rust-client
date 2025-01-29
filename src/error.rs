@@ -52,7 +52,7 @@ pub enum SmartIdClientError {
 
     /// Session did not complete within timeout
     #[error("Session did not complete within timeout")]
-    SessionDidNotCompleteInTimoutError,
+    StatusRequestLongPollingTimeoutException,
 
     /// Session does not exist or has expired
     #[error("Session does not exist or has expired")]
