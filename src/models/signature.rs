@@ -274,6 +274,19 @@ impl ResponseSignature {
             ResponseSignature::RAW_DIGEST_SIGNATURE { value, .. } => value.clone(),
         }
     }
+
+    pub fn get_signature_algorithm(&self) -> SignatureAlgorithm {
+        match self {
+            ResponseSignature::ACSP_V1 {
+                signature_algorithm,
+                ..
+            } => signature_algorithm.clone(),
+            ResponseSignature::RAW_DIGEST_SIGNATURE {
+                signature_algorithm,
+                ..
+            } => signature_algorithm.clone(),
+        }
+    }
 }
 // endregion
 
