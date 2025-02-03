@@ -163,7 +163,6 @@ impl SmartIdClient {
         match session_status.state {
             SessionState::COMPLETE => {
                 self.validate_session_status(session_status.clone(), session_config)?;
-                self.clear_session();
                 Ok(session_status)
             }
             SessionState::RUNNING => {
@@ -191,6 +190,8 @@ impl SmartIdClient {
         &self,
         authentication_request: AuthenticationRequest,
     ) -> Result<()> {
+        self.clear_session();
+
         let path = format!(
             "{}{}",
             self.cfg.api_url(),
@@ -230,6 +231,8 @@ impl SmartIdClient {
         authentication_request: AuthenticationRequest,
         document_number: String,
     ) -> Result<()> {
+        self.clear_session();
+
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -270,6 +273,8 @@ impl SmartIdClient {
         authentication_request: AuthenticationRequest,
         etsi: String,
     ) -> Result<()> {
+        self.clear_session();
+
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -309,6 +314,8 @@ impl SmartIdClient {
         authentication_request: AuthenticationRequest,
         etsi: String,
     ) -> Result<VCCode> {
+        self.clear_session();
+
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -350,6 +357,8 @@ impl SmartIdClient {
         authentication_request: AuthenticationRequest,
         document_number: String,
     ) -> Result<VCCode> {
+        self.clear_session();
+
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -396,6 +405,8 @@ impl SmartIdClient {
         signature_request: SignatureRequest,
         etsi: String,
     ) -> Result<()> {
+        self.clear_session();
+
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -435,6 +446,8 @@ impl SmartIdClient {
         signature_request: SignatureRequest,
         document_number: String,
     ) -> Result<()> {
+        self.clear_session();
+
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -473,6 +486,8 @@ impl SmartIdClient {
         signature_request: SignatureRequest,
         etsi: String,
     ) -> Result<VCCode> {
+        self.clear_session();
+
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -513,6 +528,8 @@ impl SmartIdClient {
         signature_request: SignatureRequest,
         document_number: String,
     ) -> Result<VCCode> {
+        self.clear_session();
+
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -557,6 +574,8 @@ impl SmartIdClient {
         certificate_choice_request: CertificateChoiceRequest,
         etsi: String,
     ) -> Result<()> {
+        self.clear_session();
+
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
@@ -596,6 +615,8 @@ impl SmartIdClient {
         certificate_choice_request: CertificateChoiceRequest,
         document_number: String,
     ) -> Result<()> {
+        self.clear_session();
+
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
