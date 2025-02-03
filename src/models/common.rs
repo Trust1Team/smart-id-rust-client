@@ -6,6 +6,8 @@ use crate::models::authentication_session::{
 use crate::models::certificate_choice_session::{
     CertificateChoiceRequest, CertificateChoiceSession,
 };
+use crate::models::session_status::SessionStatus;
+use crate::models::signature::{ResponseSignature, SignatureProtocol};
 use crate::models::signature_session::{
     SignatureNotificationSession, SignatureRequest, SignatureSession,
 };
@@ -80,12 +82,16 @@ pub enum SessionConfig {
     },
     AuthenticationNotification {
         session_id: String,
+        random_challenge: String,
         requested_certificate_level: CertificateLevel,
+        session_start_time: DateTime<Utc>,
         vc: VCCode,
     },
     SignatureNotification {
         session_id: String,
+        digest: String,
         requested_certificate_level: CertificateLevel,
+        session_start_time: DateTime<Utc>,
         vccode: VCCode,
     },
     CertificateChoice {
@@ -158,6 +164,13 @@ impl SessionConfig {
             session_id: authentication_notification_response.session_id,
             vc: authentication_notification_response.vc,
             requested_certificate_level: authentication_request.certificate_level.into(),
+            random_challenge: authentication_request
+                .signature_protocol_parameters
+                .get_random_challenge()
+                .ok_or(SmartIdClientError::InvalidSignatureProtocal(
+                    "Random challenge missing from authentication request",
+                ))?,
+            session_start_time: Utc::now(),
         })
     }
 
@@ -188,6 +201,13 @@ impl SessionConfig {
             session_id: signature_notification_response.session_id,
             vccode: signature_notification_response.vc,
             requested_certificate_level: signature_request.certificate_level,
+            session_start_time: Default::default(),
+            digest: signature_request
+                .signature_protocol_parameters
+                .get_digest()
+                .ok_or(SmartIdClientError::InvalidSignatureProtocal(
+                    "Digest missing from signature request",
+                ))?,
         })
     }
 
@@ -199,6 +219,52 @@ impl SessionConfig {
             session_id: certificate_choice_response.session_id,
             requested_certificate_level: certificate_choice_request.certificate_level,
             session_start_time: Utc::now(),
+        }
+    }
+
+    pub fn get_digest(&self, session_status: SessionStatus) -> Option<String> {
+        match self {
+            SessionConfig::Signature { digest, .. } => Some(digest.clone()),
+            SessionConfig::SignatureNotification { digest, .. } => Some(digest.clone()),
+            SessionConfig::AuthenticationDynamicLink {
+                random_challenge, ..
+            } => {
+                // The authentication digest requires the challenge and protocol which are available before the session is started
+                // It also requires the server random which is only available after the session result is returned
+                if let Some(ResponseSignature::ACSP_V1 { server_random, .. }) =
+                    session_status.signature
+                {
+                    Some(format!(
+                        "{:?};{};{}",
+                        SignatureProtocol::ACSP_V1,
+                        server_random,
+                        random_challenge
+                    ))
+                } else {
+                    // Authentication dynamic link can only be ACSP_V1, so this should never happen if the session is complete and successful
+                    None
+                }
+            }
+            SessionConfig::AuthenticationNotification {
+                random_challenge, ..
+            } => {
+                // The authentication digest requires the challenge and protocol which are available before the session is started
+                // It also requires the server random which is only available after the session result is returned
+                if let Some(ResponseSignature::ACSP_V1 { server_random, .. }) =
+                    session_status.signature
+                {
+                    Some(format!(
+                        "{:?};{};{}",
+                        SignatureProtocol::ACSP_V1,
+                        server_random,
+                        random_challenge
+                    ))
+                } else {
+                    // Authentication notification can only be ACSP_V1, so this should never happen if the session is complete and successful
+                    None
+                }
+            }
+            SessionConfig::CertificateChoice { .. } => None, // Certificate choice does not have a digest
         }
     }
 }
