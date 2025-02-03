@@ -200,6 +200,11 @@ async fn test_notification_auth_then_sign_with_qr_code() -> Result<()> {
         serde_json::to_string_pretty(&result)?
     );
 
+    // Digest
+    let digest = smart_id_client.get_session()?.get_digest(result);
+    assert!(digest.is_some());
+    println!("Digest: {:?}", digest);
+
     // SIGNATURE
     let signature_request = SignatureRequest::new(
         &cfg,
@@ -229,6 +234,11 @@ async fn test_notification_auth_then_sign_with_qr_code() -> Result<()> {
         "Signature Session Status \n{:}",
         serde_json::to_string_pretty(&result)?
     );
+
+    // Digest
+    let digest = smart_id_client.get_session()?.get_digest(result.clone());
+    assert!(digest.is_some());
+    println!("Digest: {:?}", digest);
 
     assert_eq!(result.result.unwrap().end_result, EndResult::OK);
     Ok(())

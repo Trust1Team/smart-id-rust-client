@@ -827,7 +827,34 @@ impl SmartIdClient {
 
                 Ok(())
             }
+            SessionConfig::AuthenticationNotification {
+                random_challenge, ..
+            } => {
+                let signature =
+                    signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+
+                signature.validate_acsp_v1(random_challenge, cert.value.clone())?;
+
+                // If no user identity is set, set it from the certificate
+                // This happens during all anonymous sessions
+                if self.get_user_identity()?.is_none() {
+                    self.set_user_identity(UserIdentity::from_certificate(cert.value.clone())?)?
+                };
+
+                Ok(())
+            }
             SessionConfig::Signature { digest, .. } => {
+                let signature =
+                    signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+
+                // TODO: CHeck this with prod
+                if self.cfg.is_demo() {
+                    return Ok(());
+                }
+
+                signature.validate_raw_digest(digest, cert.value.clone())
+            }
+            SessionConfig::SignatureNotification { digest, .. } => {
                 let signature =
                     signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 

@@ -122,10 +122,14 @@ impl SignatureRequestParameters {
         }
     }
 
+    // Get the digest from the request parameters this.
+    // This is only possible for RAW_DIGEST_SIGNATURE requests, as ACSP_V1 requests require a server random from the response to build the digest (auth)
     pub(crate) fn get_digest(&self) -> Option<String> {
         match self {
             SignatureRequestParameters::RAW_DIGEST_SIGNATURE { digest, .. } => Some(digest.clone()),
-            _ => None,
+            // ACSP_V1 requests require a server random from the response to build the digest (auth)
+            // Use SessionConfig::get_digest if you need to build the digest for ACSP_V1 requests.
+            SignatureRequestParameters::ACSP_V1 { .. } => None,
         }
     }
 
