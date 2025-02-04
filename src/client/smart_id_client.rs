@@ -687,7 +687,6 @@ impl SmartIdClient {
                     language_code: language_code.to_string(),
                 };
                 let dynamic_link = dynamic_link.generate_dynamic_link();
-                debug!("Generated dynamic link: {}", dynamic_link);
                 Ok(dynamic_link)
             }
             SessionConfig::Signature {
