@@ -93,8 +93,7 @@ impl UserIdentity {
             return Err(
                 SmartIdClientError::FailedToValidateSessionResponseCertificate(
                     "Given name provided in identity does not match certificate",
-                )
-                .into(),
+                ),
             );
         }
 
@@ -102,8 +101,7 @@ impl UserIdentity {
             return Err(
                 SmartIdClientError::FailedToValidateSessionResponseCertificate(
                     "Surname provided in identity does not match certificate",
-                )
-                .into(),
+                ),
             );
         }
 
@@ -111,8 +109,7 @@ impl UserIdentity {
             return Err(
                 SmartIdClientError::FailedToValidateSessionResponseCertificate(
                     "Identity code provided in identity does not match certificate",
-                )
-                .into(),
+                ),
             );
         }
 
@@ -153,7 +150,7 @@ impl UserIdentity {
             .map_err(|_e| {
                 SmartIdClientError::FailedToValidateSessionResponseCertificate(
                     "Certificate does not match provided user identity, attribute missing from cert"
-                ).into()
+                )
             })
     }
 }

@@ -57,32 +57,28 @@ impl Interaction {
                 if display_text_60.len() > 60 {
                     return Err(SmartIdClientError::InvalidInteractionParametersException(
                         "Display text must be 60 characters or less",
-                    )
-                    .into());
+                    ));
                 }
             }
             Interaction::ConfirmationMessage { display_text_200 } => {
                 if display_text_200.len() > 200 {
                     return Err(SmartIdClientError::InvalidInteractionParametersException(
                         "Display text must be 200 characters or less",
-                    )
-                    .into());
+                    ));
                 }
             }
             Interaction::VerificationCodeChoice { display_text_60 } => {
                 if display_text_60.len() > 60 {
                     return Err(SmartIdClientError::InvalidInteractionParametersException(
                         "Display text must be 60 characters or less",
-                    )
-                    .into());
+                    ));
                 }
             }
             Interaction::ConfirmationMessageAndVerificationCodeChoice { display_text_200 } => {
                 if display_text_200.len() > 200 {
                     return Err(SmartIdClientError::InvalidInteractionParametersException(
                         "Display text must be 200 characters or less",
-                    )
-                    .into());
+                    ));
                 }
             }
         }

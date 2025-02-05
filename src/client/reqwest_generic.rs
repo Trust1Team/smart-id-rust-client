@@ -76,10 +76,10 @@ where
             .json::<R>()
             .await
             .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string())),
-        404 => Err(SmartIdClientError::SessionDoesNotExistOrHasExpired.into()),
-        472 => Err(SmartIdClientError::UserShouldViewSmartIDAppOrPortalException.into()),
-        480 => Err(SmartIdClientError::ApiClientIsTooOldException.into()),
-        580 => Err(SmartIdClientError::SystemIsUnderMaintenanceException.into()),
+        404 => Err(SmartIdClientError::SessionDoesNotExistOrHasExpired),
+        472 => Err(SmartIdClientError::UserShouldViewSmartIDAppOrPortalException),
+        480 => Err(SmartIdClientError::ApiClientIsTooOldException),
+        580 => Err(SmartIdClientError::SystemIsUnderMaintenanceException),
         _ => {
             let response = send_response
                 .bytes()
@@ -147,10 +147,10 @@ where
             .json::<R>()
             .await
             .map_err(|e| SmartIdClientError::SmartIDAPIException(e.to_string())),
-        404 => Err(SmartIdClientError::NotFoundException.into()),
-        472 => Err(SmartIdClientError::UserShouldViewSmartIDAppOrPortalException.into()),
-        480 => Err(SmartIdClientError::ApiClientIsTooOldException.into()),
-        580 => Err(SmartIdClientError::SystemIsUnderMaintenanceException.into()),
+        404 => Err(SmartIdClientError::NotFoundException),
+        472 => Err(SmartIdClientError::UserShouldViewSmartIDAppOrPortalException),
+        480 => Err(SmartIdClientError::ApiClientIsTooOldException),
+        580 => Err(SmartIdClientError::SystemIsUnderMaintenanceException),
         _ => {
             let response = send_response
                 .bytes()

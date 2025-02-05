@@ -166,7 +166,7 @@ impl SmartIdClient {
                 Ok(session_status)
             }
             SessionState::RUNNING => {
-                Err(SmartIdClientError::StatusRequestLongPollingTimeoutException.into())
+                Err(SmartIdClientError::StatusRequestLongPollingTimeoutException)
             }
         }
     }
@@ -712,8 +712,7 @@ impl SmartIdClient {
             _ => {
                 Err(SmartIdClientError::GenerateDynamicLinkException(
                     "Can only generate dynamic links for authentication or signature dynamic link sessions",
-                )
-                .into())
+                ))
             }
 
         }
@@ -797,7 +796,7 @@ impl SmartIdClient {
             None => match session_status.state {
                 SessionState::RUNNING => Ok(()),
                 SessionState::COMPLETE => {
-                    Err(SmartIdClientError::AuthenticationSessionCompletedWithoutResult.into())
+                    Err(SmartIdClientError::AuthenticationSessionCompletedWithoutResult)
                 }
             },
         }
@@ -889,12 +888,12 @@ impl SmartIdClient {
                 Some(s) => Ok(s),
                 None => {
                     debug!("Can't get session there is no running session");
-                    Err(NoSessionException.into())
+                    Err(NoSessionException)
                 }
             },
             Err(e) => {
                 debug!("Failed to lock session config: {:?}", e);
-                Err(SmartIdClientError::GetSessionException.into())
+                Err(SmartIdClientError::GetSessionException)
             }
         }
     }
@@ -907,7 +906,7 @@ impl SmartIdClient {
             }
             Err(e) => {
                 debug!("Failed to lock session config: {:?}", e);
-                Err(SmartIdClientError::SetSessionException.into())
+                Err(SmartIdClientError::SetSessionException)
             }
         }
     }
@@ -931,7 +930,7 @@ impl SmartIdClient {
             },
             Err(e) => {
                 debug!("Failed to lock authenticated identity: {:?}", e);
-                Err(SmartIdClientError::GetUserIdentityException.into())
+                Err(SmartIdClientError::GetUserIdentityException)
             }
         }
     }
@@ -944,7 +943,7 @@ impl SmartIdClient {
             }
             Err(e) => {
                 debug!("Failed to lock authenticated identity: {:?}", e);
-                Err(SmartIdClientError::SetUserIdentityException.into())
+                Err(SmartIdClientError::SetUserIdentityException)
             }
         }
     }
