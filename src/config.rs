@@ -66,14 +66,14 @@ impl SmartIDConfig {
 }
 
 fn get_env(name: &'static str) -> Result<String> {
-    env::var(name).map_err(|_| SmartIdClientError::ConfigMissingException(name).into())
+    env::var(name).map_err(|_| SmartIdClientError::ConfigMissingException(name))
 }
 
 fn get_env_u64(name: &'static str) -> Result<u64> {
     env::var(name)
-        .map_err(|_| SmartIdClientError::ConfigMissingException(name).into())
+        .map_err(|_| SmartIdClientError::ConfigMissingException(name))
         .and_then(|val| {
             val.parse()
-                .map_err(|_| SmartIdClientError::ConfigMissingException(name).into())
+                .map_err(|_| SmartIdClientError::ConfigMissingException(name))
         })
 }

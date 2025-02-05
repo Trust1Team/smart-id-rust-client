@@ -205,8 +205,7 @@ impl ResponseSignature {
             }
             _ => Err(SmartIdClientError::InvalidSignatureProtocal(
                 "Expected RAW_DIGEST_SIGNATURE signature protocol",
-            )
-            .into()),
+            )),
         }
     }
 
@@ -221,15 +220,13 @@ impl ResponseSignature {
                 if server_random.len() < 24 {
                     return Err(SmartIdClientError::InvalidResponseSignature(
                         "server_random length is less than 24 characters".to_string(),
-                    )
-                    .into());
+                    ));
                 }
 
                 if BASE64_STANDARD.decode(server_random).is_err() {
                     return Err(SmartIdClientError::InvalidResponseSignature(
                         "server_random contains invalid Base64 characters".to_string(),
-                    )
-                    .into());
+                    ));
                 }
 
                 // signature validation
@@ -267,8 +264,7 @@ impl ResponseSignature {
             }
             _ => Err(SmartIdClientError::InvalidSignatureProtocal(
                 "Expected ACSP_V1 signature protocol",
-            )
-            .into()),
+            )),
         }
     }
 

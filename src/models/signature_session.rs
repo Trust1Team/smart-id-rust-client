@@ -89,8 +89,7 @@ impl SignatureRequest {
         if interactions.is_empty() {
             return Err(SmartIdClientError::ConfigMissingException(
                 "Define at least 1 interaction for an authentication request",
-            )
-            .into());
+            ));
         };
 
         for interaction in &interactions {

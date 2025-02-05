@@ -117,37 +117,34 @@ impl EndResult {
         match self {
             EndResult::OK => Ok(()),
             EndResult::USER_REFUSED => {
-                Err(SmartIdClientError::UserRefusedVerificationChoiceException.into())
+                Err(SmartIdClientError::UserRefusedVerificationChoiceException)
             }
-            EndResult::TIMEOUT => Err(SmartIdClientError::SessionTimeoutException.into()),
-            EndResult::DOCUMENT_UNUSABLE => {
-                Err(SmartIdClientError::DocumentUnusableException.into())
-            }
+            EndResult::TIMEOUT => Err(SmartIdClientError::SessionTimeoutException),
+            EndResult::DOCUMENT_UNUSABLE => Err(SmartIdClientError::DocumentUnusableException),
             EndResult::WRONG_VC => {
-                Err(SmartIdClientError::UserSelectedWrongVerificationCodeException.into())
+                Err(SmartIdClientError::UserSelectedWrongVerificationCodeException)
             }
             EndResult::REQUIRED_INTERACTION_NOT_SUPPORTED_BY_APP => {
-                Err(SmartIdClientError::RequiredInteractionNotSupportedByAppException.into())
+                Err(SmartIdClientError::RequiredInteractionNotSupportedByAppException)
             }
             EndResult::USER_REFUSED_CERT_CHOICE => {
-                Err(SmartIdClientError::UserRefusedCertChoiceException.into())
+                Err(SmartIdClientError::UserRefusedCertChoiceException)
             }
             EndResult::USER_REFUSED_DISPLAYTEXTANDPIN => {
-                Err(SmartIdClientError::UserRefusedDisplayTextAndPinException.into())
+                Err(SmartIdClientError::UserRefusedDisplayTextAndPinException)
             }
             EndResult::USER_REFUSED_VC_CHOICE => {
-                Err(SmartIdClientError::UserRefusedVerificationChoiceException.into())
+                Err(SmartIdClientError::UserRefusedVerificationChoiceException)
             }
             EndResult::USER_REFUSED_CONFIRMATIONMESSAGE => {
-                Err(SmartIdClientError::UserRefusedConfirmationMessageException.into())
+                Err(SmartIdClientError::UserRefusedConfirmationMessageException)
             }
             EndResult::USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE => Err(
-                SmartIdClientError::UserRefusedConfirmationMessageWithVerificationChoiceException
-                    .into(),
+                SmartIdClientError::UserRefusedConfirmationMessageWithVerificationChoiceException,
             ),
-            _ => {
-                Err(SmartIdClientError::SmartIdClientException("Unknown session end result").into())
-            }
+            _ => Err(SmartIdClientError::SmartIdClientException(
+                "Unknown session end result",
+            )),
         }
     }
 }
