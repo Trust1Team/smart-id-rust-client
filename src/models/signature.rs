@@ -3,6 +3,9 @@ use crate::error::SmartIdClientError;
 use base64::engine::general_purpose::STANDARD_NO_PAD;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
+use der::Decode;
+use num_bigint::BigUint;
+use num_traits::{One, Zero};
 use rand::{thread_rng, Rng};
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha20Rng;
@@ -10,7 +13,11 @@ use ring::signature::{
     UnparsedPublicKey, RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384,
     RSA_PKCS1_2048_8192_SHA512,
 };
+use rsa::pkcs1::DecodeRsaPublicKey;
+use rsa::traits::PublicKeyParts;
+use rsa::RsaPublicKey;
 use serde::{Deserialize, Serialize};
+use spki::DecodePublicKey;
 use x509_parser::certificate::X509Certificate;
 use x509_parser::der_parser::asn1_rs::BitString;
 use x509_parser::nom::AsBytes;
@@ -170,10 +177,7 @@ pub enum ResponseSignature {
 impl ResponseSignature {
     pub(crate) fn validate_raw_digest(&self, digest: String, cert: String) -> Result<()> {
         match self {
-            ResponseSignature::RAW_DIGEST_SIGNATURE {
-                value,
-                signature_algorithm,
-            } => {
+            ResponseSignature::RAW_DIGEST_SIGNATURE { value, .. } => {
                 let decoded_cert = BASE64_STANDARD.decode(&cert).map_err(|_| {
                     SmartIdClientError::FailedToValidateSessionResponseCertificate(
                         "Could not decode base64 certificate",
@@ -192,16 +196,12 @@ impl ResponseSignature {
                 let digest = BASE64_STANDARD
                     .decode(digest)
                     .expect("Failed to decode base64 digest");
+
                 let signature = BASE64_STANDARD
                     .decode(value)
                     .expect("Failed to decode base64 signature");
 
-                signature_algorithm.validate_signature(
-                    public_key,
-                    digest.as_bytes(),
-                    signature.as_bytes(),
-                )?;
-                Ok(())
+                verify_rsa_no_hash(public_key.as_ref(), digest.as_slice(), signature.as_slice())
             }
             _ => Err(SmartIdClientError::InvalidSignatureProtocal(
                 "Expected RAW_DIGEST_SIGNATURE signature protocol",
@@ -290,12 +290,44 @@ impl ResponseSignature {
 }
 // endregion
 
+/// Verify RSA signature without hash.
+/// This is not supported by the rsa crate, and the rsa crate traits are sealed.
+fn verify_rsa_no_hash(public_key_der: &[u8], digest: &[u8], signature: &[u8]) -> Result<()> {
+    // Extract modulus (n) and exponent (e) from the key
+    let (n, e) = match RsaPublicKey::from_pkcs1_der(public_key_der) {
+        Ok(key) => (key.n().clone(), key.e().clone()),
+        Err(_) => {
+            return Err(SmartIdClientError::InvalidResponseSignature(
+                "Failed to parse public key for verifying raw digest".to_string(),
+            ))
+        }
+    };
+
+    // We are converting from num_bigint_dig::biguint::BigUint -> num_bigint::biguint::BigUint
+    // These types have the same name but are different
+    let n: BigUint = BigUint::from_bytes_be(&n.to_bytes_be());
+    let e: BigUint = BigUint::from_bytes_be(&e.to_bytes_be());
+    let sig = BigUint::from_bytes_be(signature);
+
+    // Perform raw RSA decryption: m = s^e mod n
+    let decrypted = sig.modpow(&e, &n);
+    let decrypted_bytes = decrypted.to_bytes_be();
+
+    match decrypted_bytes.ends_with(digest) {
+        true => Ok(()),
+        false => Err(SmartIdClientError::InvalidResponseSignature(
+            "Failed to verify raw digest".to_string(),
+        )),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     const VALID_CERTIFICATE: &str = "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";
     const VALID_CERTIFICATE_2: &str = "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";
+    const VALID_CERTIFICATE_3: &str = "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";
     const INVALID_CERTIFICATE: &str = "";
 
     #[test]
@@ -361,8 +393,23 @@ mod tests {
 
     #[test]
     fn validate_raw_digest_success() {
-        let digest = "YW9ldWFvZXVhb2V1YW9ldWFvZXVhb2V1YW9ldWFvZXU=";
-        let signature = "fkNNZNwDynK7kiVean4HhyDNvJNppzqs5t8cGmy2TJkULlj7FnEatjxKyNsysYVjxKm8EQ/kHBm99tgoxjShcsI4ibDClDH3oIGsCzzlEqYtx+TIFglvqwVlo2jTd1IXZ9qu+NXC/ln3IN8V8HuRspSHoJGvGCoAmYuqrOF+2hs4+vzsMq5jbtbjaHb+LYzNBm/zJMr2Vpw5MY14jFN1tqp1le0OFTaUJmD/omKww0I5l1fkLjr1t4zGu5VoVGg4qzZoGNGiWublQKwS0nsxvcnVq2E3nLR+VD7kQqcmdgLK9XvBnpFb8ff3WXRqwlgyTiFP61s2RfqPQ8FoKjPpZhJMLaxV+4fitDuMmX9tjpvZ71bqXBIqpWDeLv+LU3uwmsop6Eg4uFsiRrfrRG9TsbbMnapfZ6qjPyXpUYcdeu3O29XbsTYxKvLjZ2DU4ePMfBEUWXgF7BHci03FC3Og8vflv0PJzyzCYJgWIdwisim1yJtFSrD3u9so7749D2D9IW8r5zA4pw7qAkBNqMO6udhlRh+IlYb//HwaNlLhHXcx2XuAV9fYwPSvghqB32jEheV2Lhs6nQ7+0qp09xLmakIxaJ+WFWYfYuPnTVNv6KnsgRtcrDFqe9e9wVIHlEy8Hhri1+fsr0IlBrtkS/tO4Z7imufQrCfXnxMGyhCb6f8UJqfisNnj3GE3N8JL+fg2BrYbONCCOvHcqW0gYvgMOzNNpp/rILgtQcHg2md9DFO8Bukz+EKqHw4IlxnqWgl2WqplPLWksOrP2oxMxF0PleYnTWoOF1I7WhY4ff98Mmtsn0zEr83cqOqAazYHdpSSzcG+BdWrlbV5D8bK8EdNVLli766QUOJQZnAKF7ZepuSjyACewnohsmg7qfRAKgCDzvLip2M9uEsS0lhkvLLJz7ksPmuACdCn8vPgQRV1HxYeS2+NTOy1SYGum5SfqsAxaki/K5Sl64BySb7W7ULCKdW+My+b4F7zUkjMeML5+08uU/KHL++pBij6IM2UK0Yy";
+        let digest = "pcWJTcOvmk5Xcvyfrit9SF55S3qU+NfEEVxg4fVf+GdxMN0W2wSpJVivcf91IG+Ji3aCGlNN8p5scBEn6mgUOg==";
+        let signature = "F84UserdWKmmsZeu5trpMT+yhqZ3aMYMhQatSrRkq3TrYWS/xaE1yzmuzNdYXELs3ZGURuXsePfPKFBvc+PTU7oRHT8dxq3zuAqhDZO8VN5iWKpjF0LTwcA4sO6+uw5hXewG/e8I/CutyYlfcobFvLIqXvXXLl2fcAeQbMvKhj/6yuwwz3b7INVDKQnz/8y+v5/XXBFnlniNJNx7d4Kk+IL7r3DMzttKrldOUzUOuIVb6sdBcrg0+LWClMIt6nCP+T006iRruGqvPpbIsEOs2JIuZo3eh7j6nX2xtMzzgd87BDUzHIFJTj8ZVQu/Yp5A4O3iL2k3E+oOX/5wQkleC6sJ94M6kPliK0LCBv7xcMUmSnwPR3ZjNCX315F21k+ikwK6JlXxBS9pvfLNi2574112yBCq4hB7VKRdORSja9XF4jhoL/rbqisuHRqIMCg3weK6dprSJB1+3pyDGzYPLsV+6RnAb958e/0A7Mq1wg4qjjlqpn32CifoGbwABjUzBhOJC/IFp5ftVQfq3KPLPviyHZN8uIuwwDfI3A9PIOOqu5jt31G777DKGW1xMwd3yRErZ2fbNbNAKjpjeNQtQmS0rcX+l0efBMe4PCmRpT3Sv0i/vNkTlZfqB2NkVSLzTevDt0N1UU+N6u4v5ZEmuEqtoXGWT4ZRlUTUc1oUG8w=";
+
+        let response = ResponseSignature::RAW_DIGEST_SIGNATURE {
+            value: signature.to_string(),
+            signature_algorithm: SignatureAlgorithm::sha512WithRSAEncryption,
+        };
+
+        assert!(response
+            .validate_raw_digest(digest.to_string(), VALID_CERTIFICATE_3.to_string())
+            .is_ok());
+    }
+
+    #[test]
+    fn validate_raw_digest_invalid_signature_digest() {
+        let digest = "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=";
+        let signature = "F84UserdWKmmsZeu5trpMT+yhqZ3aMYMhQatSrRkq3TrYWS/xaE1yzmuzNdYXELs3ZGURuXsePfPKFBvc+PTU7oRHT8dxq3zuAqhDZO8VN5iWKpjF0LTwcA4sO6+uw5hXewG/e8I/CutyYlfcobFvLIqXvXXLl2fcAeQbMvKhj/6yuwwz3b7INVDKQnz/8y+v5/XXBFnlniNJNx7d4Kk+IL7r3DMzttKrldOUzUOuIVb6sdBcrg0+LWClMIt6nCP+T006iRruGqvPpbIsEOs2JIuZo3eh7j6nX2xtMzzgd87BDUzHIFJTj8ZVQu/Yp5A4O3iL2k3E+oOX/5wQkleC6sJ94M6kPliK0LCBv7xcMUmSnwPR3ZjNCX315F21k+ikwK6JlXxBS9pvfLNi2574112yBCq4hB7VKRdORSja9XF4jhoL/rbqisuHRqIMCg3weK6dprSJB1+3pyDGzYPLsV+6RnAb958e/0A7Mq1wg4qjjlqpn32CifoGbwABjUzBhOJC/IFp5ftVQfq3KPLPviyHZN8uIuwwDfI3A9PIOOqu5jt31G777DKGW1xMwd3yRErZ2fbNbNAKjpjeNQtQmS0rcX+l0efBMe4PCmRpT3Sv0i/vNkTlZfqB2NkVSLzTevDt0N1UU+N6u4v5ZEmuEqtoXGWT4ZRlUTUc1oUG8w=";
 
         let response = ResponseSignature::RAW_DIGEST_SIGNATURE {
             value: signature.to_string(),
@@ -370,8 +417,8 @@ mod tests {
         };
 
         assert!(response
-            .validate_raw_digest(digest.to_string(), VALID_CERTIFICATE_2.to_string())
-            .is_ok());
+            .validate_raw_digest(digest.to_string(), VALID_CERTIFICATE_3.to_string())
+            .is_err());
     }
 
     #[test]
