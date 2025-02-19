@@ -56,6 +56,11 @@ webpki = "0.22.4"
 rustls = "0.21.12"
 rustls-native-certs = "0.8.1"
 oid-registry = "0.7.1"
+rsa = "0.9.7"
+num-bigint = "0.4.6"
+num-traits = "0.2.19"
+der = "0.7.9"
+spki = "0.7.3"
 
 [dev-dependencies]
 tracing-test = "0.2.4"
