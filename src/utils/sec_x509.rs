@@ -11,11 +11,19 @@ use openssl::x509::{X509StoreContext, X509};
 /// Note: It is not possible to use the webpki or tls crates to verify the certificate chain (Which would be much simpler).
 /// The reason is that they strictly expect the correct EKU for client/server certificates and we are validating signing/auth certificates.
 /// For this reason we use openssl x509 to verify the certificate chain.
+///
+/// # Arguments
+/// * `cert_value` - The certificate der base64 encoded to verify
+/// * `intermediate_certificates` - The der base64 encoded intermediate certificates to use for verification
+/// * `root_certificates` - The der base64 encoded root certificates to use for verification
+///
+/// # Returns
+/// * `Result<Vec<String>>` - The valid certificate chain in der base64 encoded format
 pub(crate) fn verify_certificate(
     cert_value: &str,
     intermediate_certificates: Vec<String>,
     root_certificates: Vec<String>,
-) -> Result<()> {
+) -> Result<Vec<String>> {
     // Decode the certificate we are validating
     let cert_der = BASE64_STANDARD.decode(cert_value).map_err(|e| {
         SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
@@ -39,7 +47,6 @@ pub(crate) fn verify_certificate(
     })?;
 
     for cert_str in intermediate_certificates {
-        println!("Intermediate certificate: {}", cert_str);
         let intermediate_cert = parse_certificate(&cert_str)?;
         intermediate_stack.push(intermediate_cert).unwrap();
     }
@@ -66,8 +73,23 @@ pub(crate) fn verify_certificate(
         ))
     })?;
 
-    context
-        .init(&store, &cert, &intermediate_stack, |ctx| ctx.verify_cert())
+    let chain = context
+        .init(&store, &cert, &intermediate_stack, |ctx| {
+            // Verify the certificate chain
+            ctx.verify_cert()?;
+
+            // Get the verified certificate chain
+            let chain = ctx.chain().unwrap();
+
+            let mut der_chain = Vec::new();
+
+            for cert in chain.iter() {
+                let base_64_encoded_der = BASE64_STANDARD.encode(cert.to_der().unwrap());
+                der_chain.push(base_64_encoded_der);
+            }
+
+            Ok(der_chain)
+        })
         .map_err(|e| {
             SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
                 "Certificate chain validation failed: {:?}",
@@ -75,7 +97,7 @@ pub(crate) fn verify_certificate(
             ))
         })?;
 
-    Ok(())
+    Ok(chain)
 }
 
 /// Strips the certificate of the header and footer and decodes it
@@ -126,6 +148,23 @@ mod tests {
         println!("Result: {:?}", result);
 
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_verify_certificate_chain_correct() {
+        let root_certificates = demo_root_certificates();
+        let intermediate_certificates = demo_intermediate_certificates();
+
+        let result = verify_certificate(
+            &VALID_CERTIFICATE,
+            intermediate_certificates,
+            root_certificates,
+        );
+
+        println!("Result: {:?}", result);
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 3);
     }
 
     #[test]
