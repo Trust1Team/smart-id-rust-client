@@ -23,7 +23,7 @@ use crate::utils::demo_certificates::{demo_intermediate_certificates, demo_root_
 use crate::utils::production_certificates::{
     production_intermediate_certificates, production_root_certificates,
 };
-use crate::utils::sec_x509::validate_certificate;
+use crate::utils::sec_x509::verify_certificate;
 use std::sync::{Arc, Mutex};
 use tracing::debug;
 
@@ -794,23 +794,8 @@ impl SmartIdClient {
                     .cert
                     .ok_or(SmartIdClientError::SessionResponseMissingCertificate)?;
 
-                if self.cfg.is_demo() {
-                    let mut root_certs = demo_root_certificates();
-                    root_certs.extend(self.root_certificates.clone());
-                    let mut intermediate_certs = demo_intermediate_certificates();
-                    intermediate_certs.extend(self.intermediate_certificates.clone());
-                    validate_certificate(&cert.value, intermediate_certs, root_certs)?;
-                } else {
-                    let mut root_certs = production_root_certificates();
-                    root_certs.extend(self.root_certificates.clone());
-                    let mut intermediate_certs = production_intermediate_certificates();
-                    intermediate_certs.extend(self.intermediate_certificates.clone());
-                    validate_certificate(
-                        &cert.value,
-                        production_root_certificates(),
-                        production_intermediate_certificates(),
-                    )?;
-                }
+                // Verify the certificate chain
+                self.verify_certificate(cert.value.clone())?;
 
                 // Check certificate level is high enough
                 if &cert.certificate_level < session_config.requested_certificate_level() {
@@ -839,6 +824,34 @@ impl SmartIdClient {
                     Err(SmartIdClientError::AuthenticationSessionCompletedWithoutResult)
                 }
             },
+        }
+    }
+
+    /// Verifies a certificate chain using the root and intermediate certificates.
+    ///
+    /// This is done automatically when validating the session response. You only need to call this method if you want to validate a certificate that has not just been returned from a session.
+    ///
+    /// # Arguments
+    /// * `cert` - The base64 der encoded certificate to be validated.
+    /// # Returns
+    /// A `Result` indicating success or failure. If the validation is successful, it returns `Ok(())`.
+    pub fn verify_certificate(&self, cert: String) -> Result<()> {
+        if self.cfg.is_demo() {
+            let mut root_certs = demo_root_certificates();
+            root_certs.extend(self.root_certificates.clone());
+            let mut intermediate_certs = demo_intermediate_certificates();
+            intermediate_certs.extend(self.intermediate_certificates.clone());
+            verify_certificate(&cert, intermediate_certs, root_certs)
+        } else {
+            let mut root_certs = production_root_certificates();
+            root_certs.extend(self.root_certificates.clone());
+            let mut intermediate_certs = production_intermediate_certificates();
+            intermediate_certs.extend(self.intermediate_certificates.clone());
+            verify_certificate(
+                &cert,
+                production_root_certificates(),
+                production_intermediate_certificates(),
+            )
         }
     }
 
