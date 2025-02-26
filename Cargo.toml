@@ -61,6 +61,7 @@ num-bigint = "0.4.6"
 num-traits = "0.2.19"
 der = "0.7.9"
 spki = "0.7.3"
+openssl = "0.10.71"
 
 [dev-dependencies]
 tracing-test = "0.2.4"

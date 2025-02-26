@@ -62,18 +62,19 @@ impl UserIdentity {
     /// let user_identity = UserIdentity::from_certificate(certificate.to_string()).unwrap();
     /// ```
     pub fn from_certificate(certificate: String) -> Result<Self> {
-        let decoded_cert = BASE64_STANDARD.decode(&certificate).map_err(|_| {
-            SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                "Could not decode base64 certificate",
-            )
+        let decoded_cert = BASE64_STANDARD.decode(&certificate).map_err(|e| {
+            SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
+                "Could not decode base64 certificate: {:?}",
+                e
+            ))
         })?;
 
-        let (_, parsed_cert) =
-            X509Certificate::from_der(decoded_cert.as_slice()).map_err(|_| {
-                SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                    "Failed to parse certificate",
-                )
-            })?;
+        let (_, parsed_cert) = X509Certificate::from_der(decoded_cert.as_slice()).map_err(|e| {
+            SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
+                "Failed to parse certificate: {:?}",
+                e
+            ))
+        })?;
 
         let given_name = UserIdentity::get_attribute_value(&parsed_cert, "givenName")?;
         let surname = UserIdentity::get_attribute_value(&parsed_cert, "surname")?;
@@ -91,25 +92,31 @@ impl UserIdentity {
 
         if self.given_name.to_uppercase() != certificate_identity.given_name.to_uppercase() {
             return Err(
-                SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                    "Given name provided in identity does not match certificate",
-                ),
+                SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
+                    "Given name provided in identity does not match certificate: {:?} != {:?}",
+                    self.given_name.to_uppercase(),
+                    certificate_identity.given_name.to_uppercase()
+                )),
             );
         }
 
         if self.surname.to_uppercase() != certificate_identity.surname.to_uppercase() {
             return Err(
-                SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                    "Surname provided in identity does not match certificate",
-                ),
+                SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
+                    "Surname provided in identity does not match certificate: {:?} != {:?}",
+                    self.surname.to_uppercase(),
+                    certificate_identity.surname.to_uppercase()
+                )),
             );
         }
 
         if self.identity_code.to_uppercase() != certificate_identity.identity_code.to_uppercase() {
             return Err(
-                SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                    "Identity code provided in identity does not match certificate",
-                ),
+                SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
+                    "Identity code provided in identity does not match certificate: {:?} != {:?}",
+                    self.identity_code.to_uppercase(),
+                    certificate_identity.identity_code.to_uppercase()
+                )),
             );
         }
 
@@ -123,9 +130,10 @@ impl UserIdentity {
             .next()
             .map(|(oid, _)| oid)
             .ok_or(
-                SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                    "OID not found in registry",
-                ),
+                SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
+                    "OID not found in registry: {:?}",
+                    oid_simple_name
+                )),
             )?;
 
         let attribute = certificate
@@ -133,9 +141,10 @@ impl UserIdentity {
             .iter_attributes()
             .find(|a| a.attr_type() == oid)
             .ok_or(
-                SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                    "OID not found in certificate",
-                ),
+                SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
+                    "OID not found in certificate: {:?}",
+                    oid
+                )),
             )?;
 
         attribute
@@ -147,9 +156,9 @@ impl UserIdentity {
                     .as_printablestring()
                     .map(|g| g.string())
             })
-            .map_err(|_e| {
+            .map_err(|e| {
                 SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                    "Certificate does not match provided user identity, attribute missing from cert"
+                    format!("Certificate does not match provided user identity, attribute missing from cert: {:?}", e)
                 )
             })
     }

@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
 
     // CREATE SMART ID CLIENT
     // This will be used for all interactions with the Smart-ID service
-    let smart_id_client = SmartIdClient::new(&cfg, None);
+    let smart_id_client = SmartIdClient::new(&cfg, None, vec![]);
 
     // AUTHENTICATION
     // Authenticate the user and set the UserIdentity on the client (This identity will be used to check certificates from future session responses)

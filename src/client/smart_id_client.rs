@@ -19,6 +19,10 @@ use crate::models::signature_session::{
     SignatureNotificationResponse, SignatureRequest, SignatureResponse,
 };
 use crate::models::user_identity::UserIdentity;
+use crate::utils::demo_certificates::{demo_intermediate_certificates, demo_root_certificates};
+use crate::utils::production_certificates::{
+    production_intermediate_certificates, production_root_certificates,
+};
 use crate::utils::sec_x509::validate_certificate;
 use std::sync::{Arc, Mutex};
 use tracing::debug;
@@ -63,11 +67,17 @@ const NOTIFICATION_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str =
 #[derive(Debug)]
 pub struct SmartIdClient {
     pub cfg: SmartIDConfig,
-    // This tracks session state and is used to make subsequent requests
-    // For example to generate QR codes or to poll for session status
+    /// This tracks session state and is used to make subsequent requests
+    /// For example to generate QR codes or to poll for session status
     pub(crate) session_config: Arc<Mutex<Option<SessionConfig>>>,
-    // Is checked against returned certificates to ensure the correct user is signing
+    /// Is checked against returned certificates to ensure the correct user is signing
     pub(crate) authenticated_identity: Arc<Mutex<Option<UserIdentity>>>,
+    /// List of root certificates used to validate the smart id certificates. If not provided, only the default root certificates will be used.
+    /// If you are using an older version of this library, you will need to provide the latest root certificates yourself.
+    pub(crate) root_certificates: Vec<String>,
+    /// List of intermediate certificates used to validate the smart id certificates. If not provided, only the default intermediate certificates will be used.
+    /// If you are using an older version of this library, you will need to provide the latest intermediate certificates yourself.
+    pub(crate) intermediate_certificates: Vec<String>,
 }
 
 impl SmartIdClient {
@@ -77,15 +87,24 @@ impl SmartIdClient {
     ///
     /// * `cfg` - A reference to the SmartIDConfig.
     /// * `user_identity` - An optional UserIdentity. This will be compared with the certificate subject to ensure the correct user is signing. If not provided, the UserIdentity will be set from the certificate during the first successful authentication.
+    /// * `root_certificates` - A vector of base64 der encoded root certificates (not bundles), this is used to validate the smart id certificate chain. If not provided, only the default root certificates will be used. If you are using an older version of this library, you will need to provide the latest root certificates yourself.
+    /// * `intermediate_certificates` - A vector of base64 der encoded intermediate certificates (not bundles), this is used to validate the smart id certificate chain. If not provided, only the default intermediate certificates will be used. If you are using an older version of this library, you will need to provide the latest intermediate certificates yourself
     ///
     /// # Returns
     ///
     /// A new instance of SmartIdClient.
-    pub fn new(cfg: &SmartIDConfig, user_identity: Option<UserIdentity>) -> Self {
+    pub fn new(
+        cfg: &SmartIDConfig,
+        user_identity: Option<UserIdentity>,
+        root_certificates: Vec<String>,
+        intermediate_certificates: Vec<String>,
+    ) -> Self {
         SmartIdClient {
             cfg: cfg.clone(),
             session_config: Arc::new(Mutex::new(None)),
             authenticated_identity: Arc::new(Mutex::new(user_identity)),
+            root_certificates,
+            intermediate_certificates,
         }
     }
 
@@ -103,6 +122,8 @@ impl SmartIdClient {
     /// * `cfg` - A reference to the SmartIDConfig.
     /// * `session_config` - The session configuration from a previous session.
     /// * `user_identity` - An optional UserIdentity. This will be compared with the certificate subject to ensure the correct user is signing. If not provided, the UserIdentity will be set from the certificate during the first successful authentication.
+    /// * `root_certificates` - A vector of root certificates, this is used to validate the smart id certificate chain. If not provided, only the default root certificates will be used. If you are using an older version of this library, you will need to provide the latest root certificates yourself.
+    /// * `intermediate_certificates` - A vector of intermediate certificates, this is used to validate the smart id certificate chain. If not provided, only the default intermediate certificates will be used. If you are using an older version of this library, you will need to provide the latest intermediate certificates yourself
     ///
     /// # Returns
     ///
@@ -111,11 +132,15 @@ impl SmartIdClient {
         cfg: &SmartIDConfig,
         session_config: SessionConfig,
         user_identity: Option<UserIdentity>,
+        root_certificates: Vec<String>,
+        intermediate_certificates: Vec<String>,
     ) -> Self {
         SmartIdClient {
             cfg: cfg.clone(),
             session_config: Arc::new(Mutex::new(Some(session_config))),
             authenticated_identity: Arc::new(Mutex::new(user_identity)),
+            root_certificates,
+            intermediate_certificates,
         }
     }
 
@@ -769,17 +794,32 @@ impl SmartIdClient {
                     .cert
                     .ok_or(SmartIdClientError::SessionResponseMissingCertificate)?;
 
-                // Validate the certificate chain and check for expiration
-                if !self.cfg.is_demo() {
-                    validate_certificate(&cert.value)?;
+                if self.cfg.is_demo() {
+                    let mut root_certs = demo_root_certificates();
+                    root_certs.extend(self.root_certificates.clone());
+                    let mut intermediate_certs = demo_intermediate_certificates();
+                    intermediate_certs.extend(self.intermediate_certificates.clone());
+                    validate_certificate(&cert.value, intermediate_certs, root_certs)?;
+                } else {
+                    let mut root_certs = production_root_certificates();
+                    root_certs.extend(self.root_certificates.clone());
+                    let mut intermediate_certs = production_intermediate_certificates();
+                    intermediate_certs.extend(self.intermediate_certificates.clone());
+                    validate_certificate(
+                        &cert.value,
+                        production_root_certificates(),
+                        production_intermediate_certificates(),
+                    )?;
                 }
 
                 // Check certificate level is high enough
                 if &cert.certificate_level < session_config.requested_certificate_level() {
                     Err(
-                        SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                            "Certificate level is not high enough",
-                        ),
+                        SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
+                            "Certificate level is not high enough: {:?} < {:?}",
+                            cert.certificate_level,
+                            session_config.requested_certificate_level()
+                        )),
                     )?
                 };
 
