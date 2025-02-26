@@ -3,9 +3,7 @@ use crate::error::SmartIdClientError;
 use base64::engine::general_purpose::STANDARD_NO_PAD;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
-use der::Decode;
 use num_bigint::BigUint;
-use num_traits::{One, Zero};
 use rand::{thread_rng, Rng};
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha20Rng;
@@ -17,7 +15,6 @@ use rsa::pkcs1::DecodeRsaPublicKey;
 use rsa::traits::PublicKeyParts;
 use rsa::RsaPublicKey;
 use serde::{Deserialize, Serialize};
-use spki::DecodePublicKey;
 use x509_parser::certificate::X509Certificate;
 use x509_parser::der_parser::asn1_rs::BitString;
 use x509_parser::nom::AsBytes;
@@ -178,17 +175,19 @@ impl ResponseSignature {
     pub(crate) fn validate_raw_digest(&self, digest: String, cert: String) -> Result<()> {
         match self {
             ResponseSignature::RAW_DIGEST_SIGNATURE { value, .. } => {
-                let decoded_cert = BASE64_STANDARD.decode(&cert).map_err(|_| {
-                    SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                        "Could not decode base64 certificate",
-                    )
+                let decoded_cert = BASE64_STANDARD.decode(&cert).map_err(|e| {
+                    SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
+                        "Could not decode base64 certificate: {:?}",
+                        e
+                    ))
                 })?;
 
                 let (_, parsed_cert) =
-                    X509Certificate::from_der(decoded_cert.as_slice()).map_err(|_| {
-                        SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                            "Failed to parse certificate",
-                        )
+                    X509Certificate::from_der(decoded_cert.as_slice()).map_err(|e| {
+                        SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
+                            "Failed to parse certificate: {:?}",
+                            e
+                        ))
                     })?;
 
                 let public_key = parsed_cert.public_key().clone().subject_public_key;
@@ -230,17 +229,19 @@ impl ResponseSignature {
                 }
 
                 // signature validation
-                let decoded_cert = BASE64_STANDARD.decode(&cert).map_err(|_| {
-                    SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                        "Could not decode base64 certificate",
-                    )
+                let decoded_cert = BASE64_STANDARD.decode(&cert).map_err(|e| {
+                    SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
+                        "Could not decode base64 certificate: {:?}",
+                        e
+                    ))
                 })?;
 
                 let (_, parsed_cert) =
-                    X509Certificate::from_der(decoded_cert.as_slice()).map_err(|_| {
-                        SmartIdClientError::FailedToValidateSessionResponseCertificate(
-                            "Failed to parse certificate",
-                        )
+                    X509Certificate::from_der(decoded_cert.as_slice()).map_err(|e| {
+                        SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
+                            "Failed to parse certificate: {:?}",
+                            e
+                        ))
                     })?;
 
                 let public_key = parsed_cert.public_key().clone().subject_public_key;
