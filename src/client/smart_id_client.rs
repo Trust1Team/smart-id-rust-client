@@ -829,13 +829,15 @@ impl SmartIdClient {
 
     /// Verifies a certificate chain using the root and intermediate certificates.
     ///
-    /// This is done automatically when validating the session response. You only need to call this method if you want to validate a certificate that has not just been returned from a session.
+    /// This is done automatically when validating the session response.
+    /// You only need to call this method if you want to validate a certificate that has not just been returned from a session.
+    /// Or if you want to get the certificate chain (Example: For PAdES-L/LTA signatures)
     ///
     /// # Arguments
     /// * `cert` - The base64 der encoded certificate to be validated.
     /// # Returns
-    /// A `Result` indicating success or failure. If the validation is successful, it returns `Ok(())`.
-    pub fn verify_certificate(&self, cert: String) -> Result<()> {
+    /// A valid certificate chain.
+    pub fn verify_certificate(&self, cert: String) -> Result<Vec<String>> {
         if self.cfg.is_demo() {
             let mut root_certs = demo_root_certificates();
             root_certs.extend(self.root_certificates.clone());
