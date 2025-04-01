@@ -1,257 +1,292 @@
+use crate::error::Result;
+use crate::error::SmartIdClientError;
+use crate::models::authentication_session::{
+    AuthenticationDynamicLinkSession, AuthenticationNotificationSession, AuthenticationRequest,
+};
+use crate::models::certificate_choice_session::{
+    CertificateChoiceRequest, CertificateChoiceSession,
+};
+use crate::models::session_status::SessionStatus;
+use crate::models::signature::{ResponseSignature, SignatureProtocol};
+use crate::models::signature_session::{
+    SignatureNotificationSession, SignatureRequest, SignatureSession,
+};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use x509_parser::prelude::{FromDer};
-use base64::{Engine as _};
-use anyhow::Result;
-use crate::models::requests::InteractionFlow;
+use std::cmp::Ordering;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[allow(non_camel_case_types)]
+/// Request Properties
+///
+/// This struct represents the properties of a request to the Smart ID service.
+/// Currently, it only includes one property, `share_md_client_ip_address`.
+///
+/// # Properties
+///
+/// * `share_md_client_ip_address` - A boolean flag indicating whether the RP API server should share the user's mobile device IP address with the RP. By default, it is set to false. The RP must have proper privilege to use this property. See section IP sharing for details.
 #[non_exhaustive]
-pub enum Capability {
-    QUALIFIED,
-    ADVANCED,
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RequestProperties {
+    /// Whether the RP API server should share user mobile device IP address with the RP. By default it is set to false. The RP must have proper privilege to use this property. See section IP sharing for details.
+    pub share_md_client_ip_address: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
 #[non_exhaustive]
 pub enum CertificateLevel {
+    #[default]
     QUALIFIED,
     ADVANCED,
-    QSCD
+    QSCD,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[allow(non_camel_case_types)]
-#[non_exhaustive]
-pub enum ResultState {
-    OK,
-    USER_REFUSED,
-    TIMEOUT,
-    DOCUMENT_UNUSABLE,
-    WRONG_VC,
-    REQUIRED_INTERACTION_NOT_SUPPORTED_BY_APP,
-    USER_REFUSED_CERT_CHOICE,
-    USER_REFUSED_DISPLAYTEXTANDPIN,
-    USER_REFUSED_VC_CHOICE,
-    USER_REFUSED_CONFIRMATIONMESSAGE,
-    USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE,
-    UNKNOWN,
-}
-
-impl From<String> for ResultState {
-    fn from(value: String) -> Self {
-        match value.to_uppercase().as_str() {
-            "OK" => ResultState::OK,
-            "USER_REFUSED" => ResultState::USER_REFUSED,
-            "TIMEOUT" => ResultState::TIMEOUT,
-            "DOCUMENT_UNUSABLE" => ResultState::DOCUMENT_UNUSABLE,
-            "WRONG_VC" => ResultState::WRONG_VC,
-            "REQUIRED_INTERACTION_NOT_SUPPORTED_BY_APP" => ResultState::REQUIRED_INTERACTION_NOT_SUPPORTED_BY_APP,
-            "USER_REFUSED_CERT_CHOICE" => ResultState::USER_REFUSED_CERT_CHOICE,
-            "USER_REFUSED_DISPLAYTEXTANDPIN" => ResultState::USER_REFUSED_DISPLAYTEXTANDPIN,
-            "USER_REFUSED_VC_CHOICE" => ResultState::USER_REFUSED_VC_CHOICE,
-            "USER_REFUSED_CONFIRMATIONMESSAGE" => ResultState::USER_REFUSED_CONFIRMATIONMESSAGE,
-            "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" => ResultState::USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE,
-            _ => ResultState::UNKNOWN,
+impl CertificateLevel {
+    fn rank(&self) -> u8 {
+        match self {
+            CertificateLevel::ADVANCED => 0,
+            CertificateLevel::QUALIFIED => 1,
+            CertificateLevel::QSCD => 2,
         }
     }
 }
 
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[allow(non_camel_case_types)]
-#[non_exhaustive]
-pub enum HashType {
-    SHA256,
-    SHA384,
-    SHA512
+impl PartialOrd for CertificateLevel {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.rank().cmp(&other.rank()))
+    }
+}
+impl Ord for CertificateLevel {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.rank().cmp(&other.rank())
+    }
 }
 
-impl From<String> for CertificateLevel {
-    fn from(value: String) -> Self {
-        match value.to_uppercase().as_str() {
-            "QUALIFIED" => CertificateLevel::QUALIFIED,
-            "ADVANCED" => CertificateLevel::ADVANCED,
-            "QSCD" => CertificateLevel::QSCD,
-            _ => CertificateLevel::QUALIFIED
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum SessionConfig {
+    AuthenticationDynamicLink {
+        session_id: String,
+        session_secret: String,
+        session_token: String,
+        random_challenge: String,
+        requested_certificate_level: CertificateLevel,
+        session_start_time: DateTime<Utc>,
+    },
+    Signature {
+        session_id: String,
+        session_secret: String,
+        session_token: String,
+        digest: String,
+        requested_certificate_level: CertificateLevel,
+        session_start_time: DateTime<Utc>,
+    },
+    AuthenticationNotification {
+        session_id: String,
+        random_challenge: String,
+        requested_certificate_level: CertificateLevel,
+        session_start_time: DateTime<Utc>,
+        vc: VCCode,
+    },
+    SignatureNotification {
+        session_id: String,
+        digest: String,
+        requested_certificate_level: CertificateLevel,
+        session_start_time: DateTime<Utc>,
+        vccode: VCCode,
+    },
+    CertificateChoice {
+        session_id: String,
+        requested_certificate_level: CertificateLevel,
+        session_start_time: DateTime<Utc>,
+    },
+}
+
+impl SessionConfig {
+    pub fn session_id(&self) -> &String {
+        match self {
+            SessionConfig::AuthenticationDynamicLink { session_id, .. } => session_id,
+            SessionConfig::Signature { session_id, .. } => session_id,
+            SessionConfig::CertificateChoice { session_id, .. } => session_id,
+            SessionConfig::AuthenticationNotification { session_id, .. } => session_id,
+            SessionConfig::SignatureNotification { session_id, .. } => session_id,
+        }
+    }
+
+    pub(crate) fn requested_certificate_level(&self) -> &CertificateLevel {
+        match self {
+            SessionConfig::AuthenticationDynamicLink {
+                requested_certificate_level,
+                ..
+            } => requested_certificate_level,
+            SessionConfig::Signature {
+                requested_certificate_level,
+                ..
+            } => requested_certificate_level,
+            SessionConfig::CertificateChoice {
+                requested_certificate_level,
+                ..
+            } => requested_certificate_level,
+            SessionConfig::AuthenticationNotification {
+                requested_certificate_level,
+                ..
+            } => requested_certificate_level,
+            SessionConfig::SignatureNotification {
+                requested_certificate_level,
+                ..
+            } => requested_certificate_level,
+        }
+    }
+
+    pub fn from_authentication_dynamic_link_response(
+        authentication_response: AuthenticationDynamicLinkSession,
+        authentication_request: AuthenticationRequest,
+    ) -> Result<SessionConfig> {
+        Ok(SessionConfig::AuthenticationDynamicLink {
+            session_id: authentication_response.session_id,
+            session_secret: authentication_response.session_secret,
+            session_token: authentication_response.session_token,
+            requested_certificate_level: authentication_request.certificate_level.into(),
+            random_challenge: authentication_request
+                .signature_protocol_parameters
+                .get_random_challenge()
+                .ok_or(SmartIdClientError::InvalidSignatureProtocal(
+                    "Random challenge missing from authentication request",
+                ))?,
+            session_start_time: Utc::now(),
+        })
+    }
+
+    pub fn from_authentication_notification_response(
+        authentication_notification_response: AuthenticationNotificationSession,
+        authentication_request: AuthenticationRequest,
+    ) -> Result<SessionConfig> {
+        Ok(SessionConfig::AuthenticationNotification {
+            session_id: authentication_notification_response.session_id,
+            vc: authentication_notification_response.vc,
+            requested_certificate_level: authentication_request.certificate_level.into(),
+            random_challenge: authentication_request
+                .signature_protocol_parameters
+                .get_random_challenge()
+                .ok_or(SmartIdClientError::InvalidSignatureProtocal(
+                    "Random challenge missing from authentication request",
+                ))?,
+            session_start_time: Utc::now(),
+        })
+    }
+
+    pub fn from_signature_dynamic_link_request_response(
+        signature_request_response: SignatureSession,
+        signature_request: SignatureRequest,
+    ) -> Result<SessionConfig> {
+        Ok(SessionConfig::Signature {
+            session_id: signature_request_response.session_id,
+            session_secret: signature_request_response.session_secret,
+            session_token: signature_request_response.session_token,
+            digest: signature_request
+                .signature_protocol_parameters
+                .get_digest()
+                .ok_or(SmartIdClientError::InvalidSignatureProtocal(
+                    "Digest missing from signature request",
+                ))?,
+            requested_certificate_level: signature_request.certificate_level,
+            session_start_time: Utc::now(),
+        })
+    }
+
+    pub fn from_signature_notification_response(
+        signature_notification_response: SignatureNotificationSession,
+        signature_request: SignatureRequest,
+    ) -> Result<SessionConfig> {
+        Ok(SessionConfig::SignatureNotification {
+            session_id: signature_notification_response.session_id,
+            vccode: signature_notification_response.vc,
+            requested_certificate_level: signature_request.certificate_level,
+            session_start_time: Default::default(),
+            digest: signature_request
+                .signature_protocol_parameters
+                .get_digest()
+                .ok_or(SmartIdClientError::InvalidSignatureProtocal(
+                    "Digest missing from signature request",
+                ))?,
+        })
+    }
+
+    pub fn from_certificate_choice_response(
+        certificate_choice_response: CertificateChoiceSession,
+        certificate_choice_request: CertificateChoiceRequest,
+    ) -> SessionConfig {
+        SessionConfig::CertificateChoice {
+            session_id: certificate_choice_response.session_id,
+            requested_certificate_level: certificate_choice_request.certificate_level,
+            session_start_time: Utc::now(),
+        }
+    }
+
+    pub fn get_digest(&self, session_status: SessionStatus) -> Option<String> {
+        match self {
+            SessionConfig::Signature { digest, .. } => Some(digest.clone()),
+            SessionConfig::SignatureNotification { digest, .. } => Some(digest.clone()),
+            SessionConfig::AuthenticationDynamicLink {
+                random_challenge, ..
+            } => {
+                // The authentication digest requires the challenge and protocol which are available before the session is started
+                // It also requires the server random which is only available after the session result is returned
+                if let Some(ResponseSignature::ACSP_V1 { server_random, .. }) =
+                    session_status.signature
+                {
+                    Some(format!(
+                        "{:?};{};{}",
+                        SignatureProtocol::ACSP_V1,
+                        server_random,
+                        random_challenge
+                    ))
+                } else {
+                    // Authentication dynamic link can only be ACSP_V1, so this should never happen if the session is complete and successful
+                    None
+                }
+            }
+            SessionConfig::AuthenticationNotification {
+                random_challenge, ..
+            } => {
+                // The authentication digest requires the challenge and protocol which are available before the session is started
+                // It also requires the server random which is only available after the session result is returned
+                if let Some(ResponseSignature::ACSP_V1 { server_random, .. }) =
+                    session_status.signature
+                {
+                    Some(format!(
+                        "{:?};{};{}",
+                        SignatureProtocol::ACSP_V1,
+                        server_random,
+                        random_challenge
+                    ))
+                } else {
+                    // Authentication notification can only be ACSP_V1, so this should never happen if the session is complete and successful
+                    None
+                }
+            }
+            SessionConfig::CertificateChoice { .. } => None, // Certificate choice does not have a digest
         }
     }
 }
 
-impl From<CertificateLevel> for String {
-    fn from(value: CertificateLevel) -> Self {
-        format!("{:?}", value).to_uppercase()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[allow(non_camel_case_types)]
-#[non_exhaustive]
-pub enum IdentityType {
-    PAS,
-    IDC,
-    PNO
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[allow(non_camel_case_types)]
-#[non_exhaustive]
-pub enum CountryCode {
-    EE, LT, LV, BE
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SemanticsIdentifier {
-    pub identifier: String,
-}
-
-impl SemanticsIdentifier {
-    pub fn new_from_string(identity_type: impl Into<String>, country_code: impl Into<String>, identity_number: impl Into<String>) -> Self {
-        SemanticsIdentifier { identifier: format!("{}{}-{}", identity_type.into(), country_code.into(), identity_number.into()) }
-    }
-
-    pub fn new_from_enum(identity_type: IdentityType, country_code: CountryCode, identity_number: impl Into<String>) -> Self {
-        SemanticsIdentifier { identifier: format!("{:?}{:?}-{}", identity_type, country_code, identity_number.into()) }
-    }
-
-    pub fn new_from_string_mock(identity_type: impl Into<String>, country_code: impl Into<String>) -> Self {
-        SemanticsIdentifier { identifier: format!("{}{}-{}-MOCK-Q", identity_type.into(), country_code.into(), "00010299944") }
-    }
-
-    pub fn new_from_enum_mock(identity_type: IdentityType, country_code: CountryCode) -> Self {
-        SemanticsIdentifier { identifier: format!("{:?}{:?}-{}-MOCK-Q", identity_type, country_code, "00010299944") }
-    }
-}
-
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Interaction {
-    #[serde(skip_serializing_if = "Option::is_none")]
+/// Represents a VC (Verification Code) used in the notification-based authentication session.
+/// This code is displayed to the user in their Smart ID app.
+///
+/// # Fields
+///
+/// * `vc_type` - The type of the VC code. Currently, the only allowed type is `alphaNumeric4`.
+/// * `value` - The value of the VC code.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct VCCode {
     #[serde(rename = "type")]
-    pub interaction_flow: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "displayText60")]
-    pub display_text_60: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "displayText200")]
-    pub display_text_200: Option<String>,
+    pub vc_type: VCCodeType,
+    pub value: String,
 }
 
-impl Interaction {
-    pub fn new(interaction_flow: Option<InteractionFlow>, display_text_60: Option<String>, display_text_200: Option<String>) -> Self {
-        Interaction {
-            interaction_flow: interaction_flow.map(|x| x.into()),
-            display_text_60,
-            display_text_200,
-        }
-    }
-
-    pub fn diplay_text_and_pin(display_text_60: impl Into<String>) -> Self {
-        Interaction {
-            interaction_flow: Some(InteractionFlow::DISPLAY_TEXT_AND_PIN.into()),
-            display_text_60: Some(display_text_60.into()),
-            display_text_200: None,
-        }
-    }
-
-    pub fn verification_code_choice(display_text_60: impl Into<String>) -> Self {
-        Interaction {
-            interaction_flow: Some(InteractionFlow::VERIFICATION_CODE_CHOICE.into()),
-            display_text_60: Some(display_text_60.into()),
-            display_text_200: None,
-        }
-    }
-
-    pub fn confirmation_message(display_text_200: impl Into<String>) -> Self {
-        Interaction {
-            interaction_flow: Some(InteractionFlow::CONFIRMATION_MESSAGE.into()),
-            display_text_60: None,
-            display_text_200: Some(display_text_200.into()),
-        }
-    }
-
-    pub fn confirmation_message_and_verification_code_choice(display_text_200: impl Into<String>) -> Self {
-        Interaction {
-            interaction_flow: Some(InteractionFlow::CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE.into()),
-            display_text_60: None,
-            display_text_200: Some(display_text_200.into()),
-        }
-    }
-
-    pub fn validate_display_text60(&self) -> Result<()> {
-
-        match &self.interaction_flow {
-            None => Ok(()),
-            Some(inter_f) => {
-                let inter_f_typed = InteractionFlow::from(inter_f.clone());
-                if inter_f_typed.eq(&InteractionFlow::VERIFICATION_CODE_CHOICE) || inter_f_typed.eq(&InteractionFlow::DISPLAY_TEXT_AND_PIN) {
-                    let display_text_60 = self.display_text_60.clone();
-                    let display_text_200 = self.display_text_200.clone();
-                    if display_text_60.is_none() {
-                        return Err(anyhow::anyhow!(format!("displayText60 cannot be null for AllowedInteractionOrder of type {:?}", inter_f_typed.clone())));
-                    };
-                    if display_text_60.is_some() && display_text_60.unwrap().clone().len() > 60 {
-                        return Err(anyhow::anyhow!("displayText60 must not be longer than 60 characters"));
-                    };
-                    if display_text_200.is_some() {
-                        return Err(anyhow::anyhow!(format!("displayText200 must be null for AllowedInteractionOrder of type {:?}", inter_f_typed.clone())));
-                    };
-                }
-                Ok(())
-            }
-        }
-    }
-
-    pub fn validate_display_text200(&self) -> Result<()> {
-        match &self.interaction_flow {
-            None => Ok(()),
-            Some(inter_f) => {
-                let inter_f_typed = InteractionFlow::from(inter_f.clone());
-                if inter_f_typed.eq(&InteractionFlow::CONFIRMATION_MESSAGE) || inter_f_typed.eq(&InteractionFlow::CONFIRMATION_MESSAGE_AND_VERIFICATION_CODE_CHOICE) {
-                    let display_text_60 = self.display_text_60.clone();
-                    let display_text_200 = self.display_text_200.clone();
-                    if display_text_200.is_none() {
-                        return Err(anyhow::anyhow!(format!("displayText200 cannot be null for AllowedInteractionOrder of type {:?}", inter_f_typed.clone())));
-                    };
-                    if display_text_200.is_some() && display_text_200.unwrap().clone().len() > 200 {
-                        return Err(anyhow::anyhow!("displayText200 must not be longer than 200 characters"));
-                    };
-                    if display_text_60.is_some() {
-                        return Err(anyhow::anyhow!(format!("displayText60 must be null for AllowedInteractionOrder of type {:?}", inter_f_typed.clone())));
-                    };
-                }
-                Ok(())
-            }
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tracing::{error, info};
-    use tracing_test::traced_test;
-    use crate::models::requests::InteractionFlow;
-
-    #[traced_test]
-    #[tokio::test]
-    async fn test_semantics_id_construct_by_string() {
-        let sem_id = SemanticsIdentifier::new_from_string("PNO", "BE", "123456789");
-        assert_eq!(sem_id.identifier, "PNOBE-123456789");
-    }
-
-    #[traced_test]
-    #[tokio::test]
-    async fn test_semantics_id_construct_by_enum() {
-        let sem_id = SemanticsIdentifier::new_from_enum(IdentityType::PNO, CountryCode::BE, "123456789");
-        assert_eq!(sem_id.identifier, "PNOBE-123456789");
-    }
-
-    #[traced_test]
-    #[tokio::test]
-    async fn test_resolve_certificate_level_string_value() {
-        let cert_level: CertificateLevel = CertificateLevel::QUALIFIED;
-        assert_eq!(String::from(cert_level), "QUALIFIED");
-    }
+/// Enum representing the type of the VC code.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[allow(non_camel_case_types)]
+#[non_exhaustive]
+pub enum VCCodeType {
+    alphaNumeric4,
 }

@@ -45,8 +45,18 @@ i.e. ask end users to perform authentication and signing operations.
   system. It may or may not create a transaction.
 * Signature key pair (or signature key) - Key pair, which is used to give digital signatures of a person.
 
+## 1.2 Implementation References
 
-## 1.2. References
+> [Demo and Testing documentation](https://github.com/SK-EID/smart-id-documentation/wiki/Smart-ID-demo)
+> 
+> [Technical Parameters for Testing](https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters#accounts)
+> 
+> [Smart-ID External API](https://github.com/SK-EID/smart-id-documentation)
+> 
+> [Technical documentation](https://github.com/SK-EID/smart-id-documentation/wiki/Technical-overview)
+>
+
+## 1.3 Informative References
 
 * **ETSI319412-1** ETSI. Electronic Signatures and Infrastructures (ESI); Certificate Profiles;
   Part 1: Overview and common data structures. 2015. URL: <http://www.etsi.org/deliver/etsi_en/319400_319499/31941201/01.01.00_30/en_31941201v010100v.pdf>.

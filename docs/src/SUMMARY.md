@@ -1,3 +1,3 @@
 # Summary
 - [Introduction](./intro)
-- [Verification Code (AUTH OR SIGN)](./verfiication)
+- [Smart-ID Documentation](smart_id.md)
