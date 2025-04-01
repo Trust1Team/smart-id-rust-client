@@ -19,7 +19,7 @@ const SMART_ID_V3_API_PATH: &str = "/smart-id-rp/v3";
 const RELYING_PARTY_NAME: &str = "YOUR_RELYING_PARTY_NAME"; // Must be updated to your own relying party name
 const RELYING_PARTY_UUID: &str = "YOUR_RELYING_PARTY_UUID"; // Must be updated to your own relying party UUID
 #[allow(dead_code)]
-const DOCUMENT_ID: &str = "YOUR_DOCUMENT_ID";
+const DOCUMENT_NUMBER: &str = "YOUR_DOCUMENT_ID";
 #[allow(dead_code)]
 const ETSI_ID: &str = "YOUR_ETSI_ID";
 const EXAMPLE_SIGNING_TEXT: &str = "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=";
@@ -250,7 +250,6 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
-
 
     // AUTHENTICATION
     let authentication_request = AuthenticationRequest::new(
