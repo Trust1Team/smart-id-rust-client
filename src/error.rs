@@ -1,56 +1,82 @@
 use thiserror::Error;
 
+pub type Result<T> = std::result::Result<T, SmartIdClientError>;
+
 #[derive(Error, Debug)]
 #[non_exhaustive]
+#[allow(dead_code)]
 pub enum SmartIdClientError {
     /// Config Exception
     #[error("Configuration missing: {0}")]
     ConfigMissingException(&'static str),
 
-    /// Generic
-    #[error("Smart ID Exception: {0}")]
-    SmartIdException(&'static str),
-
-    /// Session not found
-    #[error("Session not found: {0}")]
-    SessionNotFound(String),
-
-    #[error("Invalid request")]
-    InvalidRequest,
-
-    /// Unprocessable
-    #[error("Unprocessable exception: {0}")]
-    UnprocessableSmartIdResponseException(&'static str),
-
     ///RelyingPartyAccountConfigurationException
     #[error("Relying Party account configuration exception: {0}")]
     RelyingPartyAccountConfigurationException(&'static str),
-
-    ///ServerMaintenanceException
-    #[error("Server maintenance exception: {0}")]
-    ServerMaintenanceException(&'static str),
 
     ///SmartIdClientException
     #[error("Smart ID client exception: {0}")]
     SmartIdClientException(&'static str),
 
-    /// Client-side integration or how Relying Party account has been configured by Smart-ID operator or Smart-ID server is under maintenance
-    /// With these types of errors there is not recommended to ask the user for immediate retry
-    #[error("Enduring Smart ID exception: {0}")]
-    EnduringSmartIdException(&'static str),
-
-    /// User's action triggered ending session.
-    /// General practise is to ask the user to try again.
-    #[error("User action exception: {0}, try use case again")]
-    UserActionException(&'static str),
+    ///SmartIDAPIException
+    #[error("Smart ID API Exception: {0}")]
+    SmartIDAPIException(String),
 
     /// Session timed out without getting any response from user
     #[error("Session timed out without getting any response from user")]
     SessionTimeoutException,
 
-    /// Session exception when Retry is required
-    #[error("Session exception when Retry is required")]
-    SessionRetryException,
+    /// There is no running session
+    #[error("There is no running session")]
+    NoSessionException,
+
+    /// Failed to get the running session
+    #[error("Failed to get the running session")]
+    GetSessionException,
+
+    /// Failed to set the running session
+    #[error("Failed to set the running session")]
+    SetSessionException,
+
+    /// Failed to get user identity
+    #[error("Failed to get user identity")]
+    GetUserIdentityException,
+
+    /// Failed to set user identity
+    #[error("Failed to set user identity")]
+    SetUserIdentityException,
+
+    /// Authentication session completed without result
+    #[error("Authentication session completed without result")]
+    AuthenticationSessionCompletedWithoutResult,
+
+    /// Session did not complete within timeout
+    #[error("Session did not complete within timeout")]
+    StatusRequestLongPollingTimeoutException,
+
+    /// Session does not exist or has expired
+    #[error("Session does not exist or has expired")]
+    SessionDoesNotExistOrHasExpired,
+
+    /// Api client is too old and is not supported anymore
+    #[error("Api client is too old and is not supported anymore")]
+    ApiClientIsTooOldException,
+
+    /// System is under maintenance and is not available
+    #[error("System is under maintenance and is not available")]
+    SystemIsUnderMaintenanceException,
+
+    /// Session response missing certificate
+    #[error("Session response missing certificate")]
+    SessionResponseMissingCertificate,
+
+    /// Session response missing signature
+    #[error("Session response missing signature")]
+    SessionResponseMissingSignature,
+
+    /// Session response signature verification failed
+    #[error("Session response signature verification failed: {0}")]
+    InvalidResponseSignature(String),
 
     /// User has multiple accounts and pressed Cancel on device choice screen on any device
     #[error("User has multiple accounts and pressed Cancel on device choice screen on any device")]
@@ -76,15 +102,6 @@ pub enum SmartIdClientError {
     #[error("User selected wrong verification code")]
     UserSelectedWrongVerificationCodeException,
 
-    /// Something is wrong with user's Smart-ID account (or app) configuration.
-    /// General practise is to ask the user to try again.
-    #[error("User action exception: {0}")]
-    UserAccountException(&'static str),
-
-    /// Signer's certificate is below requested certificate level
-    #[error("Signer's certificate is below requested certificate level")]
-    CertificateLevelMismatchException,
-
     /// DOCUMENT_UNUSABLE. User must either check his/her Smart-ID mobile application or turn to customer support for getting the exact reason.
     #[error("DOCUMENT_UNUSABLE. User must either check his/her Smart-ID mobile application or turn to customer support for getting the exact reason")]
     DocumentUnusableException,
@@ -101,11 +118,43 @@ pub enum SmartIdClientError {
     #[error("User app version does not support any of the allowedInteractionsOrder interactions")]
     RequiredInteractionNotSupportedByAppException,
 
-    /// User account not found
-    #[error("User account not found")]
-    UserAccountNotFoundException,
+    /// Interaction parameters are invalid
+    #[error("Interaction parameters are invalid: {0}")]
+    InvalidInteractionParametersException(&'static str),
 
-    /// Certificate Decryption error
-    #[error("Certificate Decryption error")]
-    DecryptionError
+    /// Failed to generate dynamic link
+    #[error("Failed to generate dynamic link: {0}")]
+    GenerateDynamicLinkException(&'static str),
+
+    /// Invalid signature protocol
+    #[error("Invalid signature protocol: {0}")]
+    InvalidSignatureProtocal(&'static str),
+
+    /// Failed to validate session response certificate
+    #[error("Failed to validate session response certificate: {0}")]
+    FailedToValidateSessionResponseCertificate(String),
+
+    /// Digest is not in valid format
+    #[error("Digest is not in valid format: {0}")]
+    InvalidDigestException(&'static str),
+
+    /// User should view Smart-ID app or portal
+    #[error("User should view Smart-ID app or portal")]
+    UserShouldViewSmartIDAppOrPortalException,
+
+    /// Not found exception from Smart ID API
+    #[error("Not found exception from Smart ID API")]
+    NotFoundException,
+
+    /// Bad request exception from Smart ID API
+    #[error("Bad request exception from Smart ID API")]
+    BadRequestException,
+
+    /// Smart ID client is outdated
+    #[error("Smart ID client is outdated")]
+    ClientOutdatedException,
+
+    /// Invalid semantic identifier
+    #[error("Invalid semantic identifier: {0}")]
+    InvalidSemanticIdentifierException(String),
 }

@@ -1,11 +1,9 @@
 [env]
 RUST_LOG = "hyper=none,smart_id_rust_client=debug,smart_id_client=debug"
 
-HOST_URL = "https://sid.demo.sk.ee/smart-id-rp/v2"
+SMART_ID_ROOT_URL = "https://sid.demo.sk.ee"
+SMART_ID_V3_API_PATH = "/smart-id-rp/v3"
 RELYING_PARTY_UUID = "00000000-0000-0000-0000-000000000000"
 RELYING_PARTY_NAME = "DEMO"
 CLIENT_REQ_NETWORK_TIMEOUT_MILLIS= "30000"
-CLIENT_REQ_MAX_ATTEMPTS= "15"
-CLIENT_REQ_DELAY_SECONDS_BETWEEN_ATTEMPTS= "1"
-ENABLE_POLLING_BY_LIB="true"
 

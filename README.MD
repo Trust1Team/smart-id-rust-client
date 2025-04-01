@@ -57,6 +57,10 @@ RUST_LOG=info cargo run --example smart_id_client
 cargo test
 ```
 
+## Manual Tests
+To fully test the libraries interactions with the Smart-ID API, you will need to run the tests in [app_interaction_tests.rs](tests/app_interaction_tests.rs).
+These tests require a Qualified Smart-ID account and a mobile device with the Smart-ID app installed.
+
 ## Documentation
 
 ```zsh
@@ -104,102 +108,21 @@ SmartID configuration can be loaded form environment variables:
 let cfg = get_config_from_env();
 ```
 
-Or using the builder pattern:
+Or set manually
 ```shell
-/// Config Builder
-let cfg = SmartIDConfigBuilder::new().url("https://sid.demo.sk.ee/smart-id-rp/v2").build().expect("Error building config");
-```
-
-### Verify Certificate Existence
-
-To check whether a user has been onboarded, use the `get_certificate_by_semantic_identifier`:
-```shell
-async fn uc_get_certificate_choice(cfg: &SmartIDConfig) -> Result<()> {
-
-    /// Create the semantic identifier
-    let sem_id = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
-
-    /// Verify if a certificate exists for given id
-    let res = get_certificate_by_semantic_identifier(&cfg, sem_id).await;
-    match res {
-        Ok(r) => {
-            let cert = validate_response_success(r).map(|res| res.cert.unwrap().value.unwrap())?;
-            info!("Smart ID Certificate {:#?}", cert);
-            Ok(())
-        }
-        Err(_) => Err(anyhow::anyhow!("Error getting certificate"))
-    }
+/// Create SmartID Config
+let cfg = SmartIDConfig {
+    root_url: "https://sid.demo.sk.ee".to_string(),
+    api_path: "/smart-id-rp/v3".to_string(),
+    relying_party_uuid: "test-uuid".to_string(),
+    relying_party_name: "test-name".to_string(),
+    client_request_timeout: Some(30000),
 }
 ```
 
-### SmartID Authentication
+### Examples
+Examples of the various flows with explanations can be found in [smart_id_client.rs](examples/smart_id_client.rs).
+You will need to update the RELYING_PARTY environment variables in [config.toml](.cargo/config.toml) for these to work.
 
-To authenticate a user, use the `authenticate_by_semantic_identifier`:
-```shell
-async fn uc_authenticate_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<()> {
-    /// Create the semantic identifier
-    let sem_id = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
-
-    /// Define interactions
-    let interactions: Vec<Interaction> = vec![Interaction::diplay_text_and_pin("Authenticate to Application: ReadMyCards")];
-
-    /// Create hash
-    let hash_type = HashType::SHA256;
-    let hash = sha_digest("This is a test string".to_string().into_bytes(), &hash_type)?;
-    let b64_hash =  base64::engine::general_purpose::STANDARD.encode(hash.as_ref());
-    let verification_code_for_user = generate_verification_number(hash.as_ref().to_vec())?;
-    info!("Verification code for user: {}", verification_code_for_user);
-
-    /// Ask user for authentication
-    let res = authenticate_by_semantic_identifier(&cfg, sem_id, interactions, b64_hash, hash_type).await;
-
-    match res {
-        Ok(r) => {
-            let session_result = validate_response_success(r).map(|res| res.result)?;
-            info!("Smart ID Authentication result {:#?}", session_result);
-            Ok(())
-        }
-        Err(_) => Err(anyhow::anyhow!("Error during authentication"))
-    }
-}
-```
-
-### SmartID Digital Signature
-
-To sign a document as a user, use the `sign_by_semantic_identifier`:
-```shell
-async fn uc_sign_by_semantic_identifier(cfg: &SmartIDConfig) -> Result<()> {
-    /// Create the semantic identifier
-    let sem_id = SemanticsIdentifier::new_from_enum_mock(IdentityType::PNO, CountryCode::BE);
-
-    /// Define interactions
-    let interactions: Vec<Interaction> = vec![Interaction::confirmation_message("Are you sure to sign document: something.pdf?"), Interaction::diplay_text_and_pin("Sign using ReadMyCards")];
-
-    /// Create hash
-    let hash_type = HashType::SHA256;
-    let hash = sha_digest("This is a test string".to_string().into_bytes(), &hash_type)?;
-    let b64_hash =  base64::engine::general_purpose::STANDARD.encode(hash.as_ref());
-
-    /// Create verification cod
-    let verification_code_for_user = generate_verification_number(hash.as_ref().to_vec())?;
-    info!("Verification code for user: {}", verification_code_for_user);
-
-    /// Ask user to sign
-    let res = sign_by_semantic_identifier(&cfg, sem_id, interactions, b64_hash, hash_type).await;
-    match res {
-        Ok(r) => {
-            match validate_response_success(r).map(|res| res.signature)? {
-                None => {
-                    warn!("No signature");
-                    Ok(())
-                }
-                Some(signature) => {
-                    info!("Smart ID signature result {:#?}", signature);
-                    Ok(())
-                }
-            }
-        }
-        Err(_) => Err(anyhow::anyhow!("Error signing digest"))
-    }
-}
-```
+Examples of more complex auth->certificate->sign flows with instructions can be found in [app_interaction_tests.rs](tests/app_interaction_tests.rs).
+You will need to update the RELYING_PARTY variables in the test file for these to work.
