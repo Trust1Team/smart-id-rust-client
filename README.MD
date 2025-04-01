@@ -25,7 +25,9 @@ Additional utilities has been provided for easy integration with the Smart-ID AP
 - interactions with the mobile end-user
 
 ## Status
-Beta version - under development!
+Supporting SmartID using:
+- Nation Registry number
+- QR code
 
 ## Documentation
 
