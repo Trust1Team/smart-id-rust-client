@@ -90,6 +90,8 @@ pub enum EndResult {
     OK,
     // User refused the session.
     USER_REFUSED,
+    // User refused on interaction screen, i.e. displayed text and PIN, or verification code choice.
+    USER_REFUSED_INTERACTION,
     // There was a timeout, i.e. end user did not confirm or refuse the operation within given time frame.
     TIMEOUT,
     // For some reason, this RP request cannot be completed. User must either check his/her Smart-ID mobile application or turn to customer support for getting the exact reason.
@@ -108,6 +110,10 @@ pub enum EndResult {
     USER_REFUSED_CONFIRMATIONMESSAGE,
     // User cancelled on confirmationMessageAndVerificationCodeChoice screen.
     USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE,
+    // Failure in executing the protocol
+    PROTOCOL_FAILURE,
+    // Generic server error
+    SERVER_ERROR
     #[default]
     UNKNOWN,
 }
