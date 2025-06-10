@@ -4,14 +4,14 @@ use qrcode::QrCode;
 use smart_id_rust_client::client::smart_id_client::SmartIdClient;
 use smart_id_rust_client::config::SmartIDConfig;
 use smart_id_rust_client::models::authentication_session::{
-    AuthenticationCertificateLevel, AuthenticationRequest,
+    AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest,
 };
-use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceRequest;
+use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
 use smart_id_rust_client::models::device_link::{DeviceLinkType, DeviceLinkType};
 use smart_id_rust_client::models::interaction::Interaction;
 use smart_id_rust_client::models::session_status::EndResult;
 use smart_id_rust_client::models::signature::SignatureAlgorithm;
-use smart_id_rust_client::models::signature_session::SignatureRequest;
+use smart_id_rust_client::models::signature_session::SignatureDeviceLinkRequest;
 use std::env;
 
 const SMART_ID_ROOT_URL: &str = "https://sid.demo.sk.ee";
@@ -49,12 +49,12 @@ async fn test_authentication_qr() -> Result<()> {
     let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
 
-    let authentication_request = AuthenticationRequest::new(
+    let authentication_request = AuthenticationDeviceLinkRequest::new(
         &cfg,
         vec![Interaction::ConfirmationMessage {
             display_text_200: "TEST 1".to_string(),
         }],
-        SignatureAlgorithm::sha256WithRSAEncryption,
+        SignatureAlgorithm::RsassaPss,
         AuthenticationCertificateLevel::QUALIFIED,
     )?;
     println!(
@@ -90,7 +90,7 @@ async fn test_authentication_web_to_app() -> Result<()> {
     let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
 
-    let authentication_request = AuthenticationRequest::new(
+    let authentication_request = AuthenticationDeviceLinkRequest::new(
         &cfg,
         vec![Interaction::DisplayTextAndPIN {
             display_text_60: "Authenticate to Application: Test".to_string(),
@@ -132,7 +132,7 @@ async fn test_authentication_app_to_app() -> Result<()> {
     let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
 
-    let authentication_request = AuthenticationRequest::new(
+    let authentication_request = AuthenticationDeviceLinkRequest::new(
         &cfg,
         vec![Interaction::DisplayTextAndPIN {
             display_text_60: "Authenticate to Application: Test".to_string(),
@@ -175,12 +175,12 @@ async fn test_notification_auth_then_sign_with_qr_code() -> Result<()> {
     let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
 
     // AUTHENTICATION
-    let authentication_request = AuthenticationRequest::new(
+    let authentication_request = AuthenticationDeviceLinkRequest::new(
         &cfg,
         vec![Interaction::ConfirmationMessage {
             display_text_200: "TEST".to_string(),
         }],
-        SignatureAlgorithm::sha256WithRSAEncryption,
+        SignatureAlgorithm::RsassaPss,
         AuthenticationCertificateLevel::QUALIFIED,
     )?;
     let vc = smart_id_client
@@ -206,13 +206,13 @@ async fn test_notification_auth_then_sign_with_qr_code() -> Result<()> {
     println!("Digest: {:?}", digest);
 
     // SIGNATURE
-    let signature_request = SignatureRequest::new(
+    let signature_request = SignatureDeviceLinkRequest::new(
         &cfg,
         vec![Interaction::DisplayTextAndPIN {
             display_text_60: "Sign document".to_string(),
         }],
         EXAMPLE_SIGNING_TEXT.to_string(),
-        SignatureAlgorithm::sha256WithRSAEncryption,
+        SignatureAlgorithm::RsassaPss,
     )?;
     println!(
         "Signature Request: \n{}",
@@ -252,12 +252,12 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
     let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
 
     // AUTHENTICATION
-    let authentication_request = AuthenticationRequest::new(
+    let authentication_request = AuthenticationDeviceLinkRequest::new(
         &cfg,
         vec![Interaction::ConfirmationMessage {
             display_text_200: "TEST".to_string(),
         }],
-        SignatureAlgorithm::sha256WithRSAEncryption,
+        SignatureAlgorithm::RsassaPss,
         AuthenticationCertificateLevel::QUALIFIED,
     )?;
     println!(
@@ -285,7 +285,7 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
     // CERTIFICATE CHOICE (Only needed if we want to include the user's certificate in the digest for the signature)
     let document_number = result.result.unwrap().document_number.unwrap();
 
-    let certificate_choice_request = CertificateChoiceRequest::new(&cfg);
+    let certificate_choice_request = CertificateChoiceDeviceLinkRequest::new(&cfg);
     println!(
         "Certificate Choice Request: \n{}",
         serde_json::to_string_pretty(&certificate_choice_request)?
@@ -305,13 +305,13 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
     );
 
     // SIGNATURE
-    let signature_request = SignatureRequest::new(
+    let signature_request = SignatureDeviceLinkRequest::new(
         &cfg,
         vec![Interaction::DisplayTextAndPIN {
             display_text_60: "Sign document".to_string(),
         }],
         EXAMPLE_SIGNING_TEXT.to_string(),
-        SignatureAlgorithm::sha256WithRSAEncryption,
+        SignatureAlgorithm::RsassaPss,
     )?;
     println!(
         "Signature Request: \n{}",

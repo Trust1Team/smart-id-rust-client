@@ -11,9 +11,9 @@
 //! ```rust
 //! use crate::smart_id_rust_client::config::SmartIDConfig;
 //! use crate::smart_id_rust_client::client::smart_id_client::SmartIdClient;
-//! use crate::smart_id_rust_client::models::authentication_session::AuthenticationRequest;
-//! use crate::smart_id_rust_client::models::signature_session::SignatureRequest;
-//! use crate::smart_id_rust_client::models::certificate_choice_session::CertificateChoiceRequest;
+//! use crate::smart_id_rust_client::models::authentication_session::AuthenticationDeviceLinkRequest;
+//! use crate::smart_id_rust_client::models::signature_session::SignatureDeviceLinkRequest;
+//! use crate::smart_id_rust_client::models::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
 //! use crate::smart_id_rust_client::models::device_link::DeviceLinkType;
 //! use crate::smart_id_rust_client::models::user_identity::UserIdentity;
 //! use smart_id_rust_client::models::interaction::Interaction;
@@ -26,12 +26,12 @@
 //!     let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
 //!
 //!     // Example: Start an authentication session
-//!     let authentication_request = AuthenticationRequest::new(
+//!     let authentication_request = AuthenticationDeviceLinkRequest::new(
 //!         &cfg,
 //!         vec![Interaction::DisplayTextAndPIN {
 //!             display_text_60: "Authenticate to Application: Test".to_string(),
 //!         }],
-//!         SignatureAlgorithm::sha256WithRSAEncryption,
+//!         SignatureAlgorithm::RsassaPss,
 //!         AuthenticationCertificateLevel::QUALIFIED,
 //!     )?;
 //!     smart_id_client.start_authentication_dynamic_link_anonymous_session(authentication_request).await?;

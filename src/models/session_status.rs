@@ -22,7 +22,7 @@ pub(crate) type SessionResponse = SmartIdAPIResponse<SessionStatus>;
 /// * `signature` - The signature response, if available.
 /// * `cert` - The session certificate, if available. Contains the level of the certificate and the certificate value DER+Base64 encoded.
 /// * `ignored_properties` - Any values from requestProperties that were unsupported or ignored.
-/// * `interaction_flow_used` - The interaction flow used during the session, if available.
+/// * `interaction_type_used` - The interaction flow used during the session, if available.
 /// * `device_ip_address` - The IP address of the mobile device, if it was requested using "shareMdClientIpAddress" in the session creation parameters.
 #[skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
@@ -34,7 +34,7 @@ pub struct SessionStatus {
     pub signature: Option<ResponseSignature>,
     pub cert: Option<SessionCertificate>,
     pub ignored_properties: Option<Vec<String>>,
-    pub interaction_flow_used: Option<InteractionFlow>,
+    pub interaction_type_used: Option<InteractionFlow>,
     pub device_ip_address: Option<String>,
 }
 

@@ -1,15 +1,17 @@
 use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::models::authentication_session::{
-    AuthenticationDeviceLinkSession, AuthenticationNotificationSession, AuthenticationRequest,
+    AuthenticationDeviceLinkRequest, AuthenticationDeviceLinkSession,
+    AuthenticationNotificationRequest, AuthenticationNotificationSession,
 };
 use crate::models::certificate_choice_session::{
-    CertificateChoiceRequest, CertificateChoiceSession,
+    CertificateChoiceDeviceLinkRequest, CertificateChoiceNotificationSession,
 };
 use crate::models::session_status::SessionStatus;
 use crate::models::signature::{ResponseSignature, SignatureProtocol};
 use crate::models::signature_session::{
-    SignatureNotificationSession, SignatureRequest, SignatureSession,
+    SignatureDeviceLinkRequest, SignatureDeviceLinkSession, SignatureNotificationLinkedRequest,
+    SignatureNotificationLinkedSession, SignatureNotificationRequest, SignatureNotificationSession,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -85,7 +87,6 @@ pub enum SessionConfig {
         rp_challenge: String,
         requested_certificate_level: CertificateLevel,
         session_start_time: DateTime<Utc>,
-        vc: VCCode,
     },
     SignatureNotification {
         session_id: String,
@@ -93,6 +94,12 @@ pub enum SessionConfig {
         requested_certificate_level: CertificateLevel,
         session_start_time: DateTime<Utc>,
         vccode: VCCode,
+    },
+    SignatureNotificationLinked {
+        session_id: String,
+        digest: String,
+        requested_certificate_level: CertificateLevel,
+        session_start_time: DateTime<Utc>,
     },
     CertificateChoice {
         session_id: String,
@@ -109,6 +116,7 @@ impl SessionConfig {
             SessionConfig::CertificateChoice { session_id, .. } => session_id,
             SessionConfig::AuthenticationNotification { session_id, .. } => session_id,
             SessionConfig::SignatureNotification { session_id, .. } => session_id,
+            SessionConfig::SignatureNotificationLinked { session_id, .. } => session_id,
         }
     }
 
@@ -134,12 +142,16 @@ impl SessionConfig {
                 requested_certificate_level,
                 ..
             } => requested_certificate_level,
+            SessionConfig::SignatureNotificationLinked {
+                requested_certificate_level,
+                ..
+            } => requested_certificate_level,
         }
     }
 
     pub fn from_authentication_device_link_response(
         authentication_response: AuthenticationDeviceLinkSession,
-        authentication_request: AuthenticationRequest,
+        authentication_request: AuthenticationDeviceLinkRequest,
     ) -> Result<SessionConfig> {
         Ok(SessionConfig::AuthenticationDeviceLink {
             session_id: authentication_response.session_id,
@@ -158,11 +170,10 @@ impl SessionConfig {
 
     pub fn from_authentication_notification_response(
         authentication_notification_response: AuthenticationNotificationSession,
-        authentication_request: AuthenticationRequest,
+        authentication_request: AuthenticationNotificationRequest,
     ) -> Result<SessionConfig> {
         Ok(SessionConfig::AuthenticationNotification {
             session_id: authentication_notification_response.session_id,
-            vc: authentication_notification_response.vc,
             requested_certificate_level: authentication_request.certificate_level.into(),
             rp_challenge: authentication_request
                 .signature_protocol_parameters
@@ -175,8 +186,8 @@ impl SessionConfig {
     }
 
     pub fn from_signature_device_link_request_response(
-        signature_request_response: SignatureSession,
-        signature_request: SignatureRequest,
+        signature_request_response: SignatureDeviceLinkSession,
+        signature_request: SignatureDeviceLinkRequest,
     ) -> Result<SessionConfig> {
         Ok(SessionConfig::Signature {
             session_id: signature_request_response.session_id,
@@ -195,7 +206,7 @@ impl SessionConfig {
 
     pub fn from_signature_notification_response(
         signature_notification_response: SignatureNotificationSession,
-        signature_request: SignatureRequest,
+        signature_request: SignatureNotificationRequest,
     ) -> Result<SessionConfig> {
         Ok(SessionConfig::SignatureNotification {
             session_id: signature_notification_response.session_id,
@@ -211,9 +222,26 @@ impl SessionConfig {
         })
     }
 
+    pub fn from_signature_notification_linked_response(
+        signature_notification_response: SignatureNotificationLinkedSession,
+        signature_request: SignatureNotificationLinkedRequest,
+    ) -> Result<SessionConfig> {
+        Ok(SessionConfig::SignatureNotificationLinked {
+            session_id: signature_notification_response.session_id,
+            requested_certificate_level: signature_request.certificate_level,
+            session_start_time: Default::default(),
+            digest: signature_request
+                .signature_protocol_parameters
+                .get_digest()
+                .ok_or(SmartIdClientError::InvalidSignatureProtocal(
+                    "Digest missing from signature request",
+                ))?,
+        })
+    }
+
     pub fn from_certificate_choice_response(
-        certificate_choice_response: CertificateChoiceSession,
-        certificate_choice_request: CertificateChoiceRequest,
+        certificate_choice_response: CertificateChoiceNotificationSession,
+        certificate_choice_request: CertificateChoiceDeviceLinkRequest,
     ) -> SessionConfig {
         SessionConfig::CertificateChoice {
             session_id: certificate_choice_response.session_id,
@@ -290,5 +318,5 @@ pub struct VCCode {
 #[allow(non_camel_case_types)]
 #[non_exhaustive]
 pub enum VCCodeType {
-    alphaNumeric4,
+    numeric4,
 }

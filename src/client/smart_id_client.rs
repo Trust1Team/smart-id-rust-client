@@ -4,10 +4,13 @@ use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::error::SmartIdClientError::NoSessionException;
 use crate::models::authentication_session::{
-    AuthenticationDeviceLinkResponse, AuthenticationNotificationResponse, AuthenticationRequest,
+    AuthenticationDeviceLinkRequest, AuthenticationDeviceLinkResponse,
+    AuthenticationNotificationRequest, AuthenticationNotificationResponse,
 };
 use crate::models::certificate_choice_session::{
-    CertificateChoiceRequest, CertificateChoiceResponse,
+    CertificateChoiceDeviceLinkRequest, CertificateChoiceNotificationRequest,
+    CertificateChoiceNotificationResponse, SigningCertificate, SigningCertificateRequest,
+    SigningCertificateResponse, SigningCertificateResponseState,
 };
 use crate::models::common::{SessionConfig, VCCode};
 use crate::models::device_link::{DeviceLink, DeviceLinkType, SessionType};
@@ -16,7 +19,9 @@ use crate::models::session_status::{
 };
 use crate::models::signature::ResponseSignature;
 use crate::models::signature_session::{
-    SignatureNotificationResponse, SignatureRequest, SignatureResponse,
+    SignatureDeviceLinkRequest, SignatureDeviceLinkResponse, SignatureNotificationLinkedRequest,
+    SignatureNotificationLinkedResponse, SignatureNotificationRequest,
+    SignatureNotificationResponse,
 };
 use crate::models::user_identity::UserIdentity;
 use crate::utils::demo_certificates::{demo_intermediate_certificates, demo_root_certificates};
@@ -31,9 +36,12 @@ use tracing::debug;
 // Copied from https://github.com/SK-EID/smart-id-java-client/blob/81e48f519bf882db8584a344b161db378b959093/src/main/java/ee/sk/smartid/v3/rest/SmartIdRestConnector.java#L79
 const SESSION_STATUS_URI: &str = "/session";
 const NOTIFICATION_CERTIFICATE_CHOICE_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
-    "/certificatechoice/notification/etsi";
+    "/signature/certificate-choice/notification/etsi";
 const NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH: &str =
-    "/certificatechoice/notification/document";
+    "/signature/certificate-choice/notification/document";
+const ANONYMOUSE_DEVICE_LINK_CERTIFICATE_CHOICE_PATH: &str =
+    "/signature/certificate-choice/device-link/anonymous";
+const SIGNING_CERTIFICATE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/certificate";
 
 const DYNAMIC_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/device-link/etsi";
 const DYNAMIC_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/device-link/document";
@@ -213,7 +221,7 @@ impl SmartIdClient {
     /// A Result indicating success or failure.
     pub async fn start_authentication_dynamic_link_anonymous_session(
         &self,
-        authentication_request: AuthenticationRequest,
+        authentication_request: AuthenticationDeviceLinkRequest,
     ) -> Result<()> {
         self.clear_session();
 
@@ -224,7 +232,7 @@ impl SmartIdClient {
         );
 
         let authentication_response =
-            post::<AuthenticationRequest, AuthenticationDeviceLinkResponse>(
+            post::<AuthenticationDeviceLinkRequest, AuthenticationDeviceLinkResponse>(
                 path.as_str(),
                 &authentication_request,
                 self.cfg.client_request_timeout,
@@ -253,7 +261,7 @@ impl SmartIdClient {
     /// A Result indicating success or failure.
     pub async fn start_authentication_dynamic_link_document_session(
         &self,
-        authentication_request: AuthenticationRequest,
+        authentication_request: AuthenticationDeviceLinkRequest,
         document_number: String,
     ) -> Result<()> {
         self.clear_session();
@@ -266,7 +274,7 @@ impl SmartIdClient {
         );
 
         let authentication_response =
-            post::<AuthenticationRequest, AuthenticationDeviceLinkResponse>(
+            post::<AuthenticationDeviceLinkRequest, AuthenticationDeviceLinkResponse>(
                 path.as_str(),
                 &authentication_request,
                 self.cfg.client_request_timeout,
@@ -295,7 +303,7 @@ impl SmartIdClient {
     /// A Result indicating success or failure.
     pub async fn start_authentication_dynamic_link_etsi_session(
         &self,
-        authentication_request: AuthenticationRequest,
+        authentication_request: AuthenticationDeviceLinkRequest,
         etsi: String,
     ) -> Result<()> {
         self.clear_session();
@@ -308,7 +316,7 @@ impl SmartIdClient {
         );
 
         let authentication_response =
-            post::<AuthenticationRequest, AuthenticationDeviceLinkResponse>(
+            post::<AuthenticationDeviceLinkRequest, AuthenticationDeviceLinkResponse>(
                 path.as_str(),
                 &authentication_request,
                 self.cfg.client_request_timeout,
@@ -336,9 +344,9 @@ impl SmartIdClient {
     /// A `Result` containing the verification code the user will see on screen.
     pub async fn start_authentication_notification_etsi_session(
         &self,
-        authentication_request: AuthenticationRequest,
+        authentication_request: AuthenticationNotificationRequest,
         etsi: String,
-    ) -> Result<VCCode> {
+    ) -> Result<()> {
         self.clear_session();
 
         let path = format!(
@@ -349,7 +357,7 @@ impl SmartIdClient {
         );
 
         let authentication_response =
-            post::<AuthenticationRequest, AuthenticationNotificationResponse>(
+            post::<AuthenticationNotificationRequest, AuthenticationNotificationResponse>(
                 path.as_str(),
                 &authentication_request,
                 self.cfg.client_request_timeout,
@@ -363,7 +371,7 @@ impl SmartIdClient {
             authentication_request,
         )?)?;
 
-        Ok(session.vc)
+        Ok(())
     }
 
     /// Starts an authentication session using a notification.
@@ -379,9 +387,9 @@ impl SmartIdClient {
     /// A `Result` containing the verification code the user will see on screen.
     pub async fn start_authentication_notification_document_session(
         &self,
-        authentication_request: AuthenticationRequest,
+        authentication_request: AuthenticationNotificationRequest,
         document_number: String,
-    ) -> Result<VCCode> {
+    ) -> Result<()> {
         self.clear_session();
 
         let path = format!(
@@ -392,7 +400,7 @@ impl SmartIdClient {
         );
 
         let authentication_response =
-            post::<AuthenticationRequest, AuthenticationNotificationResponse>(
+            post::<AuthenticationNotificationRequest, AuthenticationNotificationResponse>(
                 path.as_str(),
                 &authentication_request,
                 self.cfg.client_request_timeout,
@@ -406,7 +414,7 @@ impl SmartIdClient {
             authentication_request,
         )?)?;
 
-        Ok(session.vc)
+        Ok(())
     }
 
     // endregion: Authentication
@@ -427,7 +435,7 @@ impl SmartIdClient {
     /// A Result indicating success or failure.
     pub async fn start_signature_dynamic_link_etsi_session(
         &self,
-        signature_request: SignatureRequest,
+        signature_request: SignatureDeviceLinkRequest,
         etsi: String,
     ) -> Result<()> {
         self.clear_session();
@@ -439,7 +447,7 @@ impl SmartIdClient {
             etsi,
         );
 
-        let signature_response = post::<SignatureRequest, SignatureResponse>(
+        let signature_response = post::<SignatureDeviceLinkRequest, SignatureDeviceLinkResponse>(
             path.as_str(),
             &signature_request,
             self.cfg.client_request_timeout,
@@ -468,7 +476,7 @@ impl SmartIdClient {
     /// A Result indicating success or failure.
     pub async fn start_signature_dynamic_link_document_session(
         &self,
-        signature_request: SignatureRequest,
+        signature_request: SignatureDeviceLinkRequest,
         document_number: String,
     ) -> Result<()> {
         self.clear_session();
@@ -480,7 +488,7 @@ impl SmartIdClient {
             document_number,
         );
 
-        let signature_response = post::<SignatureRequest, SignatureResponse>(
+        let signature_response = post::<SignatureDeviceLinkRequest, SignatureDeviceLinkResponse>(
             path.as_str(),
             &signature_request,
             self.cfg.client_request_timeout,
@@ -508,7 +516,7 @@ impl SmartIdClient {
     /// A `Result` containing the verification code the user will see on screen.
     pub async fn start_signature_notification_etsi_session(
         &self,
-        signature_request: SignatureRequest,
+        signature_request: SignatureNotificationRequest,
         etsi: String,
     ) -> Result<VCCode> {
         self.clear_session();
@@ -520,12 +528,13 @@ impl SmartIdClient {
             etsi,
         );
 
-        let signature_response = post::<SignatureRequest, SignatureNotificationResponse>(
-            path.as_str(),
-            &signature_request,
-            self.cfg.client_request_timeout,
-        )
-        .await?;
+        let signature_response =
+            post::<SignatureNotificationRequest, SignatureNotificationResponse>(
+                path.as_str(),
+                &signature_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
 
         let session = signature_response.into_result()?;
 
@@ -550,7 +559,7 @@ impl SmartIdClient {
     /// A `Result` containing the verification code the user will see on screen.
     pub async fn start_signature_notification_document_session(
         &self,
-        signature_request: SignatureRequest,
+        signature_request: SignatureNotificationRequest,
         document_number: String,
     ) -> Result<VCCode> {
         self.clear_session();
@@ -562,12 +571,57 @@ impl SmartIdClient {
             document_number,
         );
 
-        let signature_response = post::<SignatureRequest, SignatureNotificationResponse>(
-            path.as_str(),
-            &signature_request,
-            self.cfg.client_request_timeout,
-        )
-        .await?;
+        let signature_response =
+            post::<SignatureNotificationRequest, SignatureNotificationResponse>(
+                path.as_str(),
+                &signature_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
+
+        let session = signature_response.into_result()?;
+
+        self.set_session(SessionConfig::from_signature_notification_response(
+            session.clone(),
+            signature_request,
+        )?)?;
+
+        Ok(session.vc)
+    }
+
+    /// Starts a linked signature session using a notification.
+    /// This is the same as the start_signature_notification_document_session method, but can be linked to a previous certificate choice session.
+    /// Use the `get_session_status` method to poll for the result.
+    ///
+    /// # Arguments
+    ///
+    /// * `signature_request` - The signature request.
+    /// * `document_number` - The document number.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the verification code the user will see on screen.
+    pub async fn start_signature_notification_document_linked_session(
+        &self,
+        signature_request: SignatureNotificationLinkedRequest,
+        document_number: String,
+    ) -> Result<VCCode> {
+        self.clear_session();
+
+        let path = format!(
+            "{}{}/{}",
+            self.cfg.api_url(),
+            NOTIFICATION_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH,
+            document_number,
+        );
+
+        let signature_response =
+            post::<SignatureNotificationRequest, SignatureNotificationLinkedResponse>(
+                path.as_str(),
+                &signature_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
 
         let session = signature_response.into_result()?;
 
@@ -596,7 +650,7 @@ impl SmartIdClient {
     /// A Result indicating success or failure.
     pub async fn start_certificate_choice_notification_etsi_session(
         &self,
-        certificate_choice_request: CertificateChoiceRequest,
+        certificate_choice_request: CertificateChoiceNotificationRequest,
         etsi: String,
     ) -> Result<()> {
         self.clear_session();
@@ -609,7 +663,7 @@ impl SmartIdClient {
         );
 
         let certificate_choice_response =
-            post::<CertificateChoiceRequest, CertificateChoiceResponse>(
+            post::<CertificateChoiceNotificationRequest, CertificateChoiceNotificationResponse>(
                 path.as_str(),
                 &certificate_choice_request,
                 self.cfg.client_request_timeout,
@@ -637,7 +691,7 @@ impl SmartIdClient {
     /// A Result indicating success or failure.
     pub async fn start_certificate_choice_notification_document_session(
         &self,
-        certificate_choice_request: CertificateChoiceRequest,
+        certificate_choice_request: CertificateChoiceDeviceLinkRequest,
         document_number: String,
     ) -> Result<()> {
         self.clear_session();
@@ -650,7 +704,7 @@ impl SmartIdClient {
         );
 
         let certificate_choice_response =
-            post::<CertificateChoiceRequest, CertificateChoiceResponse>(
+            post::<CertificateChoiceDeviceLinkRequest, CertificateChoiceNotificationResponse>(
                 path.as_str(),
                 &certificate_choice_request,
                 self.cfg.client_request_timeout,
@@ -663,6 +717,53 @@ impl SmartIdClient {
             session,
             certificate_choice_request,
         ))
+    }
+
+    /// Get the signing certificate of the requested document number.
+    /// If the document number has been previously aquired via the certificate choice session or authentication session, this can be used to get the signing certificate.
+    /// This does not require a session.
+    ///
+    /// # Arguments
+    /// * `document_number` - The document number.
+    /// * `signing_certificate_request` - The signing certificate request.
+    ///
+    /// # Returns
+    /// A `Result` containing a SigningCertificateResult or an error.
+    pub async fn get_signing_certificate(
+        &self,
+        document_number: String,
+        signing_certificate_request: SigningCertificateRequest,
+    ) -> Result<SigningCertificate> {
+        let path = format!(
+            "{}{}/{}",
+            self.cfg.api_url(),
+            SIGNING_CERTIFICATE_WITH_DOCUMENT_NUMBER_PATH,
+            document_number,
+        );
+
+        let certificate_choice_response =
+            post::<SigningCertificateRequest, SigningCertificateResponse>(
+                path.as_str(),
+                &signing_certificate_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
+
+        match certificate_choice_response {
+            SigningCertificateResponse::Success(signing_certificate_result) => {
+                match signing_certificate_result.state {
+                    SigningCertificateResponseState::OK => Ok(signing_certificate_result.cert),
+                    SigningCertificateResponseState::DOCUMENT_UNUSABLE => {
+                        Err(SmartIdClientError::GetSigningCertificateException(
+                            "Document is unusable".to_string(),
+                        ))
+                    }
+                }
+            }
+            SigningCertificateResponse::Error(e) => Err(
+                SmartIdClientError::GetSigningCertificateException(e.error_type),
+            ),
+        }
     }
 
     // endregion: Certificate Choice

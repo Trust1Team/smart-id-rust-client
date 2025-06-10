@@ -4,14 +4,14 @@ use qrcode::QrCode;
 use smart_id_rust_client::client::smart_id_client::SmartIdClient;
 use smart_id_rust_client::config::SmartIDConfig;
 use smart_id_rust_client::models::authentication_session::{
-    AuthenticationCertificateLevel, AuthenticationRequest,
+    AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest,
 };
-use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceRequest;
+use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
 use smart_id_rust_client::models::device_link::DeviceLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
 use smart_id_rust_client::models::session_status::SessionStatus;
 use smart_id_rust_client::models::signature::SignatureAlgorithm;
-use smart_id_rust_client::models::signature_session::SignatureRequest;
+use smart_id_rust_client::models::signature_session::SignatureDeviceLinkRequest;
 use tracing::{info, Level};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::fmt::SubscriberBuilder;
@@ -89,12 +89,12 @@ async fn uc_authentication_request_example(
     cfg: &SmartIDConfig,
     smart_id_client: &SmartIdClient,
 ) -> Result<SessionStatus> {
-    let authentication_request = AuthenticationRequest::new(
+    let authentication_request = AuthenticationDeviceLinkRequest::new(
         cfg,
         vec![Interaction::DisplayTextAndPIN {
             display_text_60: "Authenticate to Application: Test".to_string(),
         }],
-        SignatureAlgorithm::sha256WithRSAEncryption,
+        SignatureAlgorithm::RsassaPss,
         AuthenticationCertificateLevel::QUALIFIED,
     )?;
 
@@ -132,7 +132,7 @@ async fn uc_certificate_choice_request_example(
     smart_id_client: &SmartIdClient,
     document_number: String,
 ) -> Result<SessionStatus> {
-    let certificate_choice_request = CertificateChoiceRequest::new(cfg);
+    let certificate_choice_request = CertificateChoiceDeviceLinkRequest::new(cfg);
     smart_id_client
         .start_certificate_choice_notification_document_session(
             certificate_choice_request,
@@ -152,13 +152,13 @@ async fn uc_signature_request_example(
     digest: String,
     document_number: String,
 ) -> Result<String> {
-    let signature_request = SignatureRequest::new(
+    let signature_request = SignatureDeviceLinkRequest::new(
         cfg,
         vec![Interaction::DisplayTextAndPIN {
             display_text_60: "Sign document".to_string(),
         }],
         digest,
-        SignatureAlgorithm::sha256WithRSAEncryption,
+        SignatureAlgorithm::RsassaPss,
     )?;
     smart_id_client
         .start_signature_dynamic_link_document_session(signature_request, document_number)

@@ -46,6 +46,10 @@ pub enum SmartIdClientError {
     #[error("Failed to set user identity")]
     SetUserIdentityException,
 
+    /// Get signing certificate failed
+    #[error("Get signing certificate failed: {0}")]
+    GetSigningCertificateException(String),
+
     /// Authentication session completed without result
     #[error("Authentication session completed without result")]
     AuthenticationSessionCompletedWithoutResult,
