@@ -68,7 +68,7 @@ pub enum SessionConfig {
         session_id: String,
         session_secret: String,
         session_token: String,
-        random_challenge: String,
+        rp_challenge: String,
         requested_certificate_level: CertificateLevel,
         session_start_time: DateTime<Utc>,
     },
@@ -82,7 +82,7 @@ pub enum SessionConfig {
     },
     AuthenticationNotification {
         session_id: String,
-        random_challenge: String,
+        rp_challenge: String,
         requested_certificate_level: CertificateLevel,
         session_start_time: DateTime<Utc>,
         vc: VCCode,
@@ -146,11 +146,11 @@ impl SessionConfig {
             session_secret: authentication_response.session_secret,
             session_token: authentication_response.session_token,
             requested_certificate_level: authentication_request.certificate_level.into(),
-            random_challenge: authentication_request
+            rp_challenge: authentication_request
                 .signature_protocol_parameters
-                .get_random_challenge()
+                .get_rp_challenge()
                 .ok_or(SmartIdClientError::InvalidSignatureProtocal(
-                    "Random challenge missing from authentication request",
+                    "RP challenge missing from authentication request",
                 ))?,
             session_start_time: Utc::now(),
         })
@@ -164,11 +164,11 @@ impl SessionConfig {
             session_id: authentication_notification_response.session_id,
             vc: authentication_notification_response.vc,
             requested_certificate_level: authentication_request.certificate_level.into(),
-            random_challenge: authentication_request
+            rp_challenge: authentication_request
                 .signature_protocol_parameters
-                .get_random_challenge()
+                .get_rp_challenge()
                 .ok_or(SmartIdClientError::InvalidSignatureProtocal(
-                    "Random challenge missing from authentication request",
+                    "RP challenge missing from authentication request",
                 ))?,
             session_start_time: Utc::now(),
         })
@@ -227,26 +227,28 @@ impl SessionConfig {
             SessionConfig::Signature { digest, .. } => Some(digest.clone()),
             SessionConfig::SignatureNotification { digest, .. } => Some(digest.clone()),
             SessionConfig::AuthenticationDynamicLink {
-                random_challenge, ..
+                rp_challenge: rp_challenge,
+                ..
             } => {
                 // The authentication digest requires the challenge and protocol which are available before the session is started
                 // It also requires the server random which is only available after the session result is returned
-                if let Some(ResponseSignature::ACSP_V1 { server_random, .. }) =
+                if let Some(ResponseSignature::ACSP_V2 { server_random, .. }) =
                     session_status.signature
                 {
                     Some(format!(
                         "{:?};{};{}",
-                        SignatureProtocol::ACSP_V1,
+                        SignatureProtocol::ACSP_V2,
                         server_random,
-                        random_challenge
+                        rp_challenge
                     ))
                 } else {
-                    // Authentication dynamic link can only be ACSP_V1, so this should never happen if the session is complete and successful
+                    // Authentication dynamic link can only be ACSP_V2, so this should never happen if the session is complete and successful
                     None
                 }
             }
             SessionConfig::AuthenticationNotification {
-                random_challenge, ..
+                rp_challenge: rp_challenge,
+                ..
             } => {
                 // The authentication digest requires the challenge and protocol which are available before the session is started
                 // It also requires the server random which is only available after the session result is returned
@@ -257,7 +259,7 @@ impl SessionConfig {
                         "{:?};{};{}",
                         SignatureProtocol::ACSP_V1,
                         server_random,
-                        random_challenge
+                        rp_challenge
                     ))
                 } else {
                     // Authentication notification can only be ACSP_V1, so this should never happen if the session is complete and successful

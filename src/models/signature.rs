@@ -99,7 +99,7 @@ pub enum SignatureRequestParameters {
     #[serde(rename_all = "camelCase")]
     ACSP_V1 {
         // A random value which is calculated by generating random bits with size in the range of 32 bytes …64 bytes and applying Base64 encoding (according to rfc4648).
-        random_challenge: String,
+        rp_challenge: String,
         signature_algorithm: SignatureAlgorithm,
     },
     #[serde(rename_all = "camelCase")]
@@ -118,28 +118,29 @@ impl SignatureRequestParameters {
         }
     }
 
-    pub(crate) fn get_random_challenge(&self) -> Option<String> {
+    pub(crate) fn get_rp_challenge(&self) -> Option<String> {
         match self {
-            SignatureRequestParameters::ACSP_V1 {
-                random_challenge, ..
-            } => Some(random_challenge.clone()),
+            SignatureRequestParameters::ACSP_V2 {
+                rp_challenge: rp_challenge,
+                ..
+            } => Some(rp_challenge.clone()),
             _ => None,
         }
     }
 
     // Get the digest from the request parameters this.
-    // This is only possible for RAW_DIGEST_SIGNATURE requests, as ACSP_V1 requests require a server random from the response to build the digest (auth)
+    // This is only possible for RAW_DIGEST_SIGNATURE requests, as ACSP_V2 requests require a server random from the response to build the digest (auth)
     pub(crate) fn get_digest(&self) -> Option<String> {
         match self {
             SignatureRequestParameters::RAW_DIGEST_SIGNATURE { digest, .. } => Some(digest.clone()),
-            // ACSP_V1 requests require a server random from the response to build the digest (auth)
-            // Use SessionConfig::get_digest if you need to build the digest for ACSP_V1 requests.
-            SignatureRequestParameters::ACSP_V1 { .. } => None,
+            // ACSP_V2 requests require a server random from the response to build the digest (auth)
+            // Use SessionConfig::get_digest if you need to build the digest for ACSP_V2 requests.
+            SignatureRequestParameters::ACSP_V2 { .. } => None,
         }
     }
 
     // Generates random bits with size in the range of 32 bytes …64 bytes and applies Base64 encoding.
-    fn generate_random_challenge() -> String {
+    fn generate_rp_challenge() -> String {
         let mut rng = ChaCha20Rng::from_rng(thread_rng()).expect("Failed to create RNG");
         let size = rng.gen_range(32..=64);
         let mut random_bytes = vec![0u8; size];
@@ -158,7 +159,7 @@ impl SignatureRequestParameters {
 #[non_exhaustive]
 pub enum ResponseSignature {
     #[serde(rename_all = "camelCase")]
-    ACSP_V1 {
+    ACSP_V2 {
         value: String,
         // A random value of 24 or more characters from Base64 alphabet, which is generated at RP API service side.
         // There are not any guarantees that the returned value length is the same in each call of the RP API.
@@ -209,9 +210,9 @@ impl ResponseSignature {
         }
     }
 
-    pub(crate) fn validate_acsp_v1(&self, random_challenge: String, cert: String) -> Result<()> {
+    pub(crate) fn validate_acsp_v2(&self, rp_challenge: String, cert: String) -> Result<()> {
         match self {
-            ResponseSignature::ACSP_V1 {
+            ResponseSignature::ACSP_V2 {
                 value,
                 server_random,
                 signature_algorithm,
@@ -249,9 +250,9 @@ impl ResponseSignature {
 
                 let digest = format!(
                     "{:?};{};{}",
-                    SignatureProtocol::ACSP_V1,
+                    SignatureProtocol::ACSP_V2,
                     server_random,
-                    random_challenge
+                    rp_challenge
                 );
 
                 let signature = BASE64_STANDARD
@@ -265,21 +266,21 @@ impl ResponseSignature {
                 )
             }
             _ => Err(SmartIdClientError::InvalidSignatureProtocal(
-                "Expected ACSP_V1 signature protocol",
+                "Expected ACSP_V2 signature protocol",
             )),
         }
     }
 
     pub fn get_value(&self) -> String {
         match self {
-            ResponseSignature::ACSP_V1 { value, .. } => value.clone(),
+            ResponseSignature::ACSP_V2 { value, .. } => value.clone(),
             ResponseSignature::RAW_DIGEST_SIGNATURE { value, .. } => value.clone(),
         }
     }
 
     pub fn get_signature_algorithm(&self) -> SignatureAlgorithm {
         match self {
-            ResponseSignature::ACSP_V1 {
+            ResponseSignature::ACSP_V2 {
                 signature_algorithm,
                 ..
             } => signature_algorithm.clone(),
@@ -324,62 +325,53 @@ mod tests {
     const INVALID_CERTIFICATE: &str = "";
 
     #[test]
-    fn test_new_acsp_v1() {
+    fn test_new_acsp_v2() {
         let signature_algorithm = SignatureAlgorithm::sha256WithRSAEncryption;
-        let params = SignatureRequestParameters::new_acsp_v1(signature_algorithm.clone());
+        let params = SignatureRequestParameters::new_acsp_v2(signature_algorithm.clone());
 
-        if let SignatureRequestParameters::ACSP_V1 {
-            random_challenge,
+        if let SignatureRequestParameters::ACSP_V2 {
+            rp_challenge: rp_challenge,
             signature_algorithm: alg,
         } = params
         {
-            assert!(
-                !random_challenge.is_empty(),
-                "Random challenge should not be empty"
-            );
+            assert!(!rp_challenge.is_empty(), "rp challenge should not be empty");
             assert_eq!(alg, signature_algorithm, "Signature algorithm should match");
         } else {
-            panic!("Expected SignatureRequestParameters::ACSP_V1 variant");
+            panic!("Expected SignatureRequestParameters::ACSP_V2 variant");
         }
     }
 
     #[test]
-    fn test_get_random_challenge() {
+    fn test_get_rp_challenge() {
         let signature_algorithm = SignatureAlgorithm::sha256WithRSAEncryption;
-        let params = SignatureRequestParameters::new_acsp_v1(signature_algorithm);
+        let params = SignatureRequestParameters::new_acsp_v2(signature_algorithm);
 
-        let random_challenge = params.get_random_challenge();
+        let rp_challenge = params.get_rp_challenge();
+        assert!(rp_challenge.is_some(), "rp challenge should be Some");
         assert!(
-            random_challenge.is_some(),
-            "Random challenge should be Some"
-        );
-        assert!(
-            !random_challenge.unwrap().is_empty(),
-            "Random challenge should not be empty"
+            !rp_challenge.unwrap().is_empty(),
+            "rp challenge should not be empty"
         );
     }
 
     #[test]
-    fn test_generate_random_challenge_input_value_is_correct_size() {
+    fn test_generate_rp_challenge_input_value_is_correct_size() {
         for _i in 0..100 {
-            let random_challenge = SignatureRequestParameters::generate_random_challenge();
-            assert!(
-                !random_challenge.is_empty(),
-                "Random challenge should not be empty"
-            );
+            let rp_challenge = SignatureRequestParameters::generate_rp_challenge();
+            assert!(!rp_challenge.is_empty(), "rp challenge should not be empty");
 
             // Base 64 encoding increases the size of the input, so this must be decoded before validating
-            let random_challenge_bytes = STANDARD_NO_PAD
-                .decode(random_challenge.as_bytes())
+            let rp_challenge_bytes = STANDARD_NO_PAD
+                .decode(rp_challenge.as_bytes())
                 .expect("Failed to decode Base64");
             assert!(
-                random_challenge_bytes.len() >= 32,
-                "Random challenge input should be at least 32 bytes long"
+                rp_challenge_bytes.len() >= 32,
+                "rp challenge input should be at least 32 bytes long"
             );
-            println!("{}", random_challenge_bytes.len());
+            println!("{}", rp_challenge_bytes.len());
             assert!(
-                random_challenge_bytes.len() <= 64,
-                "Random challenge input should be at most 64 bytes long"
+                rp_challenge_bytes.len() <= 64,
+                "rp challenge input should be at most 64 bytes long"
             );
         }
     }
@@ -448,39 +440,36 @@ mod tests {
     }
 
     #[test]
-    fn validate_acsp_v1_success() {
-        let random_challenge = "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=";
+    fn validate_acsp_v2_success() {
+        let rp_challenge = "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=";
         let server_random = "pAdXc1vgSHfaPzkn+nZfcaI/";
         let signature = "FiT0lbpQouGso/mAx+GpcJYJFdIiNLwBbliNjgq9H3daiUqPqAhn3sYFgM98q5DS7kQGix1Wx4kQItx1hqj0Bd6tnUgAxcv0BHf1Gxn3FygVxqtStVoYgVHsNjp7nMXJuKHgOR6YqNbxbO+fO+a/4t/YYkQlWd+MF0arY4QJ+jbRj8F13a57eQeZ8NEOVlZQq3FaeB0bcl8AsA32bRGQayKM6aBxTLHMmViaRMw5vMblVw/7GT6AKY1DlmNtw8/VvC/gkc6vtUVmfKbQNXc672jgrFZcOBJzkyW6oejbHO79g6N+jeTUo+1BF1Ao3zTpU4XyS5ArMy1+XoHN22wlnFw2diWXjMBKA/hDAIFQmgmeuc308O+CfFGoEhnQ6BknaMxabDJntjmxD+Hs4QxriSgk7rAGYpw1ZHBC/f+00Cr7EQ1RTaGX+beEroQtIa0/TeS4buRlM7SxiYXa6WZJKVP7oEmBk+aUMw6QnmbSl/mC1Vl6Mh7LtZ6jULDV40hvmfhrXdVYs9Ycyu9qLUE3GSuT7btV/WR7Hbpt0AowC/T6seH4wP4fihXtmA/IX4ount9+/Lk5g3AYyYK5iCBwL+yfKgwiw3kVfX9mT2d5iPY0m+ot6t6CrHoA33LeOX70n1xpNSfLsGWk5/2XtZgvrG+HcvJlbKv3fZbuoRsMKhU7hUQn5uhO7C4ewQzhMieCBwh1Sk3PNLFsnvx+eDgT7rUCVJXFnRPg6Slg2fwfCA1IC6zo4qL7uuO9OXE1Mx4saZta38ibmAkArRwAtG4meovqCF0APNcyrlwiqvnCJTJMOiv1nV1ZOM4RMVUOB1cI2LkqtzHRJUl9GMy8GLAuIGHLxZDl5IIYB6pn06N5XBlNs6z/x+VVqpNzWBBuAZUmyeizBjkab7Uac9H0WiH93J4K6QL+H+Zul+wp4Z9hfUyaWMzQoVEfVq/FySsudclDXx0HAupmEKDlo15S+o7dISC0JwvyXqjVTgKpONeKgRTrzxxbL/bNSfSFWXmAmZBM";
 
-        let response = ResponseSignature::ACSP_V1 {
+        let response = ResponseSignature::ACSP_V2 {
             value: signature.to_string(),
             server_random: server_random.to_string(),
             signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
         };
 
         assert!(response
-            .validate_acsp_v1(random_challenge.to_string(), VALID_CERTIFICATE.to_string())
+            .validate_acsp_v2(rp_challenge.to_string(), VALID_CERTIFICATE.to_string())
             .is_ok());
     }
 
     #[test]
-    fn validate_acsp_v1_invalid_signature() {
-        let random_challenge = "random-challenge";
+    fn validate_acsp_v2_invalid_signature() {
+        let rp_challenge = "random-challenge";
         let server_random = "server-random";
         let signature = "invalid-signature";
 
-        let response = ResponseSignature::ACSP_V1 {
+        let response = ResponseSignature::ACSP_V2 {
             value: signature.to_string(),
             server_random: server_random.to_string(),
             signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
         };
 
         assert!(response
-            .validate_acsp_v1(
-                random_challenge.to_string(),
-                INVALID_CERTIFICATE.to_string()
-            )
+            .validate_acsp_v2(rp_challenge.to_string(), INVALID_CERTIFICATE.to_string())
             .is_err());
     }
 }

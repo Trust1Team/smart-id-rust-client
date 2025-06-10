@@ -865,12 +865,13 @@ impl SmartIdClient {
     ) -> Result<()> {
         match session_config {
             SessionConfig::AuthenticationDynamicLink {
-                random_challenge, ..
+                rp_challenge: random_challenge,
+                ..
             } => {
                 let signature =
                     signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
-                signature.validate_acsp_v1(random_challenge, cert.value.clone())?;
+                signature.validate_acsp_v2(random_challenge, cert.value.clone())?;
 
                 // If no user identity is set, set it from the certificate
                 // This happens during all anonymous sessions
@@ -881,7 +882,8 @@ impl SmartIdClient {
                 Ok(())
             }
             SessionConfig::AuthenticationNotification {
-                random_challenge, ..
+                rp_challenge: random_challenge,
+                ..
             } => {
                 let signature =
                     signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
