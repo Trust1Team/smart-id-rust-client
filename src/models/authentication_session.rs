@@ -159,12 +159,12 @@ pub enum AuthenticationSignatureProtocol {
 
 // region AuthenticationSessionResponse
 
-pub(crate) type AuthenticationDynamicLinkResponse =
-    SmartIdAPIResponse<AuthenticationDynamicLinkSession>;
+pub(crate) type AuthenticationDeviceLinkResponse =
+    SmartIdAPIResponse<AuthenticationDeviceLinkSession>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AuthenticationDynamicLinkSession {
+pub struct AuthenticationDeviceLinkSession {
     #[serde(rename = "sessionID")]
     pub session_id: String,
     pub session_secret: String,

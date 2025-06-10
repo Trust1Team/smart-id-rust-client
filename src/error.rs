@@ -122,9 +122,9 @@ pub enum SmartIdClientError {
     #[error("Interaction parameters are invalid: {0}")]
     InvalidInteractionParametersException(&'static str),
 
-    /// Failed to generate dynamic link
-    #[error("Failed to generate dynamic link: {0}")]
-    GenerateDynamicLinkException(&'static str),
+    /// Failed to generate device link
+    #[error("Failed to generate device link: {0}")]
+    GenerateDeviceLinkException(&'static str),
 
     /// Invalid signature protocol
     #[error("Invalid signature protocol: {0}")]

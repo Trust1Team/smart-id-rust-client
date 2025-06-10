@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::models::authentication_session::{
-    AuthenticationDynamicLinkSession, AuthenticationNotificationSession, AuthenticationRequest,
+    AuthenticationDeviceLinkSession, AuthenticationNotificationSession, AuthenticationRequest,
 };
 use crate::models::certificate_choice_session::{
     CertificateChoiceRequest, CertificateChoiceSession,
@@ -64,7 +64,7 @@ impl Ord for CertificateLevel {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum SessionConfig {
-    AuthenticationDynamicLink {
+    AuthenticationDeviceLink {
         session_id: String,
         session_secret: String,
         session_token: String,
@@ -104,7 +104,7 @@ pub enum SessionConfig {
 impl SessionConfig {
     pub fn session_id(&self) -> &String {
         match self {
-            SessionConfig::AuthenticationDynamicLink { session_id, .. } => session_id,
+            SessionConfig::AuthenticationDeviceLink { session_id, .. } => session_id,
             SessionConfig::Signature { session_id, .. } => session_id,
             SessionConfig::CertificateChoice { session_id, .. } => session_id,
             SessionConfig::AuthenticationNotification { session_id, .. } => session_id,
@@ -114,7 +114,7 @@ impl SessionConfig {
 
     pub(crate) fn requested_certificate_level(&self) -> &CertificateLevel {
         match self {
-            SessionConfig::AuthenticationDynamicLink {
+            SessionConfig::AuthenticationDeviceLink {
                 requested_certificate_level,
                 ..
             } => requested_certificate_level,
@@ -137,11 +137,11 @@ impl SessionConfig {
         }
     }
 
-    pub fn from_authentication_dynamic_link_response(
-        authentication_response: AuthenticationDynamicLinkSession,
+    pub fn from_authentication_device_link_response(
+        authentication_response: AuthenticationDeviceLinkSession,
         authentication_request: AuthenticationRequest,
     ) -> Result<SessionConfig> {
-        Ok(SessionConfig::AuthenticationDynamicLink {
+        Ok(SessionConfig::AuthenticationDeviceLink {
             session_id: authentication_response.session_id,
             session_secret: authentication_response.session_secret,
             session_token: authentication_response.session_token,
@@ -174,7 +174,7 @@ impl SessionConfig {
         })
     }
 
-    pub fn from_signature_dynamic_link_request_response(
+    pub fn from_signature_device_link_request_response(
         signature_request_response: SignatureSession,
         signature_request: SignatureRequest,
     ) -> Result<SessionConfig> {
@@ -226,7 +226,7 @@ impl SessionConfig {
         match self {
             SessionConfig::Signature { digest, .. } => Some(digest.clone()),
             SessionConfig::SignatureNotification { digest, .. } => Some(digest.clone()),
-            SessionConfig::AuthenticationDynamicLink {
+            SessionConfig::AuthenticationDeviceLink {
                 rp_challenge: rp_challenge,
                 ..
             } => {
@@ -242,7 +242,7 @@ impl SessionConfig {
                         rp_challenge
                     ))
                 } else {
-                    // Authentication dynamic link can only be ACSP_V2, so this should never happen if the session is complete and successful
+                    // Authentication device link can only be ACSP_V2, so this should never happen if the session is complete and successful
                     None
                 }
             }

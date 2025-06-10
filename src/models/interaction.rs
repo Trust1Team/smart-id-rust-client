@@ -29,7 +29,7 @@ pub enum InteractionFlow {
 /// Represents different types of interactions that can be started on the users device
 ///
 /// There are limitations on which interactions can be used with which request types.
-/// For dynamic link flows, the following interactions are allowed:
+/// For device link flows, the following interactions are allowed:
 /// - DisplayTextAndPIN with display_text_60
 /// - ConfirmationMessage with display_text_200
 ///
@@ -163,4 +163,4 @@ mod interaction_tests {
     }
 }
 
-// endregion: Dynamic Link Tests
+// endregion: Device Link Tests

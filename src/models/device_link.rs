@@ -9,7 +9,7 @@ type HmacSha256 = Hmac<Sha256>;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
-pub enum DynamicLinkType {
+pub enum DeviceLinkType {
     QR,
     Web2App,
     App2App,
@@ -24,44 +24,44 @@ pub enum SessionType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct DynamicLink {
+pub(crate) struct DeviceLink {
     pub(crate) url: String,
     pub(crate) version: String,
     pub(crate) session_token: String,
     pub(crate) session_secret: String,
-    pub(crate) dynamic_link_type: DynamicLinkType,
+    pub(crate) device_link_type: DeviceLinkType,
     pub(crate) session_type: SessionType,
     pub(crate) session_start_time: DateTime<Utc>, // Used to calculated elapsed seconds since session start
     pub(crate) language_code: String,             // 3 letter language code according to ISO 639-2
 }
 
-impl DynamicLink {
+impl DeviceLink {
     pub(crate) fn payload(&self) -> String {
         let link = format!(
             "{:?}.{:?}.{}",
-            self.dynamic_link_type.clone(),
+            self.device_link_type.clone(),
             self.session_type.clone(),
             self.elapsed_seconds()
         );
         link
     }
 
-    pub fn generate_dynamic_link(&self) -> String {
+    pub fn generate_device_link(&self) -> String {
         format!(
-            "{}?version={}&sessionToken={}&dynamicLinkType={:?}&sessionType={:?}&elapsedSeconds={}&lang={}&authCode={}",
+            "{}?version={}&sessionToken={}&deviceLinkType={:?}&sessionType={:?}&elapsedSeconds={}&lang={}&authCode={}",
             self.url.clone(),
             self.version.clone(),
             self.session_token.clone(),
-            self.dynamic_link_type.clone(),
+            self.device_link_type.clone(),
             self.session_type.clone(),
             self.elapsed_seconds(),
             self.language_code,
-            self.generate_auth_code(),
+            self.generate_auth_code(),  
         )
     }
 
     /// Generate a HMAC SHA256 code for the session
-    /// As described here https://sk-eid.github.io/smart-id-documentation/rp-api/3.0.2/dynamic_link_flows.html#_dynamic_link_calculation
+    /// As described here https://sk-eid.github.io/smart-id-documentation/rp-api/device_link_flows.html
     pub(crate) fn generate_auth_code(&self) -> String {
         let secret = BASE64_STANDARD
             .decode(self.session_secret.clone())
@@ -85,20 +85,20 @@ impl DynamicLink {
     }
 }
 
-// region: Dynamic Link Tests
+// region: Device Link Tests
 #[cfg(test)]
 mod tests {
     use super::*;
     use chrono::Duration;
     use tracing_test::traced_test;
 
-    fn qr_dynamic_link() -> DynamicLink {
-        DynamicLink {
-            url: "https://sid.demo.sk.ee/dynamic-link".to_string(),
+    fn qr_device_link() -> DeviceLink {
+        DeviceLink {
+            url: "https://sid.demo.sk.ee/device-link".to_string(),
             version: "0.1".to_string(),
             session_token: "sessionToken".to_string(),
             session_secret: "qKzzHX6SG0ovfEdMuDEzCgTu".to_string(),
-            dynamic_link_type: DynamicLinkType::QR,
+            device_link_type: DeviceLinkType::QR,
             session_type: SessionType::auth,
             session_start_time: Utc::now(),
             language_code: "eng".to_string(),
@@ -108,34 +108,34 @@ mod tests {
     #[traced_test]
     #[tokio::test]
     async fn test_payload_generation() {
-        let dynamic_link = qr_dynamic_link();
-        assert_eq!(dynamic_link.payload(), "QR.auth.0");
+        let device_link = qr_device_link();
+        assert_eq!(device_link.payload(), "QR.auth.0");
     }
 
     #[traced_test]
     #[tokio::test]
     async fn test_payload_generation_elapsed_seconds() {
-        let dynamic_link = DynamicLink {
+        let device_link = DeviceLink {
             session_start_time: Utc::now() - Duration::seconds(20),
-            ..qr_dynamic_link()
+            ..qr_device_link()
         };
 
-        assert_eq!(dynamic_link.payload(), "QR.auth.20");
+        assert_eq!(device_link.payload(), "QR.auth.20");
     }
 
     #[traced_test]
     #[tokio::test]
     async fn test_generate_auth_code() {
-        let dynamic_link = DynamicLink {
+        let device_link = DeviceLink {
             session_secret: "ZspUAbC9eWgT3OXEu+vMyvUA".to_string(),
-            dynamic_link_type: DynamicLinkType::QR,
+            device_link_type: DeviceLinkType::QR,
             session_type: SessionType::auth,
-            ..qr_dynamic_link()
+            ..qr_device_link()
         };
 
-        println!("{:?}", dynamic_link.generate_dynamic_link());
+        println!("{:?}", device_link.generate_device_link());
         assert_eq!(
-            dynamic_link.generate_auth_code(),
+            device_link.generate_auth_code(),
             "WTtkXm95Hz1tImwoH96hfy8WjM2lAFg6P7d-B9Z73Ss="
         );
     }
@@ -143,12 +143,12 @@ mod tests {
     #[traced_test]
     #[tokio::test]
     async fn test_generate_auth_code_elapsed_seconds() {
-        let dynamic_link = DynamicLink {
+        let device_link = DeviceLink {
             session_start_time: Utc::now() - Duration::seconds(20),
-            ..qr_dynamic_link()
+            ..qr_device_link()
         };
         assert_eq!(
-            dynamic_link.generate_auth_code(),
+            device_link.generate_auth_code(),
             "IoJzCv6p28yRiOmKFlxFkCINPCXbhkiJWq7zWiaE580="
         );
     }
@@ -156,19 +156,19 @@ mod tests {
     #[traced_test]
     #[tokio::test]
     async fn test_generate_qr_code_url() {
-        let dynamic_link = qr_dynamic_link();
-        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link?version=0.1&sessionToken=sessionToken&dynamicLinkType=QR&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=E4xBQkwfmyspaZAfJoY5Pdz6-bAWytBe-wyiX3SQS5o=");
+        let device_link = qr_device_link();
+        assert_eq!(device_link.generate_device_link(), "https://sid.demo.sk.ee/device-link?version=0.1&sessionToken=sessionToken&deviceLinkType=QR&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=E4xBQkwfmyspaZAfJoY5Pdz6-bAWytBe-wyiX3SQS5o=");
     }
 
     #[traced_test]
     #[tokio::test]
     async fn test_generate_web2app_url() {
-        let dynamic_link = DynamicLink {
-            dynamic_link_type: DynamicLinkType::Web2App,
-            ..qr_dynamic_link()
+        let device_link = DeviceLink {
+            device_link_type: DeviceLinkType::Web2App,
+            ..qr_device_link()
         };
-        assert_eq!(dynamic_link.generate_dynamic_link(), "https://sid.demo.sk.ee/dynamic-link?version=0.1&sessionToken=sessionToken&dynamicLinkType=Web2App&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=ofcBeca9ATRjdO5Dr17RRvGnamYA5s5C3rmKXyuDN4g=");
+        assert_eq!(device_link.generate_device_link(), "https://sid.demo.sk.ee/device-link?version=0.1&sessionToken=sessionToken&deviceLinkType=Web2App&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=ofcBeca9ATRjdO5Dr17RRvGnamYA5s5C3rmKXyuDN4g=");
     }
 }
 
-// endregion: Dynamic Link Tests
+// endregion: Device Link Tests

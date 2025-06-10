@@ -4,13 +4,13 @@ use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::error::SmartIdClientError::NoSessionException;
 use crate::models::authentication_session::{
-    AuthenticationDynamicLinkResponse, AuthenticationNotificationResponse, AuthenticationRequest,
+    AuthenticationDeviceLinkResponse, AuthenticationNotificationResponse, AuthenticationRequest,
 };
 use crate::models::certificate_choice_session::{
     CertificateChoiceRequest, CertificateChoiceResponse,
 };
 use crate::models::common::{SessionConfig, VCCode};
-use crate::models::dynamic_link::{DynamicLink, DynamicLinkType, SessionType};
+use crate::models::device_link::{DeviceLink, DeviceLinkType, SessionType};
 use crate::models::session_status::{
     SessionCertificate, SessionResponse, SessionState, SessionStatus,
 };
@@ -35,18 +35,18 @@ const NOTIFICATION_CERTIFICATE_CHOICE_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
 const NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH: &str =
     "/certificatechoice/notification/document";
 
-const DYNAMIC_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/dynamic-link/etsi";
-const DYNAMIC_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/dynamic-link/document";
+const DYNAMIC_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/device-link/etsi";
+const DYNAMIC_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/device-link/document";
 #[allow(dead_code)]
 const NOTIFICATION_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/notification/etsi";
 #[allow(dead_code)]
 const NOTIFICATION_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/notification/document";
 
-const ANONYMOUS_DYNAMIC_LINK_AUTHENTICATION_PATH: &str = "/authentication/dynamic-link/anonymous";
+const ANONYMOUS_DYNAMIC_LINK_AUTHENTICATION_PATH: &str = "/authentication/device-link/anonymous";
 const DYNAMIC_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
-    "/authentication/dynamic-link/etsi";
+    "/authentication/device-link/etsi";
 const DYNAMIC_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str =
-    "/authentication/dynamic-link/document";
+    "/authentication/device-link/document";
 #[allow(dead_code)]
 const NOTIFICATION_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
     "/authentication/notification/etsi";
@@ -59,8 +59,8 @@ const NOTIFICATION_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str =
 /// Smart ID Client
 ///
 /// This struct provides methods to interact with the Smart ID service, including starting authentication,
-/// certificate choice, and signature sessions using dynamic links. It also includes methods to generate
-/// dynamic links, retrieve session status, and validate session responses.
+/// certificate choice, and signature sessions using device links. It also includes methods to generate
+/// device links, retrieve session status, and validate session responses.
 ///
 /// The client maintains session state and authenticated user identity to ensure the correct user is signing
 /// and to validate session responses.
@@ -115,7 +115,7 @@ impl SmartIdClient {
     /// Example Use Case:
     /// After starting an authentication session, you can cache the session_configuration (serialized).
     /// Then, when you receive a request for session status, you rebuild the client. After you cache the session_configuration again.
-    /// Then, when you receive a request for a Dynamic Link, you can rebuild the client from the session_configuration.
+    /// Then, when you receive a request for a Device Link, you can rebuild the client from the session_configuration.
     ///
     /// # Arguments
     ///
@@ -200,8 +200,8 @@ impl SmartIdClient {
 
     // region: Authentication
 
-    /// Starts an authentication session using a dynamic link.
-    /// Use the create dynamic link methods to generate the dynamic link to send to the user to continue the authentication process.
+    /// Starts an authentication session using a device link.
+    /// Use the create device link methods to generate the device link to send to the user to continue the authentication process.
     /// Use the get_session_status method to poll for the result.
     ///
     /// # Arguments
@@ -224,7 +224,7 @@ impl SmartIdClient {
         );
 
         let authentication_response =
-            post::<AuthenticationRequest, AuthenticationDynamicLinkResponse>(
+            post::<AuthenticationRequest, AuthenticationDeviceLinkResponse>(
                 path.as_str(),
                 &authentication_request,
                 self.cfg.client_request_timeout,
@@ -233,14 +233,14 @@ impl SmartIdClient {
 
         let session = authentication_response.into_result()?;
 
-        self.set_session(SessionConfig::from_authentication_dynamic_link_response(
+        self.set_session(SessionConfig::from_authentication_device_link_response(
             session,
             authentication_request,
         )?)
     }
 
-    /// Starts an authentication session with a document using a dynamic link.
-    /// Use the create dynamic link methods to generate the dynamic link to send to the user to continue the authentication process.
+    /// Starts an authentication session with a document using a device link.
+    /// Use the create device link methods to generate the device link to send to the user to continue the authentication process.
     /// Use the get_session_status method to poll for the result.
     ///
     /// # Arguments
@@ -266,7 +266,7 @@ impl SmartIdClient {
         );
 
         let authentication_response =
-            post::<AuthenticationRequest, AuthenticationDynamicLinkResponse>(
+            post::<AuthenticationRequest, AuthenticationDeviceLinkResponse>(
                 path.as_str(),
                 &authentication_request,
                 self.cfg.client_request_timeout,
@@ -275,14 +275,14 @@ impl SmartIdClient {
 
         let session = authentication_response.into_result()?;
 
-        self.set_session(SessionConfig::from_authentication_dynamic_link_response(
+        self.set_session(SessionConfig::from_authentication_device_link_response(
             session,
             authentication_request,
         )?)
     }
 
-    /// Starts an authentication session with an etsi using a dynamic link.
-    /// Use the create dynamic link methods to generate the dynamic link to send to the user to continue the authentication process.
+    /// Starts an authentication session with an etsi using a device link.
+    /// Use the create device link methods to generate the device link to send to the user to continue the authentication process.
     /// Use the get_session_status method to poll for the result.
     ///
     /// # Arguments
@@ -308,7 +308,7 @@ impl SmartIdClient {
         );
 
         let authentication_response =
-            post::<AuthenticationRequest, AuthenticationDynamicLinkResponse>(
+            post::<AuthenticationRequest, AuthenticationDeviceLinkResponse>(
                 path.as_str(),
                 &authentication_request,
                 self.cfg.client_request_timeout,
@@ -317,7 +317,7 @@ impl SmartIdClient {
 
         let session = authentication_response.into_result()?;
 
-        self.set_session(SessionConfig::from_authentication_dynamic_link_response(
+        self.set_session(SessionConfig::from_authentication_device_link_response(
             session,
             authentication_request,
         )?)
@@ -413,8 +413,8 @@ impl SmartIdClient {
 
     // region: Signature
 
-    /// Starts a signature session using a dynamic link and an ETSI identifier.
-    /// Use the create dynamic link methods to generate the dynamic link to send to the user to continue the signature process.
+    /// Starts a signature session using a device link and an ETSI identifier.
+    /// Use the create device link methods to generate the device link to send to the user to continue the signature process.
     /// Use the get_session_status method to poll for the result.
     ///
     /// # Arguments
@@ -448,14 +448,14 @@ impl SmartIdClient {
 
         let session = signature_response.into_result()?;
 
-        self.set_session(SessionConfig::from_signature_dynamic_link_request_response(
+        self.set_session(SessionConfig::from_signature_device_link_request_response(
             session,
             signature_request,
         )?)
     }
 
-    /// Starts a signature session using a dynamic link and a document number.
-    /// Use the create dynamic link methods to generate the dynamic link to send to the user to continue the signature process.
+    /// Starts a signature session using a device link and a document number.
+    /// Use the create device link methods to generate the device link to send to the user to continue the signature process.
     /// Use the get_session_status method to poll for the result.
     ///
     /// # Arguments
@@ -489,7 +489,7 @@ impl SmartIdClient {
 
         let session = signature_response.into_result()?;
 
-        self.set_session(SessionConfig::from_signature_dynamic_link_request_response(
+        self.set_session(SessionConfig::from_signature_device_link_request_response(
             session,
             signature_request,
         )?)
@@ -667,9 +667,9 @@ impl SmartIdClient {
 
     // endregion: Certificate Choice
 
-    // region: Dynamic Link
+    // region: Device Link
 
-    /// Generates a dynamic link for the current session.
+    /// Generates a device link for the current session.
     /// The link will redirect the device to the Smart-ID app.
     /// The link must be refreshed every 1 second.
     ///
@@ -680,7 +680,7 @@ impl SmartIdClient {
     ///
     /// # Returns
     ///
-    /// A `Result` containing the generated dynamic link as a `String` or an error.
+    /// A `Result` containing the generated device link as a `String` or an error.
     ///
     /// # Errors
     ///
@@ -689,29 +689,29 @@ impl SmartIdClient {
     /// - The session type is `CertificateChoice`.
     pub fn generate_dynamic_link(
         &self,
-        dynamic_link_type: DynamicLinkType,
+        dynamic_link_type: DeviceLinkType,
         language_code: &str,
     ) -> Result<String> {
         let session: SessionConfig = self.get_session()?;
 
         match session {
-            SessionConfig::AuthenticationDynamicLink {
+            SessionConfig::AuthenticationDeviceLink {
                 session_secret,
                 session_token,
                 session_start_time,
                 ..
             } => {
-                let dynamic_link = DynamicLink {
+                let dynamic_link = DeviceLink {
                     url: self.cfg.dynamic_link_url(),
                     version: "0.1".to_string(), //TODO: store this somewhere
                     session_token,
                     session_secret,
-                    dynamic_link_type: dynamic_link_type.clone(),
+                    device_link_type: dynamic_link_type.clone(),
                     session_type: SessionType::auth,
                     session_start_time,
                     language_code: language_code.to_string(),
                 };
-                let dynamic_link = dynamic_link.generate_dynamic_link();
+                let dynamic_link = dynamic_link.generate_device_link();
                 Ok(dynamic_link)
             }
             SessionConfig::Signature {
@@ -720,30 +720,30 @@ impl SmartIdClient {
                 session_start_time,
                 ..
             } => {
-                let dynamic_link = DynamicLink {
+                let dynamic_link = DeviceLink {
                     url: self.cfg.dynamic_link_url(),
                     version: "0.1".to_string(), //TODO: store this somewhere
                     session_token,
                     session_secret,
-                    dynamic_link_type: dynamic_link_type.clone(),
+                    device_link_type: dynamic_link_type.clone(),
                     session_type: SessionType::sign,
                     session_start_time,
                     language_code: language_code.to_string(),
                 };
-                let dynamic_link = dynamic_link.generate_dynamic_link();
-                debug!("Generated dynamic link: {}", dynamic_link);
+                let dynamic_link = dynamic_link.generate_device_link();
+                debug!("Generated device link: {}", dynamic_link);
                 Ok(dynamic_link)
             }
             _ => {
-                Err(SmartIdClientError::GenerateDynamicLinkException(
-                    "Can only generate dynamic links for authentication or signature dynamic link sessions",
+                Err(SmartIdClientError::GenerateDeviceLinkException(
+                    "Can only generate device links for authentication or signature device link sessions",
                 ))
             }
 
         }
     }
 
-    // endregion: Dynamic Link
+    // endregion: Device Link
 
     // region: Validation
 
@@ -864,7 +864,7 @@ impl SmartIdClient {
         cert: SessionCertificate,
     ) -> Result<()> {
         match session_config {
-            SessionConfig::AuthenticationDynamicLink {
+            SessionConfig::AuthenticationDeviceLink {
                 rp_challenge: random_challenge,
                 ..
             } => {
@@ -921,7 +921,7 @@ impl SmartIdClient {
                 signature.validate_raw_digest(digest, cert.value.clone())
             }
             _ => {
-                debug!("Signature validation only needed for dynamic link authentication and signature sessions");
+                debug!("Signature validation only needed for device link authentication and signature sessions");
                 Ok(())
             }
         }

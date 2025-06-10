@@ -7,7 +7,7 @@ use smart_id_rust_client::models::authentication_session::{
     AuthenticationCertificateLevel, AuthenticationRequest,
 };
 use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceRequest;
-use smart_id_rust_client::models::dynamic_link::DynamicLinkType;
+use smart_id_rust_client::models::device_link::{DeviceLinkType, DeviceLinkType};
 use smart_id_rust_client::models::interaction::Interaction;
 use smart_id_rust_client::models::session_status::EndResult;
 use smart_id_rust_client::models::signature::SignatureAlgorithm;
@@ -66,7 +66,7 @@ async fn test_authentication_qr() -> Result<()> {
         .start_authentication_dynamic_link_anonymous_session(authentication_request)
         .await?;
 
-    let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "eng")?;
+    let qr_code_link = smart_id_client.generate_dynamic_link(DeviceLinkType::QR, "eng")?;
 
     // Open the QR code in the computer's default image viewer
     // Scan the QR code with the Smart-ID app
@@ -107,7 +107,7 @@ async fn test_authentication_web_to_app() -> Result<()> {
         .start_authentication_dynamic_link_anonymous_session(authentication_request)
         .await?;
 
-    let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::Web2App, "eng")?;
+    let web_to_app_link = smart_id_client.generate_dynamic_link(DeviceLinkType::Web2App, "eng")?;
 
     // Open the QR code in the computer's default image viewer
     // THIS SHOULD NOT BE SCANNED WITH THE SMART-ID APP
@@ -149,7 +149,7 @@ async fn test_authentication_app_to_app() -> Result<()> {
         .start_authentication_dynamic_link_anonymous_session(authentication_request)
         .await?;
 
-    let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::App2App, "eng")?;
+    let web_to_app_link = smart_id_client.generate_dynamic_link(DeviceLinkType::App2App, "eng")?;
 
     // Open the QR code in the computer's default image viewer
     // THIS SHOULD NOT BE SCANNED WITH THE SMART-ID APP
@@ -269,7 +269,7 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
         .start_authentication_dynamic_link_anonymous_session(authentication_request)
         .await?;
 
-    let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "eng")?;
+    let qr_code_link = smart_id_client.generate_dynamic_link(DeviceLinkType::QR, "eng")?;
 
     // Open the QR code in the computer's default image viewer
     // Scan the QR code with the Smart-ID app
@@ -325,7 +325,7 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
         )
         .await?;
 
-    let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "eng")?;
+    let qr_code_link = smart_id_client.generate_dynamic_link(DeviceLinkType::QR, "eng")?;
 
     // Open the QR code in the computer's default image viewer
     // Scan the QR code with the Smart-ID app

@@ -2,7 +2,7 @@
 //!
 //! Provides a rust api client for [Smart ID](https://www.smart-id.com/) REST api.
 //! Including support for authentication, signing and certificate choice.
-//! As well as support for generating dynamic links for the Smart ID app.
+//! As well as support for generating device links for the Smart ID app.
 //!
 //! Maintained by [Trust1Team](https://trust1team.com) partner of [SK ID](https://www.skidsolutions.eu/) for [Smart ID](https://www.smart-id.com/)
 //!
@@ -14,7 +14,7 @@
 //! use crate::smart_id_rust_client::models::authentication_session::AuthenticationRequest;
 //! use crate::smart_id_rust_client::models::signature_session::SignatureRequest;
 //! use crate::smart_id_rust_client::models::certificate_choice_session::CertificateChoiceRequest;
-//! use crate::smart_id_rust_client::models::dynamic_link::DynamicLinkType;
+//! use crate::smart_id_rust_client::models::device_link::DeviceLinkType;
 //! use crate::smart_id_rust_client::models::user_identity::UserIdentity;
 //! use smart_id_rust_client::models::interaction::Interaction;
 //! use smart_id_rust_client::error::Result;
@@ -36,9 +36,9 @@
 //!     )?;
 //!     smart_id_client.start_authentication_dynamic_link_anonymous_session(authentication_request).await?;
 //!
-//!     // Example: Generate a dynamic link
+//!     // Example: Generate a device link
 //!     // This must be converted to a QR code to be scanned by the Smart ID app
-//!     let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "eng")?;
+//!     let qr_code_link = smart_id_client.generate_dynamic_link(DeviceLinkType::QR, "eng")?;
 //!     println!("QR Code Link: {}", qr_code_link);
 //!
 //!     Ok(())

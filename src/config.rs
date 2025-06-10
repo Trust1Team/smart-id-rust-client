@@ -2,7 +2,7 @@ use crate::error::Result;
 use crate::error::SmartIdClientError;
 use std::env;
 
-const DYNAMIC_LINK_PATH: &str = "/dynamic-link";
+const DYNAMIC_LINK_PATH: &str = "/device-link"; // TODO: This is now returned from hte device link session endpoint
 
 /// Smart ID Client Configuration
 ///
