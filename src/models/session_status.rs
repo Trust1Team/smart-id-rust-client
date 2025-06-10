@@ -113,7 +113,7 @@ pub enum EndResult {
     // Failure in executing the protocol
     PROTOCOL_FAILURE,
     // Generic server error
-    SERVER_ERROR
+    SERVER_ERROR,
     #[default]
     UNKNOWN,
 }

@@ -21,7 +21,6 @@ use serde_with::skip_serializing_none;
 /// * `certificate_level` - The level of the certificate required for authentication.
 /// * `signature_protocol` - The protocol used for the signature, currently only ACSP_V1 is supported.
 /// * `signature_protocol_parameters` - The parameters for the signature protocol.
-/// * `nonce` - An optional nonce for the request.
 /// * `allowed_interactions_order` - A list of allowed interactions for the authentication, at least one is required.
 /// * `request_properties` - Optional properties for the request.
 /// * `capabilities` - Used only when agreed with Smart-ID provider. When omitted request capabilities are derived from certificateLevel parameter.
@@ -57,7 +56,6 @@ pub struct AuthenticationRequest {
     pub certificate_level: AuthenticationCertificateLevel,
     pub signature_protocol: AuthenticationSignatureProtocol,
     pub signature_protocol_parameters: SignatureRequestParameters,
-    pub nonce: Option<String>,
     pub allowed_interactions_order: Vec<Interaction>,
     pub request_properties: Option<RequestProperties>,
     pub capabilities: Option<Vec<String>>,
@@ -123,7 +121,6 @@ impl AuthenticationRequest {
             signature_protocol_parameters: SignatureRequestParameters::new_acsp_v1(
                 signature_algorithm,
             ),
-            nonce: None,
             allowed_interactions_order: interactions,
             request_properties: None,
             capabilities: None,
