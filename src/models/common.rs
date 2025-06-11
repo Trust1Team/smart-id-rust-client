@@ -11,7 +11,6 @@ use crate::models::certificate_choice_session::{
 use crate::models::session_status::SessionStatusResponse;
 use crate::models::signature::{
     ResponseSignature, SignatureAlgorithm, SignatureProtocol, SignatureProtocolParameters,
-    SignatureRequestAlgorithmParameters,
 };
 use crate::models::signature_session::{
     SignatureDeviceLinkRequest, SignatureDeviceLinkSession, SignatureNotificationLinkedRequest,
@@ -22,6 +21,7 @@ use base64::Engine;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+use strum_macros::{AsRefStr, Display, EnumString};
 use tracing::error;
 
 /// Request Properties
@@ -87,7 +87,6 @@ pub enum SessionConfig {
         certificate_level: CertificateLevel,
         signature_protocol: SignatureProtocol,
         signature_protocol_parameters: SignatureProtocolParameters,
-        signature_algorithm_parameters: SignatureRequestAlgorithmParameters,
         interactions: String,
 
         // Calculated values
@@ -105,7 +104,6 @@ pub enum SessionConfig {
         certificate_level: CertificateLevel,
         signature_protocol: SignatureProtocol,
         signature_protocol_parameters: SignatureProtocolParameters,
-        signature_algorithm_parameters: SignatureRequestAlgorithmParameters,
         interactions: String,
         vc_type: VCCodeType,
 
@@ -123,11 +121,10 @@ pub enum SessionConfig {
         // Request values
         relying_party_uuid: String,
         relying_party_name: String,
-        inial_callback_url: String,
+        initial_callback_url: String,
         certificate_level: CertificateLevel,
         signature_protocol: SignatureProtocol,
         signature_protocol_parameters: SignatureProtocolParameters,
-        signature_algorithm_parameters: SignatureRequestAlgorithmParameters,
         interactions: String,
 
         // Calculated values
@@ -249,13 +246,14 @@ impl SessionConfig {
             device_link_base: authentication_response.device_link_base,
             relying_party_uuid: authentication_request.relying_party_uuid,
             relying_party_name: authentication_request.relying_party_name,
-            initial_callback_url: authentication_request.initial_callback_url,
+            initial_callback_url: authentication_request
+                .initial_callback_url
+                .unwrap_or("".to_string()),
             certificate_level: authentication_request.certificate_level.into(),
             signature_protocol: authentication_request.signature_protocol,
             signature_protocol_parameters: authentication_request
                 .signature_protocol_parameters
                 .clone(),
-            signature_algorithm_parameters: authentication_request.signature_algorithm_parameters,
             interactions: authentication_request.interactions,
             rp_challenge: authentication_request
                 .signature_protocol_parameters
@@ -281,7 +279,6 @@ impl SessionConfig {
             signature_protocol_parameters: authentication_request
                 .signature_protocol_parameters
                 .clone(),
-            signature_algorithm_parameters: authentication_request.signature_algorithm_parameters,
             interactions: authentication_request.interactions,
             vc_type: authentication_request.vc_type,
             rp_challenge: authentication_request
@@ -314,9 +311,8 @@ impl SessionConfig {
             certificate_level: signature_request.certificate_level,
             signature_protocol: signature_request.signature_protocol,
             signature_protocol_parameters: signature_request.signature_protocol_parameters.clone(),
-            signature_algorithm_parameters: signature_request.signature_algorithm_parameters,
             session_start_time: Utc::now(),
-            inial_callback_url: signature_request.initial_callback_url,
+            initial_callback_url: signature_request.initial_callback_url,
             interactions: signature_request.interactions,
         })
     }
@@ -356,7 +352,7 @@ impl SessionConfig {
             signature_protocol: signature_request.signature_protocol,
             signature_protocol_parameters: signature_request.signature_protocol_parameters.clone(),
             linked_session_id: signature_request.linked_session_id,
-            session_start_time: Default::default(),
+            session_start_time: Utc::now(),
             digest: signature_request
                 .signature_protocol_parameters
                 .get_digest()
@@ -510,4 +506,16 @@ pub struct VCCode {
 #[non_exhaustive]
 pub enum VCCodeType {
     numeric4,
+}
+
+/// Enum representing the scheme (environment) name.
+/// Refer to to the 'Environment' docs for more details https://sk-eid.github.io/smart-id-documentation/environments.html
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, AsRefStr, Display, EnumString)]
+#[strum(serialize_all = "kebab-case")]
+#[serde(rename_all = "kebab-case")]
+#[allow(non_camel_case_types)]
+#[non_exhaustive]
+pub enum SchemeName {
+    smart_id,
+    smart_id_demo,
 }

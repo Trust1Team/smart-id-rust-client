@@ -34,11 +34,11 @@
 //!         SignatureAlgorithm::RsassaPss,
 //!         AuthenticationCertificateLevel::QUALIFIED,
 //!     )?;
-//!     smart_id_client.start_authentication_dynamic_link_anonymous_session(authentication_request).await?;
+//!     smart_id_client.start_authentication_device_link_anonymous_session(authentication_request).await?;
 //!
 //!     // Example: Generate a device link
 //!     // This must be converted to a QR code to be scanned by the Smart ID app
-//!     let qr_code_link = smart_id_client.generate_dynamic_link(DeviceLinkType::QR, "eng")?;
+//!     let qr_code_link = smart_id_client.generate_device_link(DeviceLinkType::QR, "eng")?;
 //!     println!("QR Code Link: {}", qr_code_link);
 //!
 //!     Ok(())

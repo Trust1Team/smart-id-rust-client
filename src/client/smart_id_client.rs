@@ -13,7 +13,8 @@ use crate::models::certificate_choice_session::{
     SigningCertificateResponseState,
 };
 use crate::models::common::{SessionConfig, VCCode};
-use crate::models::device_link::{DeviceLink, DeviceLinkType, SessionType};
+use crate::models::device_link::DeviceLink::{CrossDeviceLink, SameDeviceLink};
+use crate::models::device_link::{DeviceLinkType, SessionType};
 use crate::models::session_status::{
     SessionCertificate, SessionResponse, SessionState, SessionStatusResponse,
 };
@@ -38,21 +39,22 @@ const NOTIFICATION_CERTIFICATE_CHOICE_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
     "/signature/certificate-choice/notification/etsi";
 const NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH: &str =
     "/signature/certificate-choice/notification/document";
+#[allow(dead_code)]
 const ANONYMOUSE_DEVICE_LINK_CERTIFICATE_CHOICE_PATH: &str =
     "/signature/certificate-choice/device-link/anonymous";
 const SIGNING_CERTIFICATE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/certificate";
 
-const DYNAMIC_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/device-link/etsi";
-const DYNAMIC_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/device-link/document";
+const DEVICE_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/device-link/etsi";
+const DEVICE_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/device-link/document";
 #[allow(dead_code)]
 const NOTIFICATION_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/notification/etsi";
 #[allow(dead_code)]
 const NOTIFICATION_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/notification/document";
 
-const ANONYMOUS_DYNAMIC_LINK_AUTHENTICATION_PATH: &str = "/authentication/device-link/anonymous";
-const DYNAMIC_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
+const ANONYMOUS_DEVICE_LINK_AUTHENTICATION_PATH: &str = "/authentication/device-link/anonymous";
+const DEVICE_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
     "/authentication/device-link/etsi";
-const DYNAMIC_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str =
+const DEVICE_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str =
     "/authentication/device-link/document";
 #[allow(dead_code)]
 const NOTIFICATION_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
@@ -60,6 +62,9 @@ const NOTIFICATION_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
 #[allow(dead_code)]
 const NOTIFICATION_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str =
     "/authentication/notification/document";
+
+// Currently only support for 1.0
+const DEVICE_LINK_VERSION: &str = "1.0";
 
 // endregion: Path definitions
 
@@ -218,7 +223,7 @@ impl SmartIdClient {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_authentication_dynamic_link_anonymous_session(
+    pub async fn start_authentication_device_link_anonymous_session(
         &self,
         authentication_request: AuthenticationDeviceLinkRequest,
     ) -> Result<()> {
@@ -227,7 +232,7 @@ impl SmartIdClient {
         let path = format!(
             "{}{}",
             self.cfg.api_url(),
-            ANONYMOUS_DYNAMIC_LINK_AUTHENTICATION_PATH,
+            ANONYMOUS_DEVICE_LINK_AUTHENTICATION_PATH,
         );
 
         let authentication_response =
@@ -258,7 +263,7 @@ impl SmartIdClient {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_authentication_dynamic_link_document_session(
+    pub async fn start_authentication_device_link_document_session(
         &self,
         authentication_request: AuthenticationDeviceLinkRequest,
         document_number: String,
@@ -268,7 +273,7 @@ impl SmartIdClient {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
-            DYNAMIC_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH,
+            DEVICE_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH,
             document_number,
         );
 
@@ -300,7 +305,7 @@ impl SmartIdClient {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_authentication_dynamic_link_etsi_session(
+    pub async fn start_authentication_device_link_etsi_session(
         &self,
         authentication_request: AuthenticationDeviceLinkRequest,
         etsi: String,
@@ -310,7 +315,7 @@ impl SmartIdClient {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
-            DYNAMIC_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH,
+            DEVICE_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH,
             etsi,
         );
 
@@ -432,7 +437,7 @@ impl SmartIdClient {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_signature_dynamic_link_etsi_session(
+    pub async fn start_signature_device_link_etsi_session(
         &self,
         signature_request: SignatureDeviceLinkRequest,
         etsi: String,
@@ -442,7 +447,7 @@ impl SmartIdClient {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
-            DYNAMIC_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH,
+            DEVICE_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH,
             etsi,
         );
 
@@ -473,7 +478,7 @@ impl SmartIdClient {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_signature_dynamic_link_document_session(
+    pub async fn start_signature_device_link_document_session(
         &self,
         signature_request: SignatureDeviceLinkRequest,
         document_number: String,
@@ -483,7 +488,7 @@ impl SmartIdClient {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
-            DYNAMIC_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH,
+            DEVICE_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH,
             document_number,
         );
 
@@ -779,7 +784,7 @@ impl SmartIdClient {
     ///
     /// # Arguments
     ///
-    /// * `dynamic_link_type` - This can be a QR, Web2App or App2App link.
+    /// * `device_link_type` - This can be a QR, Web2App or App2App link.
     /// * `language_code` - The language code (3-letter ISO 639-2 code).
     ///
     /// # Returns
@@ -791,52 +796,160 @@ impl SmartIdClient {
     /// This function will return an error if:
     /// - There is no running session.
     /// - The session type is `CertificateChoice`.
-    pub fn generate_dynamic_link(
+    pub fn generate_device_link(
         &self,
-        dynamic_link_type: DeviceLinkType,
+        device_link_type: DeviceLinkType,
         language_code: &str,
     ) -> Result<String> {
         let session: SessionConfig = self.get_session()?;
 
         match session {
             SessionConfig::AuthenticationDeviceLink {
-                session_secret,
-                session_token,
+                session_secret, 
+                session_token, 
+                device_link_base,
+                relying_party_name, 
+                initial_callback_url,
+                signature_protocol,
+                interactions, 
+                rp_challenge,  
                 session_start_time,
                 ..
             } => {
-                let dynamic_link = DeviceLink {
-                    url: self.cfg.dynamic_link_url(),
-                    version: "0.1".to_string(), //TODO: store this somewhere
-                    session_token,
-                    session_secret,
-                    device_link_type: dynamic_link_type.clone(),
-                    session_type: SessionType::auth,
-                    session_start_time,
-                    language_code: language_code.to_string(),
+                let device_link = match device_link_type {
+                    DeviceLinkType::Web2App | DeviceLinkType::App2App => {
+                        SameDeviceLink {
+                            device_link_base,
+                            device_link_type,
+                            session_token,
+                            session_type: SessionType::auth,
+                            version: DEVICE_LINK_VERSION.to_string(),
+                            language_code: language_code.to_string(),
+                            session_secret,
+                            scheme_name: self.cfg.scheme_name.clone(),
+                            signature_protocol: Some(signature_protocol),
+                            rp_challenge_or_digest: rp_challenge,
+                            relying_party_name,
+                            brokered_rp_name: "".to_string(),
+                            interactions,
+                            initial_callback_url,
+                        }
+                    }
+                    DeviceLinkType::QR => {
+                        CrossDeviceLink {
+                            device_link_base,
+                            device_link_type,
+                            session_start_time,
+                            session_token,
+                            session_type: SessionType::auth,
+                            version: DEVICE_LINK_VERSION.to_string(),
+                            language_code: language_code.to_string(),
+                            session_secret,
+                            scheme_name: self.cfg.scheme_name.clone(),
+                            relying_party_name,
+                            brokered_rp_name: "".to_string(),
+                            initial_callback_url,
+                        }
+                    }
                 };
-                let dynamic_link = dynamic_link.generate_device_link();
-                Ok(dynamic_link)
+                Ok(device_link.generate_device_link())
             }
             SessionConfig::SignatureDeviceLink {
                 session_secret,
                 session_token,
+                device_link_base,
+                relying_party_name,
+                initial_callback_url,
+                signature_protocol,
+                interactions,
+                digest,
                 session_start_time,
                 ..
             } => {
-                let dynamic_link = DeviceLink {
-                    url: self.cfg.dynamic_link_url(),
-                    version: "0.1".to_string(), //TODO: store this somewhere
-                    session_token,
-                    session_secret,
-                    device_link_type: dynamic_link_type.clone(),
-                    session_type: SessionType::sign,
-                    session_start_time,
-                    language_code: language_code.to_string(),
+                let device_link = match device_link_type {
+                    DeviceLinkType::Web2App | DeviceLinkType::App2App => {
+                        SameDeviceLink {
+                            device_link_base,
+                            device_link_type,
+                            session_token,
+                            session_type: SessionType::auth,
+                            version: DEVICE_LINK_VERSION.to_string(),
+                            language_code: language_code.to_string(),
+                            session_secret,
+                            scheme_name: self.cfg.scheme_name.clone(),
+                            signature_protocol: Some(signature_protocol),
+                            rp_challenge_or_digest: digest,
+                            relying_party_name,
+                            brokered_rp_name: "".to_string(),
+                            interactions,
+                            initial_callback_url,
+                        }
+                    }
+                    DeviceLinkType::QR => {
+                        CrossDeviceLink {
+                            device_link_base,
+                            device_link_type,
+                            session_start_time,
+                            session_token,
+                            session_type: SessionType::auth,
+                            version: DEVICE_LINK_VERSION.to_string(),
+                            language_code: language_code.to_string(),
+                            session_secret,
+                            scheme_name: self.cfg.scheme_name.clone(),
+                            relying_party_name,
+                            brokered_rp_name: "".to_string(),
+                            initial_callback_url,
+                        }
+                    }
                 };
-                let dynamic_link = dynamic_link.generate_device_link();
-                debug!("Generated device link: {}", dynamic_link);
-                Ok(dynamic_link)
+                Ok(device_link.generate_device_link())
+            }
+            SessionConfig::CertificateChoiceDeviceLink{ 
+                session_token, 
+                session_secret, 
+                device_link_base,
+                relying_party_name, 
+                initial_callback_url,
+                session_start_time, 
+                .. 
+            } => {
+                let device_link = match device_link_type {
+                    DeviceLinkType::Web2App | DeviceLinkType::App2App => {
+                        SameDeviceLink {
+                            device_link_base,
+                            device_link_type,
+                            session_token,
+                            session_type: SessionType::auth,
+                            version: DEVICE_LINK_VERSION.to_string(),
+                            language_code: language_code.to_string(),
+                            session_secret,
+                            scheme_name: self.cfg.scheme_name.clone(),
+                            signature_protocol: None,
+                            rp_challenge_or_digest: "".to_string(),
+                            relying_party_name,
+                            brokered_rp_name: "".to_string(),
+                            interactions: "".to_string(),
+                            initial_callback_url,
+                        }
+                    }
+                    DeviceLinkType::QR => {
+                        CrossDeviceLink {
+                            device_link_base,
+                            device_link_type,
+                            session_start_time,
+                            session_token,
+                            session_type: SessionType::auth,
+                            version: DEVICE_LINK_VERSION.to_string(),
+                            language_code: language_code.to_string(),
+                            session_secret,
+                            scheme_name: self.cfg.scheme_name.clone(),
+                            relying_party_name,
+                            brokered_rp_name: "".to_string(),
+                            initial_callback_url,
+                        }
+                    }
+                };
+                Ok(device_link.generate_device_link())
             }
             _ => {
                 Err(SmartIdClientError::GenerateDeviceLinkException(

@@ -56,6 +56,7 @@ impl CertificateChoiceDeviceLinkRequest {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) type CertificateChoiceDeviceLinkResponse =
     SmartIdAPIResponse<CertificateChoiceDeviceLinkSession>;
 
@@ -163,7 +164,8 @@ pub struct SigningCertificateRequest {
     pub certificate_level: CertificateLevel,
 }
 
-pub type SigningCertificateResponse = SmartIdAPIResponse<SigningCertificateResult>;
+#[allow(dead_code)]
+pub(crate) type SigningCertificateResponse = SmartIdAPIResponse<SigningCertificateResult>;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

@@ -66,7 +66,6 @@ pub struct SignatureDeviceLinkRequest {
     pub certificate_level: CertificateLevel,
     pub signature_protocol: SignatureProtocol,
     pub signature_protocol_parameters: SignatureProtocolParameters,
-    pub signature_algorithm_parameters: SignatureRequestAlgorithmParameters,
     pub nonce: Option<String>,
     pub interactions: String,
     pub request_properties: Option<RequestProperties>,
@@ -127,8 +126,10 @@ impl SignatureDeviceLinkRequest {
             signature_protocol_parameters: SignatureProtocolParameters::RAW_DIGEST_SIGNATURE {
                 digest,
                 signature_algorithm,
+                signature_algorithm_parameters: SignatureRequestAlgorithmParameters {
+                    hash_algorithm,
+                },
             },
-            signature_algorithm_parameters: SignatureRequestAlgorithmParameters { hash_algorithm },
             nonce: None,
             interactions: encoded_interactions,
             request_properties: None,
@@ -176,7 +177,7 @@ pub struct SignatureDeviceLinkSession {
 /// use smart_id_rust_client::config::SmartIDConfig;
 /// use smart_id_rust_client::models::signature_session::SignatureNotificationRequest;
 /// use smart_id_rust_client::models::interaction::Interaction;
-/// use smart_id_rust_client::models::signature::SignatureAlgorithm;
+/// use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 /// use smart_id_rust_client::error::Result;///
 ///
 /// use smart_id_rust_client::models::common::SessionConfig::SignatureNotification;
@@ -190,6 +191,7 @@ pub struct SignatureDeviceLinkSession {
 ///         interactions,
 ///         "base64-encoded-digest".to_string(),
 ///         SignatureAlgorithm::RsassaPss,
+///         HashingAlgorithm::sha_256,
 ///     )
 /// }
 /// ```
@@ -228,6 +230,7 @@ impl SignatureNotificationRequest {
         interactions: Vec<Interaction>,
         digest: String,
         signature_algorithm: SignatureAlgorithm,
+        hash_algorithm: HashingAlgorithm,
     ) -> Result<Self> {
         if interactions.is_empty() {
             return Err(SmartIdClientError::ConfigMissingException(
@@ -258,6 +261,9 @@ impl SignatureNotificationRequest {
             signature_protocol_parameters: SignatureProtocolParameters::RAW_DIGEST_SIGNATURE {
                 digest,
                 signature_algorithm,
+                signature_algorithm_parameters: SignatureRequestAlgorithmParameters {
+                    hash_algorithm,
+                },
             },
             nonce: None,
             interactions: encoded_interactions,
@@ -303,7 +309,7 @@ pub struct SignatureNotificationSession {
 /// use smart_id_rust_client::config::SmartIDConfig;
 /// use smart_id_rust_client::models::signature_session::SignatureNotificationLinkedRequest;
 /// use smart_id_rust_client::models::interaction::Interaction;
-/// use smart_id_rust_client::models::signature::SignatureAlgorithm;
+/// use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 /// use smart_id_rust_client::error::Result;
 ///
 /// fn create_signature_request(cfg: &SmartIDConfig) -> Result<SignatureNotificationLinkedRequest> {
@@ -316,6 +322,7 @@ pub struct SignatureNotificationSession {
 ///         "base64-encoded-digest".to_string(),
 ///         SignatureAlgorithm::RsassaPss,
 ///         "56e1c1d0-dc07-4c71-890b-6200856b8c75".to_string(),
+///         HashingAlgorithm::sha_256,
 ///     )
 /// }
 /// ```
@@ -357,6 +364,7 @@ impl SignatureNotificationLinkedRequest {
         digest: String,
         signature_algorithm: SignatureAlgorithm,
         linked_session_id: String,
+        hash_algorithm: HashingAlgorithm,
     ) -> Result<Self> {
         if interactions.is_empty() {
             return Err(SmartIdClientError::ConfigMissingException(
@@ -388,6 +396,9 @@ impl SignatureNotificationLinkedRequest {
             signature_protocol_parameters: SignatureProtocolParameters::RAW_DIGEST_SIGNATURE {
                 digest,
                 signature_algorithm,
+                signature_algorithm_parameters: SignatureRequestAlgorithmParameters {
+                    hash_algorithm,
+                },
             },
             nonce: None,
             interactions: encoded_interactions,

@@ -1,13 +1,16 @@
-use base64::prelude::{BASE64_STANDARD, BASE64_URL_SAFE};
-use base64::Engine;
+use crate::models::common::SchemeName;
+use crate::models::signature::SignatureProtocol;
+use base64::prelude::{BASE64_URL_SAFE, BASE64_URL_SAFE_NO_PAD};
+use base64::{engine::general_purpose, Engine as _};
 use chrono::{DateTime, Utc};
 use hmac::{Hmac, Mac};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
+use strum_macros::{AsRefStr, Display};
 
 type HmacSha256 = Hmac<Sha256>;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, AsRefStr, Display)]
 #[allow(non_camel_case_types)]
 pub enum DeviceLinkType {
     QR,
@@ -15,73 +18,230 @@ pub enum DeviceLinkType {
     App2App,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, AsRefStr, Display)]
 #[allow(non_camel_case_types)]
 pub enum SessionType {
     auth,
     sign,
-    certificateChoice,
+    cert,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct DeviceLink {
-    pub(crate) url: String,
-    pub(crate) version: String,
-    pub(crate) session_token: String,
-    pub(crate) session_secret: String,
-    pub(crate) device_link_type: DeviceLinkType,
-    pub(crate) session_type: SessionType,
-    pub(crate) session_start_time: DateTime<Utc>, // Used to calculated elapsed seconds since session start
-    pub(crate) language_code: String,             // 3 letter language code according to ISO 639-2
+pub(crate) enum DeviceLink {
+    /// Represents a device link for the same device, i.e web2app or app2app.
+    SameDeviceLink {
+        // Device link parts
+        device_link_base: String,
+        device_link_type: DeviceLinkType,
+        session_token: String,
+        session_type: SessionType,
+        version: String,
+        language_code: String, // 3 letter language code according to ISO 639-2
+        session_secret: String,
+
+        // Auth code parts
+        scheme_name: SchemeName,
+        signature_protocol: Option<SignatureProtocol>,
+        rp_challenge_or_digest: String,
+        relying_party_name: String,
+        brokered_rp_name: String,
+        interactions: String,
+        initial_callback_url: String,
+    },
+    /// Represents a device link for cross-device flows, i.e QR code.
+    CrossDeviceLink {
+        // Device link parts
+        device_link_base: String,
+        device_link_type: DeviceLinkType,
+        session_start_time: DateTime<Utc>, // Used to calculated elapsed seconds since session start
+        session_token: String,
+        session_type: SessionType,
+        version: String,
+        language_code: String, // 3 letter language code according to ISO 639-2
+        session_secret: String,
+
+        // Auth code parts
+        scheme_name: SchemeName,
+        relying_party_name: String,
+        brokered_rp_name: String,
+        initial_callback_url: String,
+    },
 }
 
 impl DeviceLink {
-    pub(crate) fn payload(&self) -> String {
-        let link = format!(
-            "{:?}.{:?}.{}",
-            self.device_link_type.clone(),
-            self.session_type.clone(),
-            self.elapsed_seconds()
-        );
-        link
-    }
-
     pub fn generate_device_link(&self) -> String {
-        format!(
-            "{}?version={}&sessionToken={}&deviceLinkType={:?}&sessionType={:?}&elapsedSeconds={}&lang={}&authCode={}",
-            self.url.clone(),
-            self.version.clone(),
-            self.session_token.clone(),
-            self.device_link_type.clone(),
-            self.session_type.clone(),
-            self.elapsed_seconds(),
-            self.language_code,
-            self.generate_auth_code(),  
-        )
+        match self {
+            DeviceLink::SameDeviceLink {
+                device_link_base,
+                device_link_type,
+                session_token,
+                session_type,
+                version,
+                language_code,
+                ..
+            } => {
+                let auth_code = self.generate_auth_code();
+                format!("{}?deviceLinkType={}&sessionToken={}&sessionType={}&version={}&lang={}&authCode={}", device_link_base, device_link_type, session_token, session_type, version, language_code, auth_code).to_string()
+            }
+            DeviceLink::CrossDeviceLink {
+                device_link_base,
+                device_link_type,
+                session_start_time,
+                session_token,
+                session_type,
+                version,
+                language_code,
+                ..
+            } => {
+                let elapsed_seconds = self.elapsed_seconds(session_start_time);
+                let auth_code = self.generate_auth_code();
+                format!("{}?deviceLinkType={}&elapsedSeconds={}&sessionToken={}&sessionType={}&version={}&lang={}&authCode={}", device_link_base, device_link_type, elapsed_seconds, session_token, session_type, version, language_code, auth_code).to_string()
+            }
+        }
     }
 
+    pub fn generate_unprotected_device_link(&self) -> String {
+        match self {
+            DeviceLink::SameDeviceLink {
+                device_link_base,
+                device_link_type,
+                session_token,
+                session_type,
+                version,
+                language_code,
+                ..
+            } => format!(
+                "{}?deviceLinkType={}&sessionToken={}&sessionType={}&version={}&lang={}",
+                device_link_base,
+                device_link_type,
+                session_token,
+                session_type,
+                version,
+                language_code
+            )
+            .to_string(),
+            DeviceLink::CrossDeviceLink {
+                device_link_base,
+                device_link_type,
+                session_token,
+                session_type,
+                session_start_time,
+                version,
+                language_code,
+                ..
+            } => format!(
+                "{}?deviceLinkType={}&elapsedSeconds={}&sessionToken={}&sessionType={}&version={}&lang={}",
+                device_link_base,
+                device_link_type,
+                self.elapsed_seconds(session_start_time),
+                session_token,
+                session_type,
+                version,
+                language_code
+            )
+            .to_string(),
+        }
+    }
+
+    /// Generate auth code payload for the device link.
+    /// As described here https://sk-eid.github.io/smart-id-documentation/rp-api/authcode.html
+    pub(crate) fn generate_auth_code_payload(&self) -> String {
+        match self {
+            DeviceLink::SameDeviceLink {
+                scheme_name,
+                signature_protocol,
+                rp_challenge_or_digest,
+                relying_party_name,
+                brokered_rp_name,
+                interactions,
+                initial_callback_url,
+                ..
+            } => {
+                let separator: &str = "|";
+                let relying_party_name_base64: String = BASE64_URL_SAFE.encode(relying_party_name);
+                let brokered_rp_name_base64: &str = &BASE64_URL_SAFE.encode(brokered_rp_name);
+                let unprotected_device_link: String = self.generate_unprotected_device_link();
+                let signature_protocol: String = signature_protocol
+                    .as_ref()
+                    .map(|s| s.as_ref().to_string())
+                    .unwrap_or_else(|| SignatureProtocol::default().as_ref().to_string());
+
+                let auth_code_payload_parts: [&str; 7] = [
+                    scheme_name.as_ref(),
+                    &signature_protocol,
+                    rp_challenge_or_digest,
+                    &relying_party_name_base64,
+                    interactions,
+                    initial_callback_url,
+                    &unprotected_device_link,
+                ];
+
+                auth_code_payload_parts.join(separator)
+            }
+            DeviceLink::CrossDeviceLink {
+                scheme_name,
+                relying_party_name,
+                brokered_rp_name,
+                initial_callback_url,
+                ..
+            } => {
+                let separator: &str = "|";
+
+                // Even though these are not used in the cross-device link, we must still insert empty strings.
+                // So our output looks like {scheme_name}|||{relying_part_name} instead of {scheme_name}|{relying_part_name}.
+                let signature_protocol: &str = "";
+                let rp_challenge_or_digest: &str = "";
+                let interactions: &str = "";
+
+                let relying_party_name_base64: &str = &BASE64_URL_SAFE.encode(relying_party_name);
+                let brokered_rp_name_base64: &str = &BASE64_URL_SAFE.encode(brokered_rp_name);
+                let unprotected_device_link: String = self.generate_unprotected_device_link();
+
+                let auth_code_payload_parts: [&str; 7] = [
+                    scheme_name.as_ref(),
+                    signature_protocol,
+                    rp_challenge_or_digest,
+                    relying_party_name_base64,
+                    interactions,
+                    initial_callback_url,
+                    &unprotected_device_link,
+                ];
+
+                auth_code_payload_parts.join(separator)
+            }
+        }
+    }
+
+    /// Generate auth code for the device link.
+    /// As described here https://sk-eid.github.io/smart-id-documentation/rp-api/authcode.html
     /// Generate a HMAC SHA256 code for the session
     /// As described here https://sk-eid.github.io/smart-id-documentation/rp-api/device_link_flows.html
     pub(crate) fn generate_auth_code(&self) -> String {
-        let secret = BASE64_STANDARD
-            .decode(self.session_secret.clone())
-            .expect("Failed to decode session secret");
-        let payload = self.payload();
+        let session_secret: &[u8] = &general_purpose::STANDARD
+            .decode(self.session_secret())
+            .unwrap();
+        let auth_code_payload: String = self.generate_auth_code_payload();
+
+        println!("Auth code payload: {}", auth_code_payload);
 
         let mut mac =
-            HmacSha256::new_from_slice(secret.as_slice()).expect("HMAC can take key of any size");
-        mac.update(payload.as_bytes());
+            Hmac::<Sha256>::new_from_slice(session_secret).expect("HMAC can take key of any size");
+        mac.update(auth_code_payload.as_bytes());
+        let auth_code_bytes = mac.finalize().into_bytes();
 
-        let result = mac.finalize();
-        let code_bytes = result.into_bytes();
-
-        BASE64_URL_SAFE.encode(code_bytes)
+        BASE64_URL_SAFE_NO_PAD.encode(auth_code_bytes)
     }
 
-    fn elapsed_seconds(&self) -> i64 {
+    fn elapsed_seconds(&self, from: &DateTime<Utc>) -> i64 {
         let now = Utc::now();
-        let duration = now.signed_duration_since(self.session_start_time);
+        let duration = now.signed_duration_since(from);
         duration.num_seconds()
+    }
+
+    fn session_secret(&self) -> &str {
+        match self {
+            DeviceLink::SameDeviceLink { session_secret, .. } => session_secret,
+            DeviceLink::CrossDeviceLink { session_secret, .. } => session_secret,
+        }
     }
 }
 
@@ -89,86 +249,179 @@ impl DeviceLink {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::device_link::DeviceLink::{CrossDeviceLink, SameDeviceLink};
     use chrono::Duration;
     use tracing_test::traced_test;
 
-    fn qr_device_link() -> DeviceLink {
-        DeviceLink {
-            url: "https://sid.demo.sk.ee/device-link".to_string(),
-            version: "0.1".to_string(),
+    // Created using outputs from the web link generator https://sk-eid.github.io/smart-id-documentation/rp-api/authcode.html
+    #[traced_test]
+    #[tokio::test]
+    async fn authentication_qr_device_link_auth_code_generation() {
+        let device_link = SameDeviceLink {
+            device_link_base: "https://smart-id.com".to_string(),
+            version: "1.0".to_string(),
             session_token: "sessionToken".to_string(),
+            session_secret: "rG/kLmfR4j4SEO+TTNUEDB7z".to_string(),
+            scheme_name: SchemeName::smart_id_demo,
+            relying_party_name: "RELYING_PARTY_NAME".to_string(),
+            brokered_rp_name: "".to_string(),
+            device_link_type: DeviceLinkType::QR,
+            session_type: SessionType::auth,
+            language_code: "eng".to_string(),
+            initial_callback_url: "https://example.com/smart-id/callback".to_string(),
+            signature_protocol: Some(SignatureProtocol::ACSP_V2),
+            rp_challenge_or_digest: "zv++eYQ9JGnEwd3TLpzw/5pJqQQ+zhjp0kFaJfk0f39TW89wOPRUj9PX7rITfKUWQq367RGo/91Q46WNrGRLrg==".to_string(),
+            interactions: "W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==".to_string(),
+        };
+
+        let unprotected_link = device_link.generate_unprotected_device_link();
+        assert_eq!(unprotected_link, "https://smart-id.com?deviceLinkType=QR&sessionToken=sessionToken&sessionType=auth&version=1.0&lang=eng");
+
+        let auth_code_payload = device_link.generate_auth_code_payload();
+        assert_eq!(auth_code_payload, "smart-id-demo|ACSP_V2|zv++eYQ9JGnEwd3TLpzw/5pJqQQ+zhjp0kFaJfk0f39TW89wOPRUj9PX7rITfKUWQq367RGo/91Q46WNrGRLrg==|REVNTyBUcnVzdDE=|W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==|https://example.com/smart-id/callback|https://smart-id.com?deviceLinkType=QR&sessionToken=sessionToken&sessionType=auth&version=1.0&lang=eng");
+
+        let auth_code = device_link.generate_auth_code();
+        assert_eq!(auth_code, "pqF4tQNXJj74VGpX1FNHbzXmJiLcqHuV5vom-oy33L8");
+    }
+
+    #[traced_test]
+    #[tokio::test]
+    async fn authentication_qr_device_link_link_generation() {
+        let device_link = CrossDeviceLink {
+            device_link_base: "https://smart-id.com/device-link".to_string(),
+            version: "1.0".to_string(),
+            session_token: "tw1hOWNAcw0wd-e9OalXV-Sr".to_string(),
+            session_secret: "rG/kLmfR4j4SEO+TTNUEDB7z".to_string(),
+            scheme_name: SchemeName::smart_id_demo,
+            relying_party_name: "RELYING_PARTY_NAME".to_string(),
+            brokered_rp_name: "".to_string(),
+            device_link_type: DeviceLinkType::QR,
+            session_type: SessionType::auth,
+            language_code: "eng".to_string(),
+            initial_callback_url: "https://example.com/smart-id/callback".to_string(),
+            session_start_time: Utc::now(),
+        };
+
+        let link = device_link.generate_device_link();
+
+        assert_eq!(link.split_at(143).0, "https://smart-id.com/device-link?deviceLinkType=QR&elapsedSeconds=0&sessionToken=tw1hOWNAcw0wd-e9OalXV-Sr&sessionType=auth&version=1.0&lang=eng");
+    }
+
+    #[traced_test]
+    #[tokio::test]
+    async fn unprotected_link_qr_auth() {
+        let device_link = CrossDeviceLink {
+            device_link_base: "https://smart-id.com/device-link".to_string(),
+            version: "1.0".to_string(),
+            session_token: "tw1hOWNAcw0wd-e9OalXV-Sr".to_string(),
             session_secret: "qKzzHX6SG0ovfEdMuDEzCgTu".to_string(),
+            scheme_name: SchemeName::smart_id,
+            relying_party_name: "DEMO 1".to_string(),
+            brokered_rp_name: "".to_string(),
             device_link_type: DeviceLinkType::QR,
             session_type: SessionType::auth,
             session_start_time: Utc::now(),
             language_code: "eng".to_string(),
-        }
-    }
-
-    #[traced_test]
-    #[tokio::test]
-    async fn test_payload_generation() {
-        let device_link = qr_device_link();
-        assert_eq!(device_link.payload(), "QR.auth.0");
-    }
-
-    #[traced_test]
-    #[tokio::test]
-    async fn test_payload_generation_elapsed_seconds() {
-        let device_link = DeviceLink {
-            session_start_time: Utc::now() - Duration::seconds(20),
-            ..qr_device_link()
+            initial_callback_url: "https://example.com".to_string(),
         };
 
-        assert_eq!(device_link.payload(), "QR.auth.20");
+        let unprotected_link = device_link.generate_unprotected_device_link();
+
+        assert_eq!(unprotected_link, "https://smart-id.com/device-link?deviceLinkType=QR&elapsedSeconds=0&sessionToken=tw1hOWNAcw0wd-e9OalXV-Sr&sessionType=auth&version=1.0&lang=eng");
     }
 
     #[traced_test]
     #[tokio::test]
-    async fn test_generate_auth_code() {
-        let device_link = DeviceLink {
-            session_secret: "ZspUAbC9eWgT3OXEu+vMyvUA".to_string(),
+    async fn unprotected_link_qr_signature() {
+        let device_link = CrossDeviceLink {
+            device_link_base: "https://smart-id.com/device-link".to_string(),
+            version: "1.0".to_string(),
+            session_token: "tw1hOWNAcw0wd-e9OalXV-Sr".to_string(),
+            session_secret: "qKzzHX6SG0ovfEdMuDEzCgTu".to_string(),
+            scheme_name: SchemeName::smart_id,
+            relying_party_name: "DEMO 1".to_string(),
+            brokered_rp_name: "".to_string(),
             device_link_type: DeviceLinkType::QR,
-            session_type: SessionType::auth,
-            ..qr_device_link()
+            session_type: SessionType::sign,
+            session_start_time: Utc::now(),
+            language_code: "eng".to_string(),
+            initial_callback_url: "https://example.com".to_string(),
         };
 
-        println!("{:?}", device_link.generate_device_link());
-        assert_eq!(
-            device_link.generate_auth_code(),
-            "WTtkXm95Hz1tImwoH96hfy8WjM2lAFg6P7d-B9Z73Ss="
-        );
+        let unprotected_link = device_link.generate_unprotected_device_link();
+
+        assert_eq!(unprotected_link, "https://smart-id.com/device-link?deviceLinkType=QR&elapsedSeconds=0&sessionToken=tw1hOWNAcw0wd-e9OalXV-Sr&sessionType=sign&version=1.0&lang=eng");
     }
 
     #[traced_test]
     #[tokio::test]
-    async fn test_generate_auth_code_elapsed_seconds() {
-        let device_link = DeviceLink {
-            session_start_time: Utc::now() - Duration::seconds(20),
-            ..qr_device_link()
+    async fn unprotected_link_qr_cert() {
+        let device_link = CrossDeviceLink {
+            device_link_base: "https://smart-id.com/device-link".to_string(),
+            version: "1.0".to_string(),
+            session_token: "tw1hOWNAcw0wd-e9OalXV-Sr".to_string(),
+            session_secret: "qKzzHX6SG0ovfEdMuDEzCgTu".to_string(),
+            scheme_name: SchemeName::smart_id,
+            relying_party_name: "DEMO 1".to_string(),
+            brokered_rp_name: "".to_string(),
+            device_link_type: DeviceLinkType::QR,
+            session_type: SessionType::cert,
+            session_start_time: Utc::now(),
+            language_code: "eng".to_string(),
+            initial_callback_url: "https://example.com".to_string(),
         };
-        assert_eq!(
-            device_link.generate_auth_code(),
-            "IoJzCv6p28yRiOmKFlxFkCINPCXbhkiJWq7zWiaE580="
-        );
+
+        let unprotected_link = device_link.generate_unprotected_device_link();
+
+        assert_eq!(unprotected_link, "https://smart-id.com/device-link?deviceLinkType=QR&elapsedSeconds=0&sessionToken=tw1hOWNAcw0wd-e9OalXV-Sr&sessionType=cert&version=1.0&lang=eng");
     }
 
-    #[traced_test]
-    #[tokio::test]
-    async fn test_generate_qr_code_url() {
-        let device_link = qr_device_link();
-        assert_eq!(device_link.generate_device_link(), "https://sid.demo.sk.ee/device-link?version=0.1&sessionToken=sessionToken&deviceLinkType=QR&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=E4xBQkwfmyspaZAfJoY5Pdz6-bAWytBe-wyiX3SQS5o=");
-    }
-
-    #[traced_test]
-    #[tokio::test]
-    async fn test_generate_web2app_url() {
-        let device_link = DeviceLink {
-            device_link_type: DeviceLinkType::Web2App,
-            ..qr_device_link()
-        };
-        assert_eq!(device_link.generate_device_link(), "https://sid.demo.sk.ee/device-link?version=0.1&sessionToken=sessionToken&deviceLinkType=Web2App&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=ofcBeca9ATRjdO5Dr17RRvGnamYA5s5C3rmKXyuDN4g=");
-    }
+    // #[traced_test]
+    // #[tokio::test]
+    // async fn test_generate_auth_code() {
+    //     let device_link = CrossDeviceLink {
+    //         session_secret: "ZspUAbC9eWgT3OXEu+vMyvUA".to_string(),
+    //         device_link_type: DeviceLinkType::QR,
+    //         session_type: SessionType::auth,
+    //         ..qr_device_link()
+    //     };
+    //
+    //     println!("{:?}", device_link.generate_device_link());
+    //     assert_eq!(
+    //         device_link.generate_auth_code(),
+    //         "WTtkXm95Hz1tImwoH96hfy8WjM2lAFg6P7d-B9Z73Ss="
+    //     );
+    // }
+    //
+    // #[traced_test]
+    // #[tokio::test]
+    // async fn test_generate_auth_code_elapsed_seconds() {
+    //     let device_link = CrossDeviceLink {
+    //         session_start_time: Utc::now() - Duration::seconds(20),
+    //         ..qr_device_link()
+    //     };
+    //     assert_eq!(
+    //         device_link.generate_auth_code(),
+    //         "IoJzCv6p28yRiOmKFlxFkCINPCXbhkiJWq7zWiaE580="
+    //     );
+    // }
+    //
+    // #[traced_test]
+    // #[tokio::test]
+    // async fn test_generate_qr_code_url() {
+    //     let device_link = qr_device_link();
+    //     assert_eq!(device_link.generate_device_link(), "https://sid.demo.sk.ee/device-link?version=0.1&sessionToken=sessionToken&deviceLinkType=QR&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=E4xBQkwfmyspaZAfJoY5Pdz6-bAWytBe-wyiX3SQS5o=");
+    // }
+    //
+    // #[traced_test]
+    // #[tokio::test]
+    // async fn test_generate_web2app_url() {
+    //     let device_link = CrossDeviceLink {
+    //         device_link_type: DeviceLinkType::Web2App,
+    //         ..qr_device_link()
+    //     };
+    //     assert_eq!(device_link.generate_device_link(), "https://sid.demo.sk.ee/device-link?version=0.1&sessionToken=sessionToken&deviceLinkType=Web2App&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=ofcBeca9ATRjdO5Dr17RRvGnamYA5s5C3rmKXyuDN4g=");
+    // }
 }
 
 // endregion: Device Link Tests

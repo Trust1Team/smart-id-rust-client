@@ -95,6 +95,7 @@ The required environment variables are:
 | HOST_URL                                  | The host address of the Smart ID Service                                       | Y              |
 | RELYING_PARTY_UUID                        | The UUID assigned to the Relying-party - provided by Smart ID                  | Y              |
 | RELYING_PARTY_NAME                        | The unique name assigned to the Relying-Party - provided by Smart ID           | Y              |
+| SMART_ID_SCHEME_NAME                      | The scheme name for the Smart ID Service (smart-id for prod, smart-id-demo..)  | Y              |
 | CLIENT_REQ_NETWORK_TIMEOUT_MILLIS         | The timeout for the REST client when requesting Smart ID Services              | N - default () |
 | CLIENT_REQ_MAX_ATTEMPTS                   | The maximum attempts for the REST client retry mechanism                       |                |
 | CLIENT_REQ_DELAY_SECONDS_BETWEEN_ATTEMPTS | The wait time between consecutive REST client requests                         |                |
