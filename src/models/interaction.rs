@@ -2,6 +2,7 @@ use crate::error::Result;
 use crate::error::SmartIdClientError;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
+use strum_macros::AsRefStr;
 
 /// Interaction Flow
 ///
@@ -15,8 +16,9 @@ use serde_with::skip_serializing_none;
 /// * `VerificationCodeChoice` - Prompts the user to choose a verification code, then enter a pin.
 /// * `ConfirmationMessageAndVerificationCodeChoice` - Displays a confirmation message and prompts the user to choose a verification code.
 #[skip_serializing_none]
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default, AsRefStr)]
 #[serde(rename_all = "camelCase")]
+#[strum(serialize_all = "camelCase")]
 #[non_exhaustive]
 pub enum InteractionFlow {
     #[default]

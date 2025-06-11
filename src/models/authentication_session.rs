@@ -5,7 +5,7 @@ use crate::models::common::{CertificateLevel, RequestProperties, VCCodeType};
 use crate::models::interaction::Interaction;
 use crate::models::response::SmartIdAPIResponse;
 use crate::models::signature::{
-    HashingAlgorithm, SignatureAlgorithm, SignatureProtocolParameters,
+    HashingAlgorithm, SignatureAlgorithm, SignatureProtocol, SignatureProtocolParameters,
     SignatureRequestAlgorithmParameters,
 };
 use base64::prelude::BASE64_STANDARD;
@@ -63,7 +63,7 @@ pub struct AuthenticationDeviceLinkRequest {
     pub relying_party_name: String,
     pub initial_callback_url: String,
     pub certificate_level: AuthenticationCertificateLevel,
-    pub signature_protocol: AuthenticationSignatureProtocol,
+    pub signature_protocol: SignatureProtocol,
     pub signature_protocol_parameters: SignatureProtocolParameters,
     pub signature_algorithm_parameters: SignatureRequestAlgorithmParameters,
     pub interactions: String,
@@ -142,7 +142,7 @@ impl AuthenticationDeviceLinkRequest {
             initial_callback_url: initial_callback_url.unwrap_or("".to_string()),
             certificate_level: authentication_certificate_level,
 
-            signature_protocol: AuthenticationSignatureProtocol::ACSP_V2,
+            signature_protocol: SignatureProtocol::ACSP_V2,
             signature_protocol_parameters: SignatureProtocolParameters::new_acsp_v2(
                 signature_algorithm,
             ),
@@ -222,7 +222,7 @@ pub struct AuthenticationNotificationRequest {
     pub relying_party_name: String,
     pub initial_callback_url: String,
     pub certificate_level: AuthenticationCertificateLevel,
-    pub signature_protocol: AuthenticationSignatureProtocol,
+    pub signature_protocol: SignatureProtocol,
     pub signature_protocol_parameters: SignatureProtocolParameters,
     pub signature_algorithm_parameters: SignatureRequestAlgorithmParameters,
     pub interactions: String,
@@ -302,7 +302,7 @@ impl AuthenticationNotificationRequest {
             initial_callback_url: initial_callback_url.unwrap_or("".to_string()),
             certificate_level: authentication_certificate_level,
 
-            signature_protocol: AuthenticationSignatureProtocol::ACSP_V2,
+            signature_protocol: SignatureProtocol::ACSP_V2,
             signature_protocol_parameters: SignatureProtocolParameters::new_acsp_v2(
                 signature_algorithm,
             ),

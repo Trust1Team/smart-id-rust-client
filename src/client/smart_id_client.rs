@@ -605,7 +605,7 @@ impl SmartIdClient {
         &self,
         signature_request: SignatureNotificationLinkedRequest,
         document_number: String,
-    ) -> Result<VCCode> {
+    ) -> Result<()> {
         self.clear_session();
 
         let path = format!(
@@ -616,7 +616,7 @@ impl SmartIdClient {
         );
 
         let signature_response =
-            post::<SignatureNotificationRequest, SignatureNotificationLinkedResponse>(
+            post::<SignatureNotificationLinkedRequest, SignatureNotificationLinkedResponse>(
                 path.as_str(),
                 &signature_request,
                 self.cfg.client_request_timeout,
@@ -625,12 +625,12 @@ impl SmartIdClient {
 
         let session = signature_response.into_result()?;
 
-        self.set_session(SessionConfig::from_signature_notification_response(
+        self.set_session(SessionConfig::from_signature_notification_linked_response(
             session.clone(),
             signature_request,
         )?)?;
 
-        Ok(session.vc)
+        Ok(())
     }
 
     // endregion: Signature
@@ -815,7 +815,7 @@ impl SmartIdClient {
                 let dynamic_link = dynamic_link.generate_device_link();
                 Ok(dynamic_link)
             }
-            SessionConfig::Signature {
+            SessionConfig::SignatureDeviceLink {
                 session_secret,
                 session_token,
                 session_start_time,
@@ -999,7 +999,7 @@ impl SmartIdClient {
 
                 Ok(())
             }
-            SessionConfig::Signature { digest, .. } => {
+            SessionConfig::SignatureDeviceLink { digest, .. } => {
                 let signature =
                     signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
