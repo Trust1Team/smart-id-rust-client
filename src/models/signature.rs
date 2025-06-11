@@ -1,23 +1,22 @@
 use crate::error::Result;
 use crate::error::SmartIdClientError;
+use crate::models::interaction::InteractionFlow;
 use base64::engine::general_purpose::STANDARD_NO_PAD;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
+use base64::Engine as _;
 use der::Decode;
 use num_bigint::BigUint;
 use rand::{thread_rng, Rng};
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha20Rng;
-use ring::signature::{
-    UnparsedPublicKey, RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384,
-    RSA_PKCS1_2048_8192_SHA512,
-};
-use rsa::pkcs1;
-use rsa::pkcs1::DecodeRsaPublicKey;
-use rsa::traits::PublicKeyParts;
+use rsa::traits::SignatureScheme;
+use rsa::{pkcs1, Pss, RsaPublicKey};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256, Sha384, Sha512};
+use spki::DecodePublicKey;
+use strum_macros::AsRefStr;
 use x509_parser::certificate::X509Certificate;
-use x509_parser::der_parser::asn1_rs::BitString;
 use x509_parser::nom::AsBytes;
 use x509_parser::prelude::FromDer;
 
@@ -26,67 +25,94 @@ use x509_parser::prelude::FromDer;
 #[non_exhaustive]
 pub enum SignatureProtocol {
     #[default]
-    ACSP_V1,
+    ACSP_V2,
     RAW_DIGEST_SIGNATURE,
-}
-
-/// The algorithm is used to verify the signature in the response.
-/// Should stay the same between authentication and signing requests. I have seen errors when using different algorithms.
-#[allow(non_camel_case_types)]
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum SignatureAlgorithm {
-    sha256WithRSAEncryption,
-    sha384WithRSAEncryption,
-    sha512WithRSAEncryption,
 }
 
 impl SignatureAlgorithm {
     pub(crate) fn validate_signature(
         &self,
-        public_key: BitString,
+        public_key: &[u8],
         digest: &[u8],
         signature: &[u8],
+        hashing_algorithm: HashingAlgorithm,
+        salt_length: u32,
     ) -> Result<()> {
-        match self {
-            SignatureAlgorithm::sha256WithRSAEncryption => {
-                let public_key =
-                    UnparsedPublicKey::new(&RSA_PKCS1_2048_8192_SHA256, public_key.as_ref());
-                public_key.verify(digest, signature).map_err(|e| {
-                    SmartIdClientError::InvalidResponseSignature(format!(
-                        "Failed to verify signature: {}",
-                        e
-                    ))
-                })
-            }
-            SignatureAlgorithm::sha384WithRSAEncryption => {
-                let public_key =
-                    UnparsedPublicKey::new(&RSA_PKCS1_2048_8192_SHA384, public_key.as_ref());
-                public_key.verify(digest, signature).map_err(|e| {
-                    SmartIdClientError::InvalidResponseSignature(format!(
-                        "Failed to verify signature: {}",
-                        e
-                    ))
-                })
-            }
-            SignatureAlgorithm::sha512WithRSAEncryption => {
-                let public_key =
-                    UnparsedPublicKey::new(&RSA_PKCS1_2048_8192_SHA512, public_key.as_ref());
-                public_key.verify(digest, signature).map_err(|e| {
-                    SmartIdClientError::InvalidResponseSignature(format!(
-                        "Failed to verify signature: {}",
-                        e
-                    ))
-                })
-            }
-        }
-        .map_err(|e| {
+        let public_key = RsaPublicKey::from_public_key_der(public_key).map_err(|e| {
             SmartIdClientError::InvalidResponseSignature(format!(
-                "Failed to verify signature: {}",
+                "Failed to parse public key: {}",
                 e
             ))
         })?;
 
+        // Create PSS verifier with SHA-256
+        let verifier = match hashing_algorithm {
+            HashingAlgorithm::sha_256 => Pss::new_with_salt::<Sha256>(salt_length as usize),
+            HashingAlgorithm::sha_384 => Pss::new_with_salt::<Sha384>(salt_length as usize),
+            HashingAlgorithm::sha_512 => Pss::new_with_salt::<Sha512>(salt_length as usize),
+            HashingAlgorithm::sha3_256 => {
+                Pss::new_with_salt::<sha3::Sha3_256>(salt_length as usize)
+            }
+            HashingAlgorithm::sha3_384 => {
+                Pss::new_with_salt::<sha3::Sha3_384>(salt_length as usize)
+            }
+            HashingAlgorithm::sha3_512 => {
+                Pss::new_with_salt::<sha3::Sha3_512>(salt_length as usize)
+            }
+        }; // 32-byte salt
+
+        // Verify signature
+        match verifier.verify(&public_key, digest, signature) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(SmartIdClientError::InvalidResponseSignature(format!(
+                "Failed to verify signature: {}",
+                e
+            ))),
+        }?;
+
         Ok(())
+    }
+
+    pub(crate) fn build_acsp_v2_digest(
+        server_random: &str,
+        rp_challenge: &str,
+        user_challenge: &str,
+        relying_party_name_base64: &str,
+        brokered_rp_name_base64: &str,
+        interactions: &str, // Base64 encoded interactions
+        interaction_type_used: InteractionFlow,
+        initial_callback_url: &str,
+        flow_type: FlowType,
+    ) -> String {
+        let separator: &str = "|";
+        let scheme_name: &str = "smart-id";
+        let signature_protocol: &str = "ACSP_V2";
+
+        let interactions_hash = Sha256::digest(interactions.as_bytes());
+        let interactions_base64 =
+            &base64::engine::general_purpose::STANDARD.encode(interactions_hash);
+
+        let acsp_v2_payload_parts: [&str; 11] = [
+            scheme_name,
+            signature_protocol,
+            server_random,
+            rp_challenge,
+            user_challenge,
+            relying_party_name_base64,
+            brokered_rp_name_base64,
+            interactions_base64,
+            interaction_type_used.as_ref(),
+            initial_callback_url,
+            flow_type.as_ref(),
+        ];
+
+        let acsp_v2_payload: String = acsp_v2_payload_parts.join(separator);
+
+        let mut hasher = Sha512::new();
+        hasher.update(acsp_v2_payload.as_bytes());
+        let digest: Vec<u8> = hasher.finalize().to_vec();
+
+        base64::engine::general_purpose::STANDARD.encode(digest)
     }
 }
 
@@ -95,9 +121,9 @@ impl SignatureAlgorithm {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 #[non_exhaustive]
-pub enum SignatureRequestParameters {
+pub enum SignatureProtocolParameters {
     #[serde(rename_all = "camelCase")]
-    ACSP_V1 {
+    ACSP_V2 {
         // A random value which is calculated by generating random bits with size in the range of 32 bytes …64 bytes and applying Base64 encoding (according to rfc4648).
         rp_challenge: String,
         signature_algorithm: SignatureAlgorithm,
@@ -110,20 +136,17 @@ pub enum SignatureRequestParameters {
     },
 }
 
-impl SignatureRequestParameters {
-    pub fn new_acsp_v1(signature_algorithm: SignatureAlgorithm) -> SignatureRequestParameters {
-        SignatureRequestParameters::ACSP_V1 {
-            random_challenge: Self::generate_random_challenge(),
+impl SignatureProtocolParameters {
+    pub fn new_acsp_v2(signature_algorithm: SignatureAlgorithm) -> SignatureProtocolParameters {
+        SignatureProtocolParameters::ACSP_V2 {
+            rp_challenge: Self::generate_rp_challenge(),
             signature_algorithm,
         }
     }
 
     pub(crate) fn get_rp_challenge(&self) -> Option<String> {
         match self {
-            SignatureRequestParameters::ACSP_V2 {
-                rp_challenge: rp_challenge,
-                ..
-            } => Some(rp_challenge.clone()),
+            SignatureProtocolParameters::ACSP_V2 { rp_challenge, .. } => Some(rp_challenge.clone()),
             _ => None,
         }
     }
@@ -132,10 +155,12 @@ impl SignatureRequestParameters {
     // This is only possible for RAW_DIGEST_SIGNATURE requests, as ACSP_V2 requests require a server random from the response to build the digest (auth)
     pub(crate) fn get_digest(&self) -> Option<String> {
         match self {
-            SignatureRequestParameters::RAW_DIGEST_SIGNATURE { digest, .. } => Some(digest.clone()),
+            SignatureProtocolParameters::RAW_DIGEST_SIGNATURE { digest, .. } => {
+                Some(digest.clone())
+            }
             // ACSP_V2 requests require a server random from the response to build the digest (auth)
             // Use SessionConfig::get_digest if you need to build the digest for ACSP_V2 requests.
-            SignatureRequestParameters::ACSP_V2 { .. } => None,
+            SignatureProtocolParameters::ACSP_V2 { .. } => None,
         }
     }
 
@@ -164,13 +189,78 @@ pub enum ResponseSignature {
         // A random value of 24 or more characters from Base64 alphabet, which is generated at RP API service side.
         // There are not any guarantees that the returned value length is the same in each call of the RP API.
         server_random: String,
+        user_challenge: String,
+        flow_type: FlowType,
         signature_algorithm: SignatureAlgorithm,
+        signature_algorithm_parameters: Option<SignatureResponseAlgorithmParameters>,
     },
+
     #[serde(rename_all = "camelCase")]
     RAW_DIGEST_SIGNATURE {
         value: String,
+        flow_type: FlowType,
         signature_algorithm: SignatureAlgorithm,
+        signature_algorithm_parameters: Option<SignatureProtocolParameters>,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SignatureResponseAlgorithmParameters {
+    hash_algorithm: HashingAlgorithm,
+    mask_gen_algorithm: MaskGenAlgorithm,
+    salt_length: u32,
+    trailer_field: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SignatureRequestAlgorithmParameters {
+    pub hash_algorithm: HashingAlgorithm,
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MaskGenAlgorithm {
+    pub algorithm: MaskGenAlgorithmType,
+    pub parameters: MaskGenAlgorithmParameters,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[allow(non_camel_case_types)]
+pub enum MaskGenAlgorithmType {
+    id_mgf1,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MaskGenAlgorithmParameters {
+    pub hash_algorithm: HashingAlgorithm,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING-KEBAB-CASE")]
+pub enum HashingAlgorithm {
+    sha_256,
+    sha_384,
+    sha_512,
+    sha3_256,
+    sha3_384,
+    sha3_512,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, AsRefStr)]
+pub enum FlowType {
+    QR,
+    App2App,
+    Web2App,
+    Notification,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SignatureAlgorithm {
+    RsassaPss,
 }
 
 impl ResponseSignature {
@@ -210,12 +300,24 @@ impl ResponseSignature {
         }
     }
 
-    pub(crate) fn validate_acsp_v2(&self, rp_challenge: String, cert: String) -> Result<()> {
+    pub(crate) fn validate_acsp_v2(
+        &self,
+        rp_challenge: String,
+        cert: String,
+        relying_party_name: String,
+        brokered_rp_name: String,
+        interactions: String,
+        interaction_type_used: InteractionFlow,
+        initial_callback_url: String,
+    ) -> Result<()> {
         match self {
             ResponseSignature::ACSP_V2 {
                 value,
                 server_random,
+                user_challenge,
+                flow_type,
                 signature_algorithm,
+                signature_algorithm_parameters,
             } => {
                 // server_random validation as specified in the Smart-ID API documentation
                 if server_random.len() < 24 {
@@ -246,23 +348,36 @@ impl ResponseSignature {
                         ))
                     })?;
 
-                let public_key = parsed_cert.public_key().clone().subject_public_key;
+                let public_key = parsed_cert.public_key().clone().raw;
 
-                let digest = format!(
-                    "{:?};{};{}",
-                    SignatureProtocol::ACSP_V2,
+                let digest = SignatureAlgorithm::build_acsp_v2_digest(
                     server_random,
-                    rp_challenge
+                    &rp_challenge,
+                    user_challenge,
+                    &BASE64_STANDARD.encode(relying_party_name),
+                    &brokered_rp_name,
+                    &interactions,
+                    interaction_type_used,
+                    &initial_callback_url,
+                    flow_type.clone(),
                 );
 
                 let signature = BASE64_STANDARD
                     .decode(value)
                     .expect("Failed to decode base64 signature");
 
+                let signature_algorithm_parameters = signature_algorithm_parameters.clone().ok_or(
+                    SmartIdClientError::InvalidResponseSignature(
+                        "Missing signature algorithm parameters".to_string(),
+                    ),
+                )?;
+
                 signature_algorithm.validate_signature(
                     public_key,
                     digest.as_bytes(),
                     signature.as_bytes(),
+                    signature_algorithm_parameters.hash_algorithm,
+                    signature_algorithm_parameters.salt_length,
                 )
             }
             _ => Err(SmartIdClientError::InvalidSignatureProtocal(
@@ -323,14 +438,16 @@ mod tests {
     // Used for testing parsing certificates with RSA modulus over 4096 bits (some rust libraries don't support it everywhere))
     const VALID_CERTIFICATE_LARGE_RSA_MODULUS: &str = "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";
     const INVALID_CERTIFICATE: &str = "";
+    const RELYING_PARTY_NAME: &str = "RELYING_PARTY_NAME";
+    const INITIAL_CALLBACK_URL: &str = "https://example.com";
 
     #[test]
     fn test_new_acsp_v2() {
-        let signature_algorithm = SignatureAlgorithm::sha256WithRSAEncryption;
-        let params = SignatureRequestParameters::new_acsp_v2(signature_algorithm.clone());
+        let signature_algorithm = SignatureAlgorithm::RsassaPss;
+        let params = SignatureProtocolParameters::new_acsp_v2(signature_algorithm.clone());
 
-        if let SignatureRequestParameters::ACSP_V2 {
-            rp_challenge: rp_challenge,
+        if let SignatureProtocolParameters::ACSP_V2 {
+            rp_challenge,
             signature_algorithm: alg,
         } = params
         {
@@ -343,8 +460,8 @@ mod tests {
 
     #[test]
     fn test_get_rp_challenge() {
-        let signature_algorithm = SignatureAlgorithm::sha256WithRSAEncryption;
-        let params = SignatureRequestParameters::new_acsp_v2(signature_algorithm);
+        let signature_algorithm = SignatureAlgorithm::RsassaPss;
+        let params = SignatureProtocolParameters::new_acsp_v2(signature_algorithm);
 
         let rp_challenge = params.get_rp_challenge();
         assert!(rp_challenge.is_some(), "rp challenge should be Some");
@@ -357,7 +474,7 @@ mod tests {
     #[test]
     fn test_generate_rp_challenge_input_value_is_correct_size() {
         for _i in 0..100 {
-            let rp_challenge = SignatureRequestParameters::generate_rp_challenge();
+            let rp_challenge = SignatureProtocolParameters::generate_rp_challenge();
             assert!(!rp_challenge.is_empty(), "rp challenge should not be empty");
 
             // Base 64 encoding increases the size of the input, so this must be decoded before validating
@@ -441,6 +558,22 @@ mod tests {
 
     #[test]
     fn validate_acsp_v2_success() {
+        let value = "u5XWfL9UggKDraAvdqz7pCf7/tYJYoppnbjccZVojKBRP1M3eKwcwoFh+hJtFuAzddtGtrbrMrQ3svgV8tSJ+w==";
+        let server_random = "teWoX+";
+        let user_challenge = "GnsWXXEjTCKR89fj9uo5u5ReBZ9JR7_pezLAI5jMS00";
+        let signature_algorithm = SignatureAlgorithm::RsassaPss;
+        let signature_algorithm_parameters = Some(SignatureResponseAlgorithmParameters {
+            hash_algorithm: HashingAlgorithm::sha3_256,
+            mask_gen_algorithm: MaskGenAlgorithm {
+                algorithm: MaskGenAlgorithmType::id_mgf1,
+                parameters: MaskGenAlgorithmParameters {
+                    hash_algorithm: HashingAlgorithm::sha3_256,
+                },
+            },
+            salt_length: 64,
+            trailer_field: "0xbc".to_string(),
+        });
+
         let rp_challenge = "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=";
         let server_random = "pAdXc1vgSHfaPzkn+nZfcaI/";
         let signature = "FiT0lbpQouGso/mAx+GpcJYJFdIiNLwBbliNjgq9H3daiUqPqAhn3sYFgM98q5DS7kQGix1Wx4kQItx1hqj0Bd6tnUgAxcv0BHf1Gxn3FygVxqtStVoYgVHsNjp7nMXJuKHgOR6YqNbxbO+fO+a/4t/YYkQlWd+MF0arY4QJ+jbRj8F13a57eQeZ8NEOVlZQq3FaeB0bcl8AsA32bRGQayKM6aBxTLHMmViaRMw5vMblVw/7GT6AKY1DlmNtw8/VvC/gkc6vtUVmfKbQNXc672jgrFZcOBJzkyW6oejbHO79g6N+jeTUo+1BF1Ao3zTpU4XyS5ArMy1+XoHN22wlnFw2diWXjMBKA/hDAIFQmgmeuc308O+CfFGoEhnQ6BknaMxabDJntjmxD+Hs4QxriSgk7rAGYpw1ZHBC/f+00Cr7EQ1RTaGX+beEroQtIa0/TeS4buRlM7SxiYXa6WZJKVP7oEmBk+aUMw6QnmbSl/mC1Vl6Mh7LtZ6jULDV40hvmfhrXdVYs9Ycyu9qLUE3GSuT7btV/WR7Hbpt0AowC/T6seH4wP4fihXtmA/IX4ount9+/Lk5g3AYyYK5iCBwL+yfKgwiw3kVfX9mT2d5iPY0m+ot6t6CrHoA33LeOX70n1xpNSfLsGWk5/2XtZgvrG+HcvJlbKv3fZbuoRsMKhU7hUQn5uhO7C4ewQzhMieCBwh1Sk3PNLFsnvx+eDgT7rUCVJXFnRPg6Slg2fwfCA1IC6zo4qL7uuO9OXE1Mx4saZta38ibmAkArRwAtG4meovqCF0APNcyrlwiqvnCJTJMOiv1nV1ZOM4RMVUOB1cI2LkqtzHRJUl9GMy8GLAuIGHLxZDl5IIYB6pn06N5XBlNs6z/x+VVqpNzWBBuAZUmyeizBjkab7Uac9H0WiH93J4K6QL+H+Zul+wp4Z9hfUyaWMzQoVEfVq/FySsudclDXx0HAupmEKDlo15S+o7dISC0JwvyXqjVTgKpONeKgRTrzxxbL/bNSfSFWXmAmZBM";
@@ -448,11 +581,22 @@ mod tests {
         let response = ResponseSignature::ACSP_V2 {
             value: signature.to_string(),
             server_random: server_random.to_string(),
-            signature_algorithm: SignatureAlgorithm::sha256WithRSAEncryption,
+            user_challenge: "".to_string(),
+            flow_type: FlowType::QR,
+            signature_algorithm: SignatureAlgorithm::RsassaPss,
+            signature_algorithm_parameters: None,
         };
 
         assert!(response
-            .validate_acsp_v2(rp_challenge.to_string(), VALID_CERTIFICATE.to_string())
+            .validate_acsp_v2(
+                rp_challenge.to_string(),
+                VALID_CERTIFICATE.to_string(),
+                RELYING_PARTY_NAME.to_string(),
+                "".to_string(),
+                "".to_string(),
+                InteractionFlow::DisplayTextAndPIN,
+                INITIAL_CALLBACK_URL.to_string(),
+            )
             .is_ok());
     }
 

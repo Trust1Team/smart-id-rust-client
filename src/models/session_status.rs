@@ -7,7 +7,7 @@ use crate::models::signature::{ResponseSignature, SignatureProtocol};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
-pub(crate) type SessionResponse = SmartIdAPIResponse<SessionStatus>;
+pub(crate) type SessionResponse = SmartIdAPIResponse<SessionStatusResponse>;
 
 /// Session Status
 ///
@@ -27,7 +27,7 @@ pub(crate) type SessionResponse = SmartIdAPIResponse<SessionStatus>;
 #[skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct SessionStatus {
+pub struct SessionStatusResponse {
     pub state: SessionState,
     pub result: Option<SessionResult>,
     pub signature_protocol: Option<SignatureProtocol>,

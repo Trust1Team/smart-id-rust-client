@@ -140,7 +140,7 @@ mod tests {
         let intermediate_certificates = demo_intermediate_certificates();
 
         let result = verify_certificate(
-            &VALID_CERTIFICATE,
+            VALID_CERTIFICATE,
             intermediate_certificates,
             root_certificates,
         );
@@ -156,7 +156,7 @@ mod tests {
         let intermediate_certificates = demo_intermediate_certificates();
 
         let result = verify_certificate(
-            &VALID_CERTIFICATE,
+            VALID_CERTIFICATE,
             intermediate_certificates,
             root_certificates,
         );
@@ -173,7 +173,7 @@ mod tests {
         let intermediate_certificates = demo_intermediate_certificates();
 
         let result = verify_certificate(
-            &INVALID_CERTIFICATE,
+            INVALID_CERTIFICATE,
             intermediate_certificates,
             root_certificates,
         );

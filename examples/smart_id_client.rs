@@ -9,7 +9,7 @@ use smart_id_rust_client::models::authentication_session::{
 use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
 use smart_id_rust_client::models::device_link::DeviceLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
-use smart_id_rust_client::models::session_status::SessionStatus;
+use smart_id_rust_client::models::session_status::SessionStatusResponse;
 use smart_id_rust_client::models::signature::SignatureAlgorithm;
 use smart_id_rust_client::models::signature_session::SignatureDeviceLinkRequest;
 use tracing::{info, Level};
@@ -88,7 +88,7 @@ async fn main() -> Result<()> {
 async fn uc_authentication_request_example(
     cfg: &SmartIDConfig,
     smart_id_client: &SmartIdClient,
-) -> Result<SessionStatus> {
+) -> Result<SessionStatusResponse> {
     let authentication_request = AuthenticationDeviceLinkRequest::new(
         cfg,
         vec![Interaction::DisplayTextAndPIN {
@@ -131,7 +131,7 @@ async fn uc_certificate_choice_request_example(
     cfg: &SmartIDConfig,
     smart_id_client: &SmartIdClient,
     document_number: String,
-) -> Result<SessionStatus> {
+) -> Result<SessionStatusResponse> {
     let certificate_choice_request = CertificateChoiceDeviceLinkRequest::new(cfg);
     smart_id_client
         .start_certificate_choice_notification_document_session(

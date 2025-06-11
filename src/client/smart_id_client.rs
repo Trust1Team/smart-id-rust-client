@@ -8,16 +8,15 @@ use crate::models::authentication_session::{
     AuthenticationNotificationRequest, AuthenticationNotificationResponse,
 };
 use crate::models::certificate_choice_session::{
-    CertificateChoiceDeviceLinkRequest, CertificateChoiceNotificationRequest,
-    CertificateChoiceNotificationResponse, SigningCertificate, SigningCertificateRequest,
-    SigningCertificateResponse, SigningCertificateResponseState,
+    CertificateChoiceNotificationRequest, CertificateChoiceNotificationResponse,
+    SigningCertificate, SigningCertificateRequest, SigningCertificateResponse,
+    SigningCertificateResponseState,
 };
 use crate::models::common::{SessionConfig, VCCode};
 use crate::models::device_link::{DeviceLink, DeviceLinkType, SessionType};
 use crate::models::session_status::{
-    SessionCertificate, SessionResponse, SessionState, SessionStatus,
+    SessionCertificate, SessionResponse, SessionState, SessionStatusResponse,
 };
-use crate::models::signature::ResponseSignature;
 use crate::models::signature_session::{
     SignatureDeviceLinkRequest, SignatureDeviceLinkResponse, SignatureNotificationLinkedRequest,
     SignatureNotificationLinkedResponse, SignatureNotificationRequest,
@@ -176,7 +175,7 @@ impl SmartIdClient {
     /// - The session response is missing a signature.
     /// - The session response certificate is invalid.
     /// - The session response signature is invalid.
-    pub async fn get_session_status(&self) -> Result<SessionStatus> {
+    pub async fn get_session_status(&self) -> Result<SessionStatusResponse> {
         let session_config = self.get_session()?;
 
         let path = format!(
@@ -672,10 +671,12 @@ impl SmartIdClient {
 
         let session = certificate_choice_response.into_result()?;
 
-        self.set_session(SessionConfig::from_certificate_choice_response(
-            session,
-            certificate_choice_request,
-        ))
+        self.set_session(
+            SessionConfig::from_certificate_choice_notification_response(
+                session,
+                certificate_choice_request,
+            ),
+        )
     }
 
     /// Starts a certificate choice session using a notification and document id.
@@ -691,7 +692,7 @@ impl SmartIdClient {
     /// A Result indicating success or failure.
     pub async fn start_certificate_choice_notification_document_session(
         &self,
-        certificate_choice_request: CertificateChoiceDeviceLinkRequest,
+        certificate_choice_request: CertificateChoiceNotificationRequest,
         document_number: String,
     ) -> Result<()> {
         self.clear_session();
@@ -704,7 +705,7 @@ impl SmartIdClient {
         );
 
         let certificate_choice_response =
-            post::<CertificateChoiceDeviceLinkRequest, CertificateChoiceNotificationResponse>(
+            post::<CertificateChoiceNotificationRequest, CertificateChoiceNotificationResponse>(
                 path.as_str(),
                 &certificate_choice_request,
                 self.cfg.client_request_timeout,
@@ -713,10 +714,12 @@ impl SmartIdClient {
 
         let session = certificate_choice_response.into_result()?;
 
-        self.set_session(SessionConfig::from_certificate_choice_response(
-            session,
-            certificate_choice_request,
-        ))
+        self.set_session(
+            SessionConfig::from_certificate_choice_notification_response(
+                session,
+                certificate_choice_request,
+            ),
+        )
     }
 
     /// Get the signing certificate of the requested document number.
@@ -882,10 +885,10 @@ impl SmartIdClient {
     /// - The provided identity does not match the certificate.
     fn validate_session_status(
         &self,
-        session_status: SessionStatus,
+        session_status: SessionStatusResponse,
         session_config: SessionConfig,
     ) -> Result<()> {
-        match session_status.result {
+        match session_status.result.clone() {
             Some(session_result) => {
                 // Check the result is OK
                 session_result.end_result.is_ok()?;
@@ -893,6 +896,7 @@ impl SmartIdClient {
                 // Validate the certificate is present (Required for OK status)
                 let cert = session_status
                     .cert
+                    .clone()
                     .ok_or(SmartIdClientError::SessionResponseMissingCertificate)?;
 
                 // Verify the certificate chain
@@ -910,7 +914,7 @@ impl SmartIdClient {
                 };
 
                 // Validate signature is correct
-                self.validate_signature(session_config, session_status.signature, cert.clone())?;
+                self.validate_signature(session_config, session_status, cert.clone())?;
 
                 // Check that the identity matches the certificate
                 if let Some(user_identity) = self.get_user_identity()? {
@@ -961,18 +965,34 @@ impl SmartIdClient {
     fn validate_signature(
         &self,
         session_config: SessionConfig,
-        signature: Option<ResponseSignature>,
+        session_status_response: SessionStatusResponse,
         cert: SessionCertificate,
     ) -> Result<()> {
         match session_config {
             SessionConfig::AuthenticationDeviceLink {
-                rp_challenge: random_challenge,
+                relying_party_name,
+                initial_callback_url,
+                interactions,
+                rp_challenge,
                 ..
             } => {
-                let signature =
-                    signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+                let signature = session_status_response
+                    .signature
+                    .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
-                signature.validate_acsp_v2(random_challenge, cert.value.clone())?;
+                let used_interaction_type = session_status_response
+                    .interaction_type_used
+                    .ok_or(SmartIdClientError::SessionResponseMissingInteractionType)?;
+
+                signature.validate_acsp_v2(
+                    rp_challenge,
+                    cert.value.clone(),
+                    relying_party_name,
+                    "".to_string(),
+                    interactions,
+                    used_interaction_type,
+                    initial_callback_url,
+                )?;
 
                 // If no user identity is set, set it from the certificate
                 // This happens during all anonymous sessions
@@ -983,13 +1003,29 @@ impl SmartIdClient {
                 Ok(())
             }
             SessionConfig::AuthenticationNotification {
-                rp_challenge: random_challenge,
+                relying_party_name,
+                initial_callback_url,
+                interactions,
+                rp_challenge,
                 ..
             } => {
-                let signature =
-                    signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+                let signature = session_status_response
+                    .signature
+                    .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
-                signature.validate_acsp_v1(random_challenge, cert.value.clone())?;
+                let used_interaction_type = session_status_response
+                    .interaction_type_used
+                    .ok_or(SmartIdClientError::SessionResponseMissingInteractionType)?;
+
+                signature.validate_acsp_v2(
+                    rp_challenge,
+                    cert.value.clone(),
+                    relying_party_name,
+                    "".to_string(),
+                    interactions,
+                    used_interaction_type,
+                    initial_callback_url,
+                )?;
 
                 // If no user identity is set, set it from the certificate
                 // This happens during all anonymous sessions
@@ -1000,8 +1036,9 @@ impl SmartIdClient {
                 Ok(())
             }
             SessionConfig::SignatureDeviceLink { digest, .. } => {
-                let signature =
-                    signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+                let signature = session_status_response
+                    .signature
+                    .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
                 // TODO: CHeck this with prod
                 if self.cfg.is_demo() {
@@ -1011,8 +1048,9 @@ impl SmartIdClient {
                 signature.validate_raw_digest(digest, cert.value.clone())
             }
             SessionConfig::SignatureNotification { digest, .. } => {
-                let signature =
-                    signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+                let signature = session_status_response
+                    .signature
+                    .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
                 // TODO: CHeck this with prod
                 if self.cfg.is_demo() {

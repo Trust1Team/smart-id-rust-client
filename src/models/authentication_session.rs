@@ -345,11 +345,4 @@ impl From<AuthenticationCertificateLevel> for CertificateLevel {
     }
 }
 
-#[allow(non_camel_case_types)]
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[non_exhaustive]
-pub enum AuthenticationSignatureProtocol {
-    ACSP_V1,
-}
-
 // endregion enums

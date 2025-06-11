@@ -8,7 +8,7 @@ use crate::models::certificate_choice_session::{
     CertificateChoiceDeviceLinkRequest, CertificateChoiceDeviceLinkSession,
     CertificateChoiceNotificationRequest, CertificateChoiceNotificationSession,
 };
-use crate::models::session_status::SessionStatus;
+use crate::models::session_status::SessionStatusResponse;
 use crate::models::signature::{
     ResponseSignature, SignatureAlgorithm, SignatureProtocol, SignatureProtocolParameters,
     SignatureRequestAlgorithmParameters,
@@ -22,6 +22,7 @@ use base64::Engine;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+use tracing::error;
 
 /// Request Properties
 ///
@@ -397,36 +398,45 @@ impl SessionConfig {
         }
     }
 
-    pub fn get_digest(&self, session_status: SessionStatus) -> Option<String> {
+    pub fn get_digest(&self, session_status: SessionStatusResponse) -> Option<String> {
         match self {
             SessionConfig::SignatureDeviceLink { digest, .. } => Some(digest.clone()),
             SessionConfig::SignatureNotification { digest, .. } => Some(digest.clone()),
             SessionConfig::SignatureNotificationLinked { digest, .. } => Some(digest.clone()),
             SessionConfig::AuthenticationDeviceLink {
                 relying_party_name,
-                rp_challenge: rp_challenge,
+                initial_callback_url,
+                interactions,
+                rp_challenge,
                 ..
             } => {
                 // The authentication digest requires the challenge and protocol which are available before the session is started
                 // It also requires the server random which is only available after the session result is returned
+
+                let interaction_type_used = match session_status.interaction_type_used.clone() {
+                    Some(interaction) => interaction,
+                    None => {
+                        error!("Session status does not contain interaction type used, defaulting to DisplayTextAndPIN");
+                        return None;
+                    }
+                };
+
                 if let Some(ResponseSignature::ACSP_V2 {
-                    value,
                     server_random,
                     user_challenge,
                     flow_type,
-                    signature_algorithm,
-                    signature_algorithm_parameters,
+                    ..
                 }) = session_status.signature
                 {
                     Some(SignatureAlgorithm::build_acsp_v2_digest(
-                        server_random,
-                        &rp_challenge,
-                        user_challenge,
+                        &server_random,
+                        rp_challenge,
+                        &user_challenge,
                         &BASE64_STANDARD.encode(relying_party_name),
-                        &brokered_rp_name,
-                        &interactions,
+                        "",
+                        interactions,
                         interaction_type_used,
-                        &initial_callback_url,
+                        initial_callback_url,
                         flow_type.clone(),
                     ))
                 } else {
@@ -435,33 +445,42 @@ impl SessionConfig {
                 }
             }
             SessionConfig::AuthenticationNotification {
-                rp_challenge: rp_challenge,
+                relying_party_name,
+                initial_callback_url,
+                interactions,
+                rp_challenge,
                 ..
             } => {
                 // The authentication digest requires the challenge and protocol which are available before the session is started
                 // It also requires the server random which is only available after the session result is returned
+                let interaction_type_used = match session_status.interaction_type_used.clone() {
+                    Some(interaction) => interaction,
+                    None => {
+                        error!("Session status does not contain interaction type used, defaulting to DisplayTextAndPIN");
+                        return None;
+                    }
+                };
+
                 if let Some(ResponseSignature::ACSP_V2 {
-                    value,
                     server_random,
                     user_challenge,
                     flow_type,
-                    signature_algorithm,
-                    signature_algorithm_parameters,
+                    ..
                 }) = session_status.signature
                 {
                     Some(SignatureAlgorithm::build_acsp_v2_digest(
-                        server_random,
-                        &rp_challenge,
-                        user_challenge,
+                        &server_random,
+                        rp_challenge,
+                        &user_challenge,
                         &BASE64_STANDARD.encode(relying_party_name),
-                        &brokered_rp_name,
-                        &interactions,
+                        "",
+                        interactions,
                         interaction_type_used,
-                        &initial_callback_url,
+                        initial_callback_url,
                         flow_type.clone(),
                     ))
                 } else {
-                    // Authentication notification can only be ACSP_V2, so this should never happen if the session is complete and successful
+                    // Authentication device link can only be ACSP_V2, so this should never happen if the session is complete and successful
                     None
                 }
             }

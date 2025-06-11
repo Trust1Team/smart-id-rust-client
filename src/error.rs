@@ -78,6 +78,10 @@ pub enum SmartIdClientError {
     #[error("Session response missing signature")]
     SessionResponseMissingSignature,
 
+    /// Session response missing interaction type
+    #[error("Session response missing interaction type")]
+    SessionResponseMissingInteractionType,
+
     /// Session response signature verification failed
     #[error("Session response signature verification failed: {0}")]
     InvalidResponseSignature(String),
