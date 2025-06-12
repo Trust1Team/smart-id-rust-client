@@ -3,15 +3,16 @@ use image::Luma;
 use qrcode::QrCode;
 use smart_id_rust_client::client::smart_id_client::SmartIdClient;
 use smart_id_rust_client::config::SmartIDConfig;
-use smart_id_rust_client::models::authentication_session::{
+use smart_id_rust_client::models::api::authentication_session::{
     AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest,
+    AuthenticationNotificationRequest,
 };
-use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
-use smart_id_rust_client::models::device_link::{DeviceLinkType, DeviceLinkType};
+use smart_id_rust_client::models::api::certificate_choice_session::CertificateChoiceNotificationRequest;
+use smart_id_rust_client::models::api::session_status::EndResult;
+use smart_id_rust_client::models::api::signature_session::SignatureDeviceLinkRequest;
+use smart_id_rust_client::models::device_link::DeviceLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
-use smart_id_rust_client::models::session_status::EndResult;
-use smart_id_rust_client::models::signature::SignatureAlgorithm;
-use smart_id_rust_client::models::signature_session::SignatureDeviceLinkRequest;
+use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 use std::env;
 
 const SMART_ID_ROOT_URL: &str = "https://sid.demo.sk.ee";

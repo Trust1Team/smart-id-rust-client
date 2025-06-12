@@ -3,26 +3,26 @@ use crate::config::SmartIDConfig;
 use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::error::SmartIdClientError::NoSessionException;
-use crate::models::authentication_session::{
+use crate::models::api::authentication_session::{
     AuthenticationDeviceLinkRequest, AuthenticationDeviceLinkResponse,
     AuthenticationNotificationRequest, AuthenticationNotificationResponse,
 };
-use crate::models::certificate_choice_session::{
+use crate::models::api::certificate_choice_session::{
     CertificateChoiceNotificationRequest, CertificateChoiceNotificationResponse,
     SigningCertificate, SigningCertificateRequest, SigningCertificateResponse,
     SigningCertificateResponseState,
 };
-use crate::models::common::{SessionConfig, VCCode};
-use crate::models::device_link::DeviceLink::{CrossDeviceLink, SameDeviceLink};
-use crate::models::device_link::{DeviceLinkType, SessionType};
-use crate::models::session_status::{
+use crate::models::api::session_status::{
     SessionCertificate, SessionResponse, SessionState, SessionStatusResponse,
 };
-use crate::models::signature_session::{
+use crate::models::api::signature_session::{
     SignatureDeviceLinkRequest, SignatureDeviceLinkResponse, SignatureNotificationLinkedRequest,
     SignatureNotificationLinkedResponse, SignatureNotificationRequest,
     SignatureNotificationResponse,
 };
+use crate::models::common::{SessionConfig, VCCode};
+use crate::models::device_link::DeviceLink::{CrossDeviceLink, SameDeviceLink};
+use crate::models::device_link::{DeviceLinkType, SessionType};
 use crate::models::user_identity::UserIdentity;
 use crate::utils::demo_certificates::{demo_intermediate_certificates, demo_root_certificates};
 use crate::utils::production_certificates::{
@@ -908,10 +908,10 @@ impl SmartIdClient {
                 session_token, 
                 session_secret, 
                 device_link_base,
-                relying_party_name, 
+                relying_party_name,
                 initial_callback_url,
-                session_start_time, 
-                .. 
+                session_start_time,
+                ..
             } => {
                 let device_link = match device_link_type {
                     DeviceLinkType::Web2App | DeviceLinkType::App2App => {

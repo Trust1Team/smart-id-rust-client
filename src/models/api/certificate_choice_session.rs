@@ -1,6 +1,6 @@
 use crate::config::SmartIDConfig;
+use crate::models::api::response::SmartIdAPIResponse;
 use crate::models::common::{CertificateLevel, RequestProperties};
-use crate::models::response::SmartIdAPIResponse;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
@@ -25,7 +25,7 @@ use serde_with::skip_serializing_none;
 ///
 /// ```rust
 /// use smart_id_rust_client::config::SmartIDConfig;
-/// use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
+/// use smart_id_rust_client::models::api::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
 ///
 /// fn create_certificate_choice_request(cfg: &SmartIDConfig) -> CertificateChoiceDeviceLinkRequest {
 ///     CertificateChoiceDeviceLinkRequest::new(cfg)
@@ -93,7 +93,7 @@ pub struct CertificateChoiceDeviceLinkSession {
 ///
 /// ```rust
 /// use smart_id_rust_client::config::SmartIDConfig;
-/// use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
+/// use smart_id_rust_client::models::api::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
 ///
 /// fn create_certificate_choice_request(cfg: &SmartIDConfig) -> CertificateChoiceDeviceLinkRequest {
 ///     CertificateChoiceDeviceLinkRequest::new(cfg)
@@ -148,7 +148,7 @@ pub struct CertificateChoiceNotificationSession {
 /// # Example
 /// ```rust
 /// use smart_id_rust_client::config::SmartIDConfig;
-/// use smart_id_rust_client::models::certificate_choice_session::SigningCertificateRequest;use smart_id_rust_client::models::common::CertificateLevel;
+/// use smart_id_rust_client::models::api::certificate_choice_session::SigningCertificateRequest;use smart_id_rust_client::models::common::CertificateLevel;
 /// fn create_signing_certificate_request(cfg: &SmartIDConfig) -> SigningCertificateRequest {
 ///    SigningCertificateRequest {
 ///        relying_party_uuid: cfg.relying_party_uuid.clone(),

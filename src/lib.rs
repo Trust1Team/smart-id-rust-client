@@ -11,14 +11,14 @@
 //! ```rust
 //! use crate::smart_id_rust_client::config::SmartIDConfig;
 //! use crate::smart_id_rust_client::client::smart_id_client::SmartIdClient;
-//! use crate::smart_id_rust_client::models::authentication_session::AuthenticationDeviceLinkRequest;
-//! use crate::smart_id_rust_client::models::signature_session::SignatureDeviceLinkRequest;
-//! use crate::smart_id_rust_client::models::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
+//! use smart_id_rust_client::models::api::authentication_session::AuthenticationDeviceLinkRequest;
+//! use smart_id_rust_client::models::api::signature_session::SignatureDeviceLinkRequest;
+//! use smart_id_rust_client::models::api::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
 //! use crate::smart_id_rust_client::models::device_link::DeviceLinkType;
 //! use crate::smart_id_rust_client::models::user_identity::UserIdentity;
 //! use smart_id_rust_client::models::interaction::Interaction;
 //! use smart_id_rust_client::error::Result;
-//! use smart_id_rust_client::models::authentication_session::AuthenticationCertificateLevel;
+//! use smart_id_rust_client::models::api::authentication_session::AuthenticationCertificateLevel;
 //! use smart_id_rust_client::models::signature::SignatureAlgorithm;
 //! #[tokio::main]
 //! async fn main() -> Result<()> {

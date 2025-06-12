@@ -1,9 +1,9 @@
 use crate::config::SmartIDConfig;
 use crate::error::Result;
 use crate::error::SmartIdClientError;
+use crate::models::api::response::SmartIdAPIResponse;
 use crate::models::common::{CertificateLevel, RequestProperties, VCCode};
 use crate::models::interaction::{encode_interactions_base_64, Interaction};
-use crate::models::response::SmartIdAPIResponse;
 use crate::models::signature::{
     HashingAlgorithm, SignatureAlgorithm, SignatureProtocol, SignatureProtocolParameters,
     SignatureRequestAlgorithmParameters,
@@ -36,7 +36,7 @@ use serde_with::skip_serializing_none;
 ///
 /// ```rust
 /// use smart_id_rust_client::config::SmartIDConfig;
-/// use smart_id_rust_client::models::signature_session::SignatureDeviceLinkRequest;
+/// use smart_id_rust_client::models::api::signature_session::SignatureDeviceLinkRequest;
 /// use smart_id_rust_client::models::interaction::Interaction;
 /// use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 /// use smart_id_rust_client::error::Result;
@@ -170,7 +170,7 @@ pub struct SignatureDeviceLinkSession {
 ///
 /// ```rust
 /// use smart_id_rust_client::config::SmartIDConfig;
-/// use smart_id_rust_client::models::signature_session::SignatureNotificationRequest;
+/// use smart_id_rust_client::models::api::signature_session::SignatureNotificationRequest;
 /// use smart_id_rust_client::models::interaction::Interaction;
 /// use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 /// use smart_id_rust_client::error::Result;///
@@ -297,7 +297,7 @@ pub struct SignatureNotificationSession {
 ///
 /// ```rust
 /// use smart_id_rust_client::config::SmartIDConfig;
-/// use smart_id_rust_client::models::signature_session::SignatureNotificationLinkedRequest;
+/// use smart_id_rust_client::models::api::signature_session::SignatureNotificationLinkedRequest;
 /// use smart_id_rust_client::models::interaction::Interaction;
 /// use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 /// use smart_id_rust_client::error::Result;

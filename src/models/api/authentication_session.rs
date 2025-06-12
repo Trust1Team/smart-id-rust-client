@@ -1,9 +1,9 @@
 use crate::config::SmartIDConfig;
 use crate::error::Result;
 use crate::error::SmartIdClientError;
+use crate::models::api::response::SmartIdAPIResponse;
 use crate::models::common::{CertificateLevel, RequestProperties, VCCodeType};
 use crate::models::interaction::{encode_interactions_base_64, Interaction};
-use crate::models::response::SmartIdAPIResponse;
 use crate::models::signature::{
     HashingAlgorithm, SignatureAlgorithm, SignatureProtocol, SignatureProtocolParameters,
 };
@@ -34,7 +34,7 @@ use serde_with::skip_serializing_none;
 /// ```rust
 /// use smart_id_rust_client::error::Result;
 /// use smart_id_rust_client::config::SmartIDConfig;
-/// use smart_id_rust_client::models::authentication_session::{AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest};
+/// use smart_id_rust_client::models::api::authentication_session::{AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest};
 /// use smart_id_rust_client::models::interaction::Interaction;
 /// use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 ///
@@ -88,7 +88,7 @@ pub struct AuthenticationDeviceLinkRequest {
 /// ```rust
 /// use smart_id_rust_client::error::Result;
 /// use smart_id_rust_client::config::SmartIDConfig;
-/// use smart_id_rust_client::models::authentication_session::{AuthenticationDeviceLinkRequest, AuthenticationCertificateLevel};
+/// use smart_id_rust_client::models::api::authentication_session::{AuthenticationDeviceLinkRequest, AuthenticationCertificateLevel};
 /// use smart_id_rust_client::models::interaction::Interaction;
 /// use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 ///
@@ -187,7 +187,7 @@ pub struct AuthenticationDeviceLinkSession {
 /// ```rust
 /// use smart_id_rust_client::error::Result;
 /// use smart_id_rust_client::config::SmartIDConfig;
-/// use smart_id_rust_client::models::authentication_session::{AuthenticationCertificateLevel, AuthenticationNotificationRequest};
+/// use smart_id_rust_client::models::api::authentication_session::{AuthenticationCertificateLevel, AuthenticationNotificationRequest};
 /// use smart_id_rust_client::models::interaction::Interaction;
 /// use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 ///
@@ -242,7 +242,7 @@ pub struct AuthenticationNotificationRequest {
 /// ```rust
 /// use smart_id_rust_client::error::Result;
 /// use smart_id_rust_client::config::SmartIDConfig;
-/// use smart_id_rust_client::models::authentication_session::{AuthenticationNotificationRequest, AuthenticationCertificateLevel};
+/// use smart_id_rust_client::models::api::authentication_session::{AuthenticationNotificationRequest, AuthenticationCertificateLevel};
 /// use smart_id_rust_client::models::interaction::Interaction;
 /// use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 ///

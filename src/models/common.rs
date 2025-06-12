@@ -1,20 +1,20 @@
 use crate::error::Result;
 use crate::error::SmartIdClientError;
-use crate::models::authentication_session::{
+use crate::models::api::authentication_session::{
     AuthenticationDeviceLinkRequest, AuthenticationDeviceLinkSession,
     AuthenticationNotificationRequest, AuthenticationNotificationSession,
 };
-use crate::models::certificate_choice_session::{
+use crate::models::api::certificate_choice_session::{
     CertificateChoiceDeviceLinkRequest, CertificateChoiceDeviceLinkSession,
     CertificateChoiceNotificationRequest, CertificateChoiceNotificationSession,
 };
-use crate::models::session_status::SessionStatusResponse;
-use crate::models::signature::{
-    ResponseSignature, SignatureAlgorithm, SignatureProtocol, SignatureProtocolParameters,
-};
-use crate::models::signature_session::{
+use crate::models::api::session_status::SessionStatusResponse;
+use crate::models::api::signature_session::{
     SignatureDeviceLinkRequest, SignatureDeviceLinkSession, SignatureNotificationLinkedRequest,
     SignatureNotificationLinkedSession, SignatureNotificationRequest, SignatureNotificationSession,
+};
+use crate::models::signature::{
+    ResponseSignature, SignatureAlgorithm, SignatureProtocol, SignatureProtocolParameters,
 };
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;

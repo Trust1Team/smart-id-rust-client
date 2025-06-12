@@ -3,15 +3,15 @@ use image::Luma;
 use qrcode::QrCode;
 use smart_id_rust_client::client::smart_id_client::SmartIdClient;
 use smart_id_rust_client::config::SmartIDConfig;
-use smart_id_rust_client::models::authentication_session::{
+use smart_id_rust_client::models::api::authentication_session::{
     AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest,
 };
-use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
+use smart_id_rust_client::models::api::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
+use smart_id_rust_client::models::api::session_status::SessionStatusResponse;
+use smart_id_rust_client::models::api::signature_session::SignatureDeviceLinkRequest;
 use smart_id_rust_client::models::device_link::DeviceLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
-use smart_id_rust_client::models::session_status::SessionStatusResponse;
 use smart_id_rust_client::models::signature::SignatureAlgorithm;
-use smart_id_rust_client::models::signature_session::SignatureDeviceLinkRequest;
 use tracing::{info, Level};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::fmt::SubscriberBuilder;
