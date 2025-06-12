@@ -6,12 +6,15 @@ use smart_id_rust_client::config::SmartIDConfig;
 use smart_id_rust_client::models::api::authentication_session::{
     AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest,
 };
-use smart_id_rust_client::models::api::certificate_choice_session::CertificateChoiceDeviceLinkRequest;
+use smart_id_rust_client::models::api::certificate_choice_session::{
+    CertificateChoiceDeviceLinkRequest, CertificateChoiceNotificationRequest,
+};
 use smart_id_rust_client::models::api::session_status::SessionStatusResponse;
 use smart_id_rust_client::models::api::signature_session::SignatureDeviceLinkRequest;
+use smart_id_rust_client::models::common::SchemeName;
 use smart_id_rust_client::models::device_link::DeviceLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
-use smart_id_rust_client::models::signature::SignatureAlgorithm;
+use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 use tracing::{info, Level};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::fmt::SubscriberBuilder;
@@ -32,6 +35,7 @@ async fn main() -> Result<()> {
     let _cfg = SmartIDConfig {
         root_url: "https://sid.demo.sk.ee".to_string(),
         api_path: "/smart-id-rp/v3".to_string(),
+        scheme_name: SchemeName::smart_id_demo,
         relying_party_uuid: "test-uuid".to_string(),
         relying_party_name: "test-name".to_string(),
         client_request_timeout: Some(30000),
@@ -96,6 +100,8 @@ async fn uc_authentication_request_example(
         }],
         SignatureAlgorithm::RsassaPss,
         AuthenticationCertificateLevel::QUALIFIED,
+        None, // No callback url is needed for cross device link sessions (QR)
+        HashingAlgorithm::sha_256,
     )?;
 
     smart_id_client
@@ -132,7 +138,7 @@ async fn uc_certificate_choice_request_example(
     smart_id_client: &SmartIdClient,
     document_number: String,
 ) -> Result<SessionStatusResponse> {
-    let certificate_choice_request = CertificateChoiceDeviceLinkRequest::new(cfg);
+    let certificate_choice_request = CertificateChoiceNotificationRequest::new(cfg);
     smart_id_client
         .start_certificate_choice_notification_document_session(
             certificate_choice_request,
@@ -159,6 +165,8 @@ async fn uc_signature_request_example(
         }],
         digest,
         SignatureAlgorithm::RsassaPss,
+        HashingAlgorithm::sha_256,
+        None, // No callback url is needed for cross device link sessions (QR)
     )?;
     smart_id_client
         .start_signature_dynamic_link_document_session(signature_request, document_number)
