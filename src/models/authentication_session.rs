@@ -2,13 +2,11 @@ use crate::config::SmartIDConfig;
 use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::models::common::{CertificateLevel, RequestProperties, VCCodeType};
-use crate::models::interaction::Interaction;
+use crate::models::interaction::{encode_interactions_base_64, Interaction};
 use crate::models::response::SmartIdAPIResponse;
 use crate::models::signature::{
     HashingAlgorithm, SignatureAlgorithm, SignatureProtocol, SignatureProtocolParameters,
-    SignatureRequestAlgorithmParameters,
 };
-use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -61,11 +59,10 @@ pub struct AuthenticationDeviceLinkRequest {
     #[serde(rename = "relyingPartyUUID")]
     pub relying_party_uuid: String,
     pub relying_party_name: String,
-    pub initial_callback_url: String,
+    pub initial_callback_url: Option<String>,
     pub certificate_level: AuthenticationCertificateLevel,
     pub signature_protocol: SignatureProtocol,
     pub signature_protocol_parameters: SignatureProtocolParameters,
-    pub signature_algorithm_parameters: SignatureRequestAlgorithmParameters,
     pub interactions: String,
     pub request_properties: Option<RequestProperties>,
     pub capabilities: Option<Vec<String>>,
@@ -129,24 +126,19 @@ impl AuthenticationDeviceLinkRequest {
             interaction.validate_text_length()?;
         }
 
-        let encoded_interactions =
-            BASE64_STANDARD.encode(serde_json::to_string(&interactions).map_err(|_| {
-                SmartIdClientError::InvalidInteractionParametersException(
-                    "Interactions could not be serialized to JSON",
-                )
-            })?);
+        let encoded_interactions = encode_interactions_base_64(&interactions)?;
 
         Ok(AuthenticationDeviceLinkRequest {
             relying_party_uuid: cfg.relying_party_uuid.clone(),
             relying_party_name: cfg.relying_party_name.clone(),
-            initial_callback_url: initial_callback_url.unwrap_or("".to_string()),
+            initial_callback_url,
             certificate_level: authentication_certificate_level,
 
             signature_protocol: SignatureProtocol::ACSP_V2,
             signature_protocol_parameters: SignatureProtocolParameters::new_acsp_v2(
                 signature_algorithm,
+                hash_algorithm,
             ),
-            signature_algorithm_parameters: SignatureRequestAlgorithmParameters { hash_algorithm },
             interactions: encoded_interactions,
             request_properties: None,
             capabilities: None,
@@ -224,7 +216,6 @@ pub struct AuthenticationNotificationRequest {
     pub certificate_level: AuthenticationCertificateLevel,
     pub signature_protocol: SignatureProtocol,
     pub signature_protocol_parameters: SignatureProtocolParameters,
-    pub signature_algorithm_parameters: SignatureRequestAlgorithmParameters,
     pub interactions: String,
     pub request_properties: Option<RequestProperties>,
     pub capabilities: Option<Vec<String>>,
@@ -289,12 +280,7 @@ impl AuthenticationNotificationRequest {
             interaction.validate_text_length()?;
         }
 
-        let encoded_interactions =
-            BASE64_STANDARD.encode(serde_json::to_string(&interactions).map_err(|_| {
-                SmartIdClientError::InvalidInteractionParametersException(
-                    "Interactions could not be serialized to JSON",
-                )
-            })?);
+        let encoded_interactions = encode_interactions_base_64(&interactions)?;
 
         Ok(AuthenticationNotificationRequest {
             relying_party_uuid: cfg.relying_party_uuid.clone(),
@@ -305,8 +291,8 @@ impl AuthenticationNotificationRequest {
             signature_protocol: SignatureProtocol::ACSP_V2,
             signature_protocol_parameters: SignatureProtocolParameters::new_acsp_v2(
                 signature_algorithm,
+                hash_algorithm,
             ),
-            signature_algorithm_parameters: SignatureRequestAlgorithmParameters { hash_algorithm },
             interactions: encoded_interactions,
             request_properties: None,
             capabilities: None,

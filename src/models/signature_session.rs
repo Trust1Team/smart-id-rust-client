@@ -2,7 +2,7 @@ use crate::config::SmartIDConfig;
 use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::models::common::{CertificateLevel, RequestProperties, VCCode};
-use crate::models::interaction::Interaction;
+use crate::models::interaction::{encode_interactions_base_64, Interaction};
 use crate::models::response::SmartIdAPIResponse;
 use crate::models::signature::{
     HashingAlgorithm, SignatureAlgorithm, SignatureProtocol, SignatureProtocolParameters,
@@ -106,12 +106,7 @@ impl SignatureDeviceLinkRequest {
             interaction.validate_text_length()?;
         }
 
-        let encoded_interactions =
-            BASE64_STANDARD.encode(serde_json::to_string(&interactions).map_err(|_| {
-                SmartIdClientError::InvalidInteractionParametersException(
-                    "Interactions could not be serialized to JSON",
-                )
-            })?);
+        let encoded_interactions = encode_interactions_base_64(&interactions)?;
 
         BASE64_STANDARD.decode(&digest).map_err(|_| {
             SmartIdClientError::InvalidDigestException("Digest not encoded in base64")
@@ -242,12 +237,7 @@ impl SignatureNotificationRequest {
             interaction.validate_text_length()?;
         }
 
-        let encoded_interactions =
-            BASE64_STANDARD.encode(serde_json::to_string(&interactions).map_err(|_| {
-                SmartIdClientError::InvalidInteractionParametersException(
-                    "Interactions could not be serialized to JSON",
-                )
-            })?);
+        let encoded_interactions = encode_interactions_base_64(&interactions)?;
 
         BASE64_STANDARD.decode(&digest).map_err(|_| {
             SmartIdClientError::InvalidDigestException("Digest not encoded in base64")
@@ -376,12 +366,7 @@ impl SignatureNotificationLinkedRequest {
             interaction.validate_text_length()?;
         }
 
-        let encoded_interactions =
-            BASE64_STANDARD.encode(serde_json::to_string(&interactions).map_err(|_| {
-                SmartIdClientError::InvalidInteractionParametersException(
-                    "Interactions could not be serialized to JSON",
-                )
-            })?);
+        let encoded_interactions = encode_interactions_base_64(&interactions)?;
 
         BASE64_STANDARD.decode(&digest).map_err(|_| {
             SmartIdClientError::InvalidDigestException("Digest not encoded in base64")
