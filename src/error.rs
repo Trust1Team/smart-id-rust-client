@@ -10,6 +10,10 @@ pub enum SmartIdClientError {
     #[error("Configuration missing: {0}")]
     ConfigMissingException(&'static str),
 
+    /// Serialization Error
+    #[error("Serialization error: {0}")]
+    SerializationError(String),
+
     ///RelyingPartyAccountConfigurationException
     #[error("Relying Party account configuration exception: {0}")]
     RelyingPartyAccountConfigurationException(&'static str),
@@ -165,4 +169,12 @@ pub enum SmartIdClientError {
     /// Invalid semantic identifier
     #[error("Invalid semantic identifier: {0}")]
     InvalidSemanticIdentifierException(String),
+
+    // Protocol Failure Exception
+    #[error("Protocol failure exception")]
+    ProtocolFailureException,
+
+    // Server Error Exception
+    #[error("Server error exception")]
+    ServerErrorException,
 }

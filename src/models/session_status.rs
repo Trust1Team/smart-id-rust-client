@@ -148,7 +148,9 @@ impl EndResult {
             EndResult::USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE => Err(
                 SmartIdClientError::UserRefusedConfirmationMessageWithVerificationChoiceException,
             ),
-            _ => Err(SmartIdClientError::SmartIdClientException(
+            EndResult::PROTOCOL_FAILURE => Err(SmartIdClientError::ProtocolFailureException),
+            EndResult::SERVER_ERROR => Err(SmartIdClientError::ServerErrorException),
+            EndResult::UNKNOWN | _ => Err(SmartIdClientError::SmartIdClientException(
                 "Unknown session end result",
             )),
         }
