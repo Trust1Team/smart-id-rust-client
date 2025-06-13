@@ -80,23 +80,23 @@ impl SignatureAlgorithm {
             }
         }; // 32-byte salt
 
-        println!(
-            "[SmartIdClient] Verifying RSA signature with algorithm: {:?}, salt length: {}",
-            hashing_algorithm, salt_length
-        );
-        println!(
-            "[SmartIdClient] Public key modulus: {:?}",
-            rsa_public_key.n()
-        );
-        println!(
-            "[SmartIdClient] Public key exponent: {:?}",
-            rsa_public_key.e()
-        );
-        println!("[SmartIdClient] Digest: {:?}", digest);
-        println!("[SmartIdClient] Signature: {:?}", signature);
-
-        println!("Digest length: {}", digest.len());
-        println!("Signature length: {}", signature.len());
+        // println!(
+        //     "[SmartIdClient] Verifying RSA signature with algorithm: {:?}, salt length: {}",
+        //     hashing_algorithm, salt_length
+        // );
+        // println!(
+        //     "[SmartIdClient] Public key modulus: {:?}",
+        //     rsa_public_key.n()
+        // );
+        // println!(
+        //     "[SmartIdClient] Public key exponent: {:?}",
+        //     rsa_public_key.e()
+        // );
+        // println!("[SmartIdClient] Digest: {:?}", digest);
+        // println!("[SmartIdClient] Signature: {:?}", signature);
+        //
+        // println!("Digest length: {}", digest.len());
+        // println!("Signature length: {}", signature.len());
 
         // Verify signature
         match verifier.verify(&rsa_public_key, digest, signature) {
@@ -208,7 +208,7 @@ impl SignatureAlgorithm {
 
         let acsp_v2_payload: String = acsp_v2_payload_parts.join(separator);
 
-        println!("[SmartIdClient] ACSP V2 Payload: {}", acsp_v2_payload);
+        // println!("[SmartIdClient] ACSP V2 Payload: {}", acsp_v2_payload);
 
         acsp_v2_payload
     }
@@ -471,7 +471,7 @@ impl ResponseSignature {
                     ));
                 }
 
-                println!("cert: {}", cert);
+                // println!("cert: {}", cert);
                 // signature validation
                 let decoded_cert = BASE64_STANDARD.decode(&cert).map_err(|e| {
                     SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(

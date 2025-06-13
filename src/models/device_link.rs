@@ -229,7 +229,7 @@ impl DeviceLink {
             .unwrap();
         let auth_code_payload: String = self.generate_auth_code_payload();
 
-        println!("Auth code payload: {}", auth_code_payload);
+        // println!("Auth code payload: {}", auth_code_payload);
 
         let mut mac =
             Hmac::<Sha256>::new_from_slice(session_secret).expect("HMAC can take key of any size");
