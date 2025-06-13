@@ -6,9 +6,7 @@ use smart_id_rust_client::config::SmartIDConfig;
 use smart_id_rust_client::models::api::authentication_session::{
     AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest,
 };
-use smart_id_rust_client::models::api::certificate_choice_session::{
-    CertificateChoiceDeviceLinkRequest, CertificateChoiceNotificationRequest,
-};
+use smart_id_rust_client::models::api::certificate_choice_session::CertificateChoiceNotificationRequest;
 use smart_id_rust_client::models::api::session_status::SessionStatusResponse;
 use smart_id_rust_client::models::api::signature_session::SignatureDeviceLinkRequest;
 use smart_id_rust_client::models::common::SchemeName;
@@ -126,25 +124,6 @@ async fn uc_authentication_request_example(
 
     // This will open the QR code as an image on your computer so you can scan it with your smart-id app
     open_qr_in_computer_image_viewer(qr_code_link.clone(), "auth_qr_code")?;
-
-    // This will long poll the session status
-    let result = smart_id_client.get_session_status().await?;
-    info!("{:?}", result.clone().result.unwrap().end_result);
-    Ok(result)
-}
-
-async fn uc_certificate_choice_request_example(
-    cfg: &SmartIDConfig,
-    smart_id_client: &SmartIdClient,
-    document_number: String,
-) -> Result<SessionStatusResponse> {
-    let certificate_choice_request = CertificateChoiceNotificationRequest::new(cfg);
-    smart_id_client
-        .start_certificate_choice_notification_document_session(
-            certificate_choice_request,
-            document_number,
-        )
-        .await?;
 
     // This will long poll the session status
     let result = smart_id_client.get_session_status().await?;

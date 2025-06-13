@@ -7,7 +7,6 @@ use crate::models::interaction::{encode_interactions_base_64, Interaction};
 use crate::models::signature::{
     HashingAlgorithm, SignatureAlgorithm, SignatureProtocol, SignatureProtocolParameters,
 };
-use base64::Engine;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 // region AuthenticationDeviceLinkSessionRequest

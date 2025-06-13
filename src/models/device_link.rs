@@ -8,8 +8,6 @@ use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use strum_macros::{AsRefStr, Display};
 
-type HmacSha256 = Hmac<Sha256>;
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, AsRefStr, Display)]
 #[allow(non_camel_case_types)]
 pub enum DeviceLinkType {

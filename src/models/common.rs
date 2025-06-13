@@ -20,10 +20,8 @@ use base64::engine::general_purpose::STANDARD;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use chrono::{DateTime, Utc};
-use der::Encode;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::clone;
 use std::cmp::Ordering;
 use strum_macros::{AsRefStr, Display, EnumString};
 use tracing::error;
@@ -420,7 +418,7 @@ impl SessionConfig {
             SessionConfig::SignatureNotificationLinked { digest, .. } => Some(digest.clone()),
             SessionConfig::AuthenticationDeviceLink {
                 relying_party_name,
-                initial_callback_url,
+
                 interactions,
                 rp_challenge,
                 scheme_name,
