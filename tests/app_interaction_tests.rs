@@ -390,6 +390,42 @@ async fn test_device_link_auth_then_certificate_choice_notification_etsi_then_si
     Ok(())
 }
 
+#[tokio::test]
+#[ignore]
+async fn test_authentication_etsi_notifiaction() -> Result<()> {
+    setup();
+    let cfg = SmartIDConfig::load_from_env()?;
+    let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
+
+    // AUTHENTICATION
+    let authentication_request = AuthenticationNotificationRequest::new(
+        &cfg,
+        vec![Interaction::ConfirmationMessage {
+            display_text_200: "TEST".to_string(),
+        }],
+        SignatureAlgorithm::RsassaPss,
+        AuthenticationCertificateLevel::QUALIFIED,
+        HashingAlgorithm::sha_256,
+    )?;
+    println!(
+        "Authentication Request:\n{}",
+        serde_json::to_string_pretty(&authentication_request)?
+    );
+
+    smart_id_client
+        .start_authentication_notification_etsi_session(authentication_request, ETSI_ID.to_string())
+        .await?;
+
+    // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
+    let result = smart_id_client.get_session_status().await?;
+    println!(
+        "Authentication Session Status \n{:}",
+        serde_json::to_string_pretty(&result)?
+    );
+
+    Ok(())
+}
+
 // Helper function to open the QR code in the computer's default image viewer
 // This allows the tester to scan the QR code with a mobile device during maunal testing.
 fn open_qr_in_computer_image_viewer(qr_code_link: String, name: &str) -> Result<()> {
