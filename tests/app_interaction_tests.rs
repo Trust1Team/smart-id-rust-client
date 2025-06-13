@@ -4,30 +4,49 @@ use qrcode::QrCode;
 use smart_id_rust_client::client::smart_id_client::SmartIdClient;
 use smart_id_rust_client::config::SmartIDConfig;
 use smart_id_rust_client::models::api::authentication_session::{
-    AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest
-    ,
+    AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest,
+    AuthenticationNotificationRequest,
 };
 use smart_id_rust_client::models::api::certificate_choice_session::CertificateChoiceNotificationRequest;
 use smart_id_rust_client::models::api::session_status::EndResult;
-use smart_id_rust_client::models::api::signature_session::SignatureDeviceLinkRequest;
+use smart_id_rust_client::models::api::signature_session::{
+    SignatureDeviceLinkRequest, SignatureNotificationRequest,
+};
 use smart_id_rust_client::models::device_link::DeviceLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
 use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 use std::env;
 
-const SMART_ID_ROOT_URL: &str = "https://sid.demo.sk.ee";
-const SMART_ID_V3_API_PATH: &str = "/smart-id-rp/v3";
-const RELYING_PARTY_NAME: &str = "YOUR_RELYING_PARTY_NAME"; // Must be updated to your own relying party name
-const RELYING_PARTY_UUID: &str = "YOUR_RELYING_PARTY_UUID"; // Must be updated to your own relying party UUID
-#[allow(dead_code)]
-const DOCUMENT_NUMBER: &str = "YOUR_DOCUMENT_ID";
-#[allow(dead_code)]
-const ETSI_ID: &str = "YOUR_ETSI_ID";
+const SMART_ID_ROOT_URL: &str = "https://sid.demo.sk.ee/smart-id-rp";
+const SMART_ID_V3_API_PATH: &str = "/v3";
+const SMART_ID_SCHEME_NAME: &str = "smart-id-demo";
+const RELYING_PARTY_NAME: &str = "RELYING_PARTY_NAME"; // Must be updated to your own relying party name
+const RELYING_PARTY_UUID: &str = "RELYING_PARTY_UUID"; // Must be updated to your own relying party UUID
+const DOCUMENT_NUMBER: &str = "PNOBE-{ETSI_NUMBER}-WJS9-Q";
+const ETSI_ID: &str = "PNOBE-{ETSI_NUMBER}";
+const INITIAL_CALLBACK_URL: &str = "https://example.com/smart-id/callback";
+
+// const SMART_ID_ROOT_URL: &str = "https://rp-api.smart-id.com";
+// const SMART_ID_V3_API_PATH: &str = "/v3";
+// const RELYING_PARTY_NAME: &str = "Trust1Connector"; // Must be updated to your own relying party name
+// const RELYING_PARTY_UUID: &str = "RELYING_PARTY_UUID"; // Must be updated to your own relying party UUID
+// const DOCUMENT_NUMBER: &str = "PNOBE-{ETSI_NUMBER}-WJS9-Q";
+// const ETSI_ID: &str = "BE{ETSI_NUMBER}";
+// const INITIAL_CALLBACK_URL: &str = "https://example.com/smart-id/callback";
+
 const EXAMPLE_SIGNING_TEXT: &str = "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=";
+// const SMART_ID_ROOT_URL: &str = "https://sid.demo.sk.ee/smart-id-rp";
+// const SMART_ID_V3_API_PATH: &str = "/v3";
+// const RELYING_PARTY_NAME: &str = "DEMO"; // Must be updated to your own relying party name
+// const RELYING_PARTY_UUID: &str = "00000000-0000-4000-8000-000000000000"; // Must be updated to your own relying party UUID
+//  const DOCUMENT_NUMBER: &str = "YOUR_DOCUMENT_ID";
+//  const ETSI_ID: &str = "YOUR_ETSI_ID";
+// const INITIAL_CALLBACK_URL: &str = "https://example.com/smart-id/callback";
 
 fn setup() {
     env::set_var("SMART_ID_ROOT_URL", SMART_ID_ROOT_URL);
     env::set_var("SMART_ID_V3_API_PATH", SMART_ID_V3_API_PATH);
+    env::set_var("SMART_ID_SCHEME_NAME", SMART_ID_SCHEME_NAME);
     env::set_var("RELYING_PARTY_NAME", RELYING_PARTY_NAME);
     env::set_var("RELYING_PARTY_UUID", RELYING_PARTY_UUID);
     env::set_var("CLIENT_REQ_NETWORK_TIMEOUT_MILLIS", "30000");
@@ -181,7 +200,7 @@ async fn test_authentication_app_to_app() -> Result<()> {
 
 #[tokio::test]
 #[ignore]
-async fn test_notification_auth_then_notification_sign) -> Result<()> {
+async fn test_notification_auth_then_notification_sign() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
@@ -232,15 +251,18 @@ async fn test_notification_auth_then_notification_sign) -> Result<()> {
             },
             Interaction::DisplayTextAndPIN {
                 display_text_60: "Short description of the transaction context".to_string(),
-        }],
-        "VC3jDipMw9TgSQrIm3oYuz2t/GciD3Aw2WTpnaGpo+1sdkkRiCnbRz08uqlgU6q1W2/VP6PDxSQlOy5AIxT5Xw==".to_string(),
+            },
+        ],
+        "VC3jDipMw9TgSQrIm3oYuz2t/GciD3Aw2WTpnaGpo+1sdkkRiCnbRz08uqlgU6q1W2/VP6PDxSQlOy5AIxT5Xw=="
+            .to_string(),
         SignatureAlgorithm::RsassaPss,
+        HashingAlgorithm::sha_512,
     )?;
+
     println!(
         "Signature Request: \n{}",
         serde_json::to_string_pretty(&signature_request)?
     );
-
 
     smart_id_client
         .start_signature_notification_document_session(
@@ -248,9 +270,6 @@ async fn test_notification_auth_then_notification_sign) -> Result<()> {
             DOCUMENT_NUMBER.to_string(),
         )
         .await?;
-
-    // This code should match the code displayed in the Smart-ID app
-    println!("Verification Code Sign: {}", vc.value);
 
     let result = smart_id_client.get_session_status().await?;
     println!(
@@ -269,7 +288,8 @@ async fn test_notification_auth_then_notification_sign) -> Result<()> {
 
 #[tokio::test]
 #[ignore]
-async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code() -> Result<()> {
+async fn test_device_link_auth_then_certificate_choice_notification_etsi_then_sign_with_qr_code(
+) -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
@@ -282,6 +302,8 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
         }],
         SignatureAlgorithm::RsassaPss,
         AuthenticationCertificateLevel::QUALIFIED,
+        None,
+        HashingAlgorithm::sha_256,
     )?;
     println!(
         "Authentication Request:\n{}",
@@ -289,10 +311,10 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
     );
 
     smart_id_client
-        .start_authentication_dynamic_link_anonymous_session(authentication_request)
+        .start_authentication_device_link_anonymous_session(authentication_request)
         .await?;
 
-    let qr_code_link = smart_id_client.generate_dynamic_link(DeviceLinkType::QR, "eng")?;
+    let qr_code_link = smart_id_client.generate_device_link(DeviceLinkType::QR, "eng")?;
 
     // Open the QR code in the computer's default image viewer
     // Scan the QR code with the Smart-ID app
@@ -306,18 +328,16 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
     );
 
     // CERTIFICATE CHOICE (Only needed if we want to include the user's certificate in the digest for the signature)
-    let document_number = result.result.unwrap().document_number.unwrap();
-
-    let certificate_choice_request = CertificateChoiceDeviceLinkRequest::new(&cfg);
+    let certificate_choice_request = CertificateChoiceNotificationRequest::new(&cfg);
     println!(
         "Certificate Choice Request: \n{}",
         serde_json::to_string_pretty(&certificate_choice_request)?
     );
 
     smart_id_client
-        .start_certificate_choice_notification_document_session(
+        .start_certificate_choice_notification_etsi_session(
             certificate_choice_request,
-            document_number.clone(),
+            ETSI_ID.to_string(),
         )
         .await?;
 
@@ -327,14 +347,20 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
         serde_json::to_string_pretty(&result)?
     );
 
+    let document_number = result.result.unwrap().document_number.unwrap();
+    println!("Document Number: {}", document_number);
+
     // SIGNATURE
     let signature_request = SignatureDeviceLinkRequest::new(
         &cfg,
         vec![Interaction::DisplayTextAndPIN {
             display_text_60: "Sign document".to_string(),
         }],
-        EXAMPLE_SIGNING_TEXT.to_string(),
+        "VC3jDipMw9TgSQrIm3oYuz2t/GciD3Aw2WTpnaGpo+1sdkkRiCnbRz08uqlgU6q1W2/VP6PDxSQlOy5AIxT5Xw=="
+            .to_string(),
         SignatureAlgorithm::RsassaPss,
+        HashingAlgorithm::sha_512,
+        None,
     )?;
     println!(
         "Signature Request: \n{}",
@@ -342,13 +368,13 @@ async fn test_dynamic_link_auth_then_certificate_choice_then_sign_with_qr_code()
     );
 
     smart_id_client
-        .start_signature_dynamic_link_document_session(
+        .start_signature_device_link_document_session(
             signature_request,
             document_number.to_string(),
         )
         .await?;
 
-    let qr_code_link = smart_id_client.generate_dynamic_link(DeviceLinkType::QR, "eng")?;
+    let qr_code_link = smart_id_client.generate_device_link(DeviceLinkType::QR, "eng")?;
 
     // Open the QR code in the computer's default image viewer
     // Scan the QR code with the Smart-ID app

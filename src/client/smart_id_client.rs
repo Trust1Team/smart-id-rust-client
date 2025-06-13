@@ -707,50 +707,6 @@ impl SmartIdClient {
         )
     }
 
-    /// Starts a certificate choice session using a notification and document id.
-    /// Use the get_session_status method to poll for the result.
-    ///
-    /// # Arguments
-    ///
-    /// * `certificate_choice_request` - The certificate choice request.
-    /// * `document_number` - The document number.
-    ///
-    /// # Returns
-    ///
-    /// A Result indicating success or failure.
-    pub async fn start_certificate_choice_notification_document_session(
-        &self,
-        certificate_choice_request: CertificateChoiceNotificationRequest,
-        document_number: String,
-    ) -> Result<()> {
-        self.clear_session();
-
-        let path = format!(
-            "{}{}/{}",
-            self.cfg.api_url(),
-            NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH,
-            document_number,
-        );
-
-        let certificate_choice_response =
-            post::<CertificateChoiceNotificationRequest, CertificateChoiceNotificationResponse>(
-                path.as_str(),
-                &certificate_choice_request,
-                self.cfg.client_request_timeout,
-            )
-            .await?;
-
-        let session = certificate_choice_response.into_result()?;
-
-        self.set_session(
-            SessionConfig::from_certificate_choice_notification_response(
-                session,
-                certificate_choice_request,
-                &self.cfg.scheme_name,
-            ),
-        )
-    }
-
     /// Get the signing certificate of the requested document number.
     /// If the document number has been previously aquired via the certificate choice session or authentication session, this can be used to get the signing certificate.
     /// This does not require a session.
@@ -896,7 +852,7 @@ impl SmartIdClient {
                             device_link_base,
                             device_link_type,
                             session_token,
-                            session_type: SessionType::auth,
+                            session_type: SessionType::sign,
                             version: DEVICE_LINK_VERSION.to_string(),
                             language_code: language_code.to_string(),
                             session_secret,
@@ -915,7 +871,7 @@ impl SmartIdClient {
                             device_link_type,
                             session_start_time,
                             session_token,
-                            session_type: SessionType::auth,
+                            session_type: SessionType::sign,
                             version: DEVICE_LINK_VERSION.to_string(),
                             language_code: language_code.to_string(),
                             session_secret,
@@ -943,7 +899,7 @@ impl SmartIdClient {
                             device_link_base,
                             device_link_type,
                             session_token,
-                            session_type: SessionType::auth,
+                            session_type: SessionType::cert,
                             version: DEVICE_LINK_VERSION.to_string(),
                             language_code: language_code.to_string(),
                             session_secret,
@@ -962,7 +918,7 @@ impl SmartIdClient {
                             device_link_type,
                             session_start_time,
                             session_token,
-                            session_type: SessionType::auth,
+                            session_type: SessionType::cert,
                             version: DEVICE_LINK_VERSION.to_string(),
                             language_code: language_code.to_string(),
                             session_secret,

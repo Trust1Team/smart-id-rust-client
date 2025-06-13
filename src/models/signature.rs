@@ -317,6 +317,10 @@ pub enum ResponseSignature {
         signature_algorithm_parameters: Option<SignatureResponseAlgorithmParameters>,
         flow_type: FlowType,
     },
+
+    // The certificate choice returns this mostly empty variant, it does not actually contain a signature.
+    #[serde(rename_all = "camelCase")]
+    CERTIFICATE_CHOICE_NO_SIGNATURE { flow_type: FlowType },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -529,6 +533,10 @@ impl ResponseSignature {
         match self {
             ResponseSignature::ACSP_V2 { value, .. } => value.clone(),
             ResponseSignature::RAW_DIGEST_SIGNATURE { value, .. } => value.clone(),
+            ResponseSignature::CERTIFICATE_CHOICE_NO_SIGNATURE { .. } => {
+                // This variant does not contain a signature value, so we return an empty string.
+                String::new()
+            }
         }
     }
 
@@ -542,6 +550,10 @@ impl ResponseSignature {
                 signature_algorithm,
                 ..
             } => signature_algorithm.clone(),
+            ResponseSignature::CERTIFICATE_CHOICE_NO_SIGNATURE { .. } => {
+                // This variant does not contain a signature algorithm, so we return a default value.
+                SignatureAlgorithm::RsassaPss
+            }
         }
     }
 
@@ -557,6 +569,10 @@ impl ResponseSignature {
                 signature_algorithm_parameters,
                 ..
             } => signature_algorithm_parameters.clone(),
+            ResponseSignature::CERTIFICATE_CHOICE_NO_SIGNATURE { .. } => {
+                // This variant does not contain signature algorithm parameters, so we return None.
+                None
+            }
         }
     }
 }
