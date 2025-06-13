@@ -212,7 +212,6 @@ pub struct AuthenticationNotificationRequest {
     #[serde(rename = "relyingPartyUUID")]
     pub relying_party_uuid: String,
     pub relying_party_name: String,
-    pub initial_callback_url: String,
     pub certificate_level: AuthenticationCertificateLevel,
     pub signature_protocol: SignatureProtocol,
     pub signature_protocol_parameters: SignatureProtocolParameters,
@@ -266,7 +265,6 @@ impl AuthenticationNotificationRequest {
         interactions: Vec<Interaction>,
         signature_algorithm: SignatureAlgorithm,
         authentication_certificate_level: AuthenticationCertificateLevel,
-        initial_callback_url: Option<String>,
         hash_algorithm: HashingAlgorithm,
     ) -> Result<Self> {
         // At least one interaction is needed for every authentication request
@@ -285,9 +283,7 @@ impl AuthenticationNotificationRequest {
         Ok(AuthenticationNotificationRequest {
             relying_party_uuid: cfg.relying_party_uuid.clone(),
             relying_party_name: cfg.relying_party_name.clone(),
-            initial_callback_url: initial_callback_url.unwrap_or("".to_string()),
             certificate_level: authentication_certificate_level,
-
             signature_protocol: SignatureProtocol::ACSP_V2,
             signature_protocol_parameters: SignatureProtocolParameters::new_acsp_v2(
                 signature_algorithm,

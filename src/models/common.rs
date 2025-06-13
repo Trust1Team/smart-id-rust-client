@@ -20,6 +20,7 @@ use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::cmp::Ordering;
 use strum_macros::{AsRefStr, Display, EnumString};
 use tracing::error;
@@ -81,6 +82,7 @@ pub enum SessionConfig {
         device_link_base: String,
 
         // Request values
+        scheme_name: SchemeName,
         relying_party_uuid: String,
         relying_party_name: String,
         initial_callback_url: String,
@@ -98,9 +100,9 @@ pub enum SessionConfig {
         session_id: String,
 
         // Request values
+        scheme_name: SchemeName,
         relying_party_uuid: String,
         relying_party_name: String,
-        initial_callback_url: String,
         certificate_level: CertificateLevel,
         signature_protocol: SignatureProtocol,
         signature_protocol_parameters: SignatureProtocolParameters,
@@ -119,6 +121,7 @@ pub enum SessionConfig {
         device_link_base: String,
 
         // Request values
+        scheme_name: SchemeName,
         relying_party_uuid: String,
         relying_party_name: String,
         initial_callback_url: String,
@@ -137,6 +140,7 @@ pub enum SessionConfig {
         vc: VCCode,
 
         // Request values
+        scheme_name: SchemeName,
         relying_party_uuid: String,
         relying_party_name: String,
         certificate_level: CertificateLevel,
@@ -153,6 +157,7 @@ pub enum SessionConfig {
         session_id: String,
 
         // Request values
+        scheme_name: SchemeName,
         relying_party_uuid: String,
         relying_party_name: String,
         certificate_level: CertificateLevel,
@@ -173,6 +178,7 @@ pub enum SessionConfig {
         device_link_base: String,
 
         // Request values
+        scheme_name: SchemeName,
         relying_party_uuid: String,
         relying_party_name: String,
         initial_callback_url: String,
@@ -182,13 +188,13 @@ pub enum SessionConfig {
         session_start_time: DateTime<Utc>,
     },
     CertificateChoiceNotification {
-        // Request values
+        // Response values
         session_id: String,
 
-        // Response values
+        // Request values
+        scheme_name: SchemeName,
         relying_party_uuid: String,
         relying_party_name: String,
-        initial_callback_url: String,
         certificate_level: CertificateLevel,
 
         // Calculated values
@@ -238,8 +244,10 @@ impl SessionConfig {
     pub fn from_authentication_device_link_response(
         authentication_response: AuthenticationDeviceLinkSession,
         authentication_request: AuthenticationDeviceLinkRequest,
+        scheme_name: &SchemeName,
     ) -> Result<SessionConfig> {
         Ok(SessionConfig::AuthenticationDeviceLink {
+            scheme_name: scheme_name.clone(),
             session_id: authentication_response.session_id,
             session_secret: authentication_response.session_secret,
             session_token: authentication_response.session_token,
@@ -268,12 +276,13 @@ impl SessionConfig {
     pub fn from_authentication_notification_response(
         authentication_notification_response: AuthenticationNotificationSession,
         authentication_request: AuthenticationNotificationRequest,
+        scheme_name: &SchemeName,
     ) -> Result<SessionConfig> {
         Ok(SessionConfig::AuthenticationNotification {
+            scheme_name: scheme_name.clone(),
             session_id: authentication_notification_response.session_id,
             relying_party_uuid: authentication_request.relying_party_uuid,
             relying_party_name: authentication_request.relying_party_name,
-            initial_callback_url: authentication_request.initial_callback_url,
             certificate_level: authentication_request.certificate_level.into(),
             signature_protocol: authentication_request.signature_protocol,
             signature_protocol_parameters: authentication_request
@@ -294,8 +303,10 @@ impl SessionConfig {
     pub fn from_signature_device_link_request_response(
         signature_request_response: SignatureDeviceLinkSession,
         signature_request: SignatureDeviceLinkRequest,
+        scheme_name: &SchemeName,
     ) -> Result<SessionConfig> {
         Ok(SessionConfig::SignatureDeviceLink {
+            scheme_name: scheme_name.clone(),
             session_id: signature_request_response.session_id,
             session_secret: signature_request_response.session_secret,
             session_token: signature_request_response.session_token,
@@ -320,8 +331,10 @@ impl SessionConfig {
     pub fn from_signature_notification_response(
         signature_notification_response: SignatureNotificationSession,
         signature_request: SignatureNotificationRequest,
+        scheme_name: &SchemeName,
     ) -> Result<SessionConfig> {
         Ok(SessionConfig::SignatureNotification {
+            scheme_name: scheme_name.clone(),
             session_id: signature_notification_response.session_id,
             relying_party_uuid: signature_request.relying_party_uuid,
             relying_party_name: signature_request.relying_party_name,
@@ -343,8 +356,10 @@ impl SessionConfig {
     pub fn from_signature_notification_linked_response(
         signature_notification_response: SignatureNotificationLinkedSession,
         signature_request: SignatureNotificationLinkedRequest,
+        scheme_name: &SchemeName,
     ) -> Result<SessionConfig> {
         Ok(SessionConfig::SignatureNotificationLinked {
+            scheme_name: scheme_name.clone(),
             session_id: signature_notification_response.session_id,
             relying_party_uuid: signature_request.relying_party_uuid,
             relying_party_name: signature_request.relying_party_name,
@@ -366,8 +381,10 @@ impl SessionConfig {
     pub fn from_certificate_choice_device_link_response(
         certificate_choice_response: CertificateChoiceDeviceLinkSession,
         certificate_choice_request: CertificateChoiceDeviceLinkRequest,
+        scheme_name: &SchemeName,
     ) -> SessionConfig {
         SessionConfig::CertificateChoiceDeviceLink {
+            scheme_name: scheme_name.clone(),
             session_id: certificate_choice_response.session_id,
             session_token: certificate_choice_response.session_token,
             session_secret: certificate_choice_response.session_secret,
@@ -383,12 +400,13 @@ impl SessionConfig {
     pub fn from_certificate_choice_notification_response(
         certificate_choice_response: CertificateChoiceNotificationSession,
         certificate_choice_request: CertificateChoiceNotificationRequest,
+        scheme_name: &SchemeName,
     ) -> SessionConfig {
         SessionConfig::CertificateChoiceNotification {
+            scheme_name: SchemeName::smart_id,
             session_id: certificate_choice_response.session_id,
             relying_party_uuid: certificate_choice_request.relying_party_uuid,
             relying_party_name: certificate_choice_request.relying_party_name,
-            initial_callback_url: certificate_choice_request.initial_callback_url,
             certificate_level: certificate_choice_request.certificate_level,
             session_start_time: Utc::now(),
         }
@@ -404,6 +422,9 @@ impl SessionConfig {
                 initial_callback_url,
                 interactions,
                 rp_challenge,
+                scheme_name,
+                signature_protocol,
+                signature_protocol_parameters,
                 ..
             } => {
                 // The authentication digest requires the challenge and protocol which are available before the session is started
@@ -425,6 +446,8 @@ impl SessionConfig {
                 }) = session_status.signature
                 {
                     Some(SignatureAlgorithm::build_acsp_v2_digest(
+                        scheme_name.clone(),
+                        signature_protocol.clone(),
                         &server_random,
                         rp_challenge,
                         &user_challenge,
@@ -434,6 +457,7 @@ impl SessionConfig {
                         interaction_type_used,
                         initial_callback_url,
                         flow_type.clone(),
+                        signature_protocol_parameters.get_hashing_algorithm(),
                     ))
                 } else {
                     // Authentication device link can only be ACSP_V2, so this should never happen if the session is complete and successful
@@ -441,8 +465,10 @@ impl SessionConfig {
                 }
             }
             SessionConfig::AuthenticationNotification {
+                scheme_name,
+                signature_protocol,
+                signature_protocol_parameters,
                 relying_party_name,
-                initial_callback_url,
                 interactions,
                 rp_challenge,
                 ..
@@ -465,6 +491,8 @@ impl SessionConfig {
                 }) = session_status.signature
                 {
                     Some(SignatureAlgorithm::build_acsp_v2_digest(
+                        scheme_name.clone(),
+                        signature_protocol.clone(),
                         &server_random,
                         rp_challenge,
                         &user_challenge,
@@ -472,8 +500,9 @@ impl SessionConfig {
                         "",
                         interactions,
                         interaction_type_used,
-                        initial_callback_url,
+                        "",
                         flow_type.clone(),
+                        signature_protocol_parameters.get_hashing_algorithm(),
                     ))
                 } else {
                     // Authentication device link can only be ACSP_V2, so this should never happen if the session is complete and successful
@@ -482,6 +511,35 @@ impl SessionConfig {
             }
             SessionConfig::CertificateChoiceDeviceLink { .. } => None, // Certificate choice does not have a digest
             SessionConfig::CertificateChoiceNotification { .. } => None, // Certificate choice does not have a digest
+        }
+    }
+
+    // Calculate the VC code for notification-based authentication using the RP challenge.
+    // Based on documentation https://sk-eid.github.io/smart-id-documentation/rp-api/notification_based_flows.html
+    pub fn calculate_vc_code(&self) -> Result<VCCode> {
+        match self {
+            SessionConfig::AuthenticationNotification {
+                vc_type,
+                rp_challenge,
+                ..
+            } => {
+                let rp_challenge_bytes = base64::engine::general_purpose::STANDARD
+                    .decode(rp_challenge)
+                    .map_err(|_| {
+                        SmartIdClientError::InvalidSignatureProtocal("Invalid RP challenge")
+                    })?;
+                let sha256_hash = Sha256::digest(&rp_challenge_bytes);
+                let result = (((sha256_hash[30] as u16) << 8) + (sha256_hash[31] as u16)) % 10000;
+                let verification_code: String = format!("{:04}", result);
+
+                Ok(VCCode {
+                    vc_type: vc_type.clone(),
+                    value: verification_code,
+                })
+            }
+            _ => Err(SmartIdClientError::InvalidSignatureProtocal(
+                "VC code can only be calculated for AuthenticationNotification session",
+            )),
         }
     }
 }
@@ -518,4 +576,39 @@ pub enum VCCodeType {
 pub enum SchemeName {
     smart_id,
     smart_id_demo,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::signature::{HashingAlgorithm, SignatureRequestAlgorithmParameters};
+
+    // Based on the example from the documentation, their example return value is incorrect though.
+    // https://sk-eid.github.io/smart-id-documentation/rp-api/notification_based_flows.html
+    #[test]
+    fn test_verification_code_calculation() {
+        let session_config = SessionConfig::AuthenticationNotification {
+            scheme_name: SchemeName::smart_id,
+            session_id: "test_session_id".to_string(),
+            relying_party_uuid: "test_relying_party_uuid".to_string(),
+            relying_party_name: "Test Relying Party".to_string(),
+            certificate_level: CertificateLevel::QUALIFIED,
+            signature_protocol: SignatureProtocol::ACSP_V2,
+            signature_protocol_parameters: SignatureProtocolParameters::ACSP_V2 {
+                rp_challenge: "GYS+yoah6emAcVDNIajwSs6UB/M95XrDxMzXBUkwQJ9YFDipXXzGpPc7raWcuc2+TEoRc7WvIZ/7dU/iRXenYg==".to_string(),
+                signature_algorithm: SignatureAlgorithm::RsassaPss,
+                signature_algorithm_parameters: SignatureRequestAlgorithmParameters {
+                    hash_algorithm: HashingAlgorithm::sha_256,
+                },
+            },
+            interactions: "Test interactions".to_string(),
+            vc_type: VCCodeType::numeric4,
+            rp_challenge: "dGVzdF9jaGFsbGVuZ2U=".to_string(), // Base64 encoded "test_challenge"
+            session_start_time: Default::default(),
+        };
+
+        let vc_code = session_config.calculate_vc_code().unwrap();
+        assert_eq!(vc_code.value, "9158"); // The example from the docs has an incorrect return value.
+        assert_eq!(vc_code.vc_type, VCCodeType::numeric4);
+    }
 }

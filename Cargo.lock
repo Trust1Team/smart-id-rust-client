@@ -1362,6 +1362,7 @@ dependencies = [
  "num-iter",
  "num-traits",
  "rand",
+ "serde",
  "smallvec",
  "zeroize",
 ]
@@ -2345,6 +2346,7 @@ dependencies = [
  "hmac",
  "image",
  "num-bigint",
+ "num-bigint-dig",
  "num-traits",
  "oid-registry",
  "open",

@@ -197,6 +197,8 @@ impl SmartIdClient {
 
         let session_status = session_response.into_result()?;
 
+        println!("Session status response: \n {}", serde_json::to_string_pretty(&session_status).unwrap());
+
         match session_status.state {
             SessionState::COMPLETE => {
                 self.validate_session_status(session_status.clone(), session_config)?;
@@ -248,6 +250,7 @@ impl SmartIdClient {
         self.set_session(SessionConfig::from_authentication_device_link_response(
             session,
             authentication_request,
+            &self.cfg.scheme_name,
         )?)
     }
 
@@ -290,6 +293,7 @@ impl SmartIdClient {
         self.set_session(SessionConfig::from_authentication_device_link_response(
             session,
             authentication_request,
+            &self.cfg.scheme_name,
         )?)
     }
 
@@ -332,6 +336,7 @@ impl SmartIdClient {
         self.set_session(SessionConfig::from_authentication_device_link_response(
             session,
             authentication_request,
+            &self.cfg.scheme_name,
         )?)
     }
 
@@ -350,7 +355,7 @@ impl SmartIdClient {
         &self,
         authentication_request: AuthenticationNotificationRequest,
         etsi: String,
-    ) -> Result<()> {
+    ) -> Result<VCCode> {
         self.clear_session();
 
         let path = format!(
@@ -370,12 +375,17 @@ impl SmartIdClient {
 
         let session = authentication_response.into_result()?;
 
-        self.set_session(SessionConfig::from_authentication_notification_response(
+        let session_config = SessionConfig::from_authentication_notification_response(
             session.clone(),
             authentication_request,
-        )?)?;
+            &self.cfg.scheme_name,
+        )?;
 
-        Ok(())
+        let vc_code = session_config.calculate_vc_code();
+
+        self.set_session(session_config)?;
+
+        vc_code
     }
 
     /// Starts an authentication session using a notification.
@@ -393,7 +403,7 @@ impl SmartIdClient {
         &self,
         authentication_request: AuthenticationNotificationRequest,
         document_number: String,
-    ) -> Result<()> {
+    ) -> Result<VCCode> {
         self.clear_session();
 
         let path = format!(
@@ -413,12 +423,19 @@ impl SmartIdClient {
 
         let session = authentication_response.into_result()?;
 
-        self.set_session(SessionConfig::from_authentication_notification_response(
+        println!("Authentication response: \n {}", serde_json::to_string_pretty(&session).unwrap());
+
+        let session_config = SessionConfig::from_authentication_notification_response(
             session.clone(),
             authentication_request,
-        )?)?;
-
-        Ok(())
+            &self.cfg.scheme_name,
+        )?;
+        
+        let vc_code = session_config.calculate_vc_code();
+        
+        self.set_session(session_config)?;
+        
+        vc_code
     }
 
     // endregion: Authentication
@@ -463,6 +480,7 @@ impl SmartIdClient {
         self.set_session(SessionConfig::from_signature_device_link_request_response(
             session,
             signature_request,
+            &self.cfg.scheme_name,
         )?)
     }
 
@@ -504,6 +522,7 @@ impl SmartIdClient {
         self.set_session(SessionConfig::from_signature_device_link_request_response(
             session,
             signature_request,
+            &self.cfg.scheme_name,
         )?)
     }
 
@@ -545,6 +564,7 @@ impl SmartIdClient {
         self.set_session(SessionConfig::from_signature_notification_response(
             session.clone(),
             signature_request,
+            &self.cfg.scheme_name,
         )?)?;
 
         Ok(session.vc)
@@ -588,6 +608,7 @@ impl SmartIdClient {
         self.set_session(SessionConfig::from_signature_notification_response(
             session.clone(),
             signature_request,
+            &self.cfg.scheme_name,
         )?)?;
 
         Ok(session.vc)
@@ -632,6 +653,7 @@ impl SmartIdClient {
         self.set_session(SessionConfig::from_signature_notification_linked_response(
             session.clone(),
             signature_request,
+            &self.cfg.scheme_name,
         )?)?;
 
         Ok(())
@@ -680,6 +702,7 @@ impl SmartIdClient {
             SessionConfig::from_certificate_choice_notification_response(
                 session,
                 certificate_choice_request,
+                &self.cfg.scheme_name,
             ),
         )
     }
@@ -723,6 +746,7 @@ impl SmartIdClient {
             SessionConfig::from_certificate_choice_notification_response(
                 session,
                 certificate_choice_request,
+                &self.cfg.scheme_name,
             ),
         )
     }
@@ -1087,6 +1111,9 @@ impl SmartIdClient {
                 initial_callback_url,
                 interactions,
                 rp_challenge,
+                scheme_name,
+                signature_protocol,
+                signature_protocol_parameters,
                 ..
             } => {
                 let signature = session_status_response
@@ -1098,6 +1125,8 @@ impl SmartIdClient {
                     .ok_or(SmartIdClientError::SessionResponseMissingInteractionType)?;
 
                 signature.validate_acsp_v2(
+                    scheme_name,
+                    signature_protocol,
                     rp_challenge,
                     cert.value.clone(),
                     relying_party_name,
@@ -1105,6 +1134,7 @@ impl SmartIdClient {
                     interactions,
                     used_interaction_type,
                     initial_callback_url,
+                    signature_protocol_parameters.get_hashing_algorithm(),
                 )?;
 
                 // If no user identity is set, set it from the certificate
@@ -1117,9 +1147,11 @@ impl SmartIdClient {
             }
             SessionConfig::AuthenticationNotification {
                 relying_party_name,
-                initial_callback_url,
                 interactions,
                 rp_challenge,
+                scheme_name,
+                signature_protocol,
+                signature_protocol_parameters,
                 ..
             } => {
                 let signature = session_status_response
@@ -1131,13 +1163,16 @@ impl SmartIdClient {
                     .ok_or(SmartIdClientError::SessionResponseMissingInteractionType)?;
 
                 signature.validate_acsp_v2(
+                    scheme_name,
+                    signature_protocol,
                     rp_challenge,
                     cert.value.clone(),
                     relying_party_name,
                     "".to_string(),
                     interactions,
                     used_interaction_type,
-                    initial_callback_url,
+                    "".to_string(),
+                    signature_protocol_parameters.get_hashing_algorithm(),
                 )?;
 
                 // If no user identity is set, set it from the certificate

@@ -1,7 +1,7 @@
 use crate::models::common::SchemeName;
 use crate::models::signature::SignatureProtocol;
-use base64::prelude::{BASE64_URL_SAFE, BASE64_URL_SAFE_NO_PAD};
-use base64::{engine::general_purpose, Engine as _};
+use base64::prelude::BASE64_URL_SAFE;
+use base64::{alphabet, engine, engine::general_purpose, Engine as _};
 use chrono::{DateTime, Utc};
 use hmac::{Hmac, Mac};
 use serde::{Deserialize, Serialize};
@@ -165,11 +165,12 @@ impl DeviceLink {
                     .map(|s| s.as_ref().to_string())
                     .unwrap_or_else(|| SignatureProtocol::default().as_ref().to_string());
 
-                let auth_code_payload_parts: [&str; 7] = [
+                let auth_code_payload_parts: [&str; 8] = [
                     scheme_name.as_ref(),
                     &signature_protocol,
                     rp_challenge_or_digest,
                     &relying_party_name_base64,
+                    brokered_rp_name_base64,
                     interactions,
                     initial_callback_url,
                     &unprotected_device_link,
@@ -196,11 +197,12 @@ impl DeviceLink {
                 let brokered_rp_name_base64: &str = &BASE64_URL_SAFE.encode(brokered_rp_name);
                 let unprotected_device_link: String = self.generate_unprotected_device_link();
 
-                let auth_code_payload_parts: [&str; 7] = [
+                let auth_code_payload_parts: [&str; 8] = [
                     scheme_name.as_ref(),
                     signature_protocol,
                     rp_challenge_or_digest,
                     relying_party_name_base64,
+                    brokered_rp_name_base64,
                     interactions,
                     initial_callback_url,
                     &unprotected_device_link,
@@ -226,9 +228,14 @@ impl DeviceLink {
         let mut mac =
             Hmac::<Sha256>::new_from_slice(session_secret).expect("HMAC can take key of any size");
         mac.update(auth_code_payload.as_bytes());
+
         let auth_code_bytes = mac.finalize().into_bytes();
 
-        BASE64_URL_SAFE_NO_PAD.encode(auth_code_bytes)
+        const CUSTOM_ENGINE: engine::GeneralPurpose =
+            engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
+        let auth_code: String = CUSTOM_ENGINE.encode(auth_code_bytes);
+
+        auth_code
     }
 
     fn elapsed_seconds(&self, from: &DateTime<Utc>) -> i64 {
@@ -250,7 +257,7 @@ impl DeviceLink {
 mod tests {
     use super::*;
     use crate::models::device_link::DeviceLink::{CrossDeviceLink, SameDeviceLink};
-    use chrono::Duration;
+    use crate::models::signature::SignatureProtocol::ACSP_V2;
     use tracing_test::traced_test;
 
     // Created using outputs from the web link generator https://sk-eid.github.io/smart-id-documentation/rp-api/authcode.html
@@ -282,6 +289,47 @@ mod tests {
 
         let auth_code = device_link.generate_auth_code();
         assert_eq!(auth_code, "pqF4tQNXJj74VGpX1FNHbzXmJiLcqHuV5vom-oy33L8");
+    }
+
+    #[traced_test]
+    #[tokio::test]
+    async fn authentication_qr_device_link_auth_code_generation_with_real_params() {
+        use crate::models::common::SchemeName;
+        use crate::models::device_link::DeviceLink::SameDeviceLink;
+        use crate::models::signature::SignatureProtocol;
+
+        let device_link = CrossDeviceLink {
+            device_link_base: "https://sid.demo.sk.ee/device-link".to_string(),
+            version: "1.0".to_string(),
+            session_token: "UhZj7BX4XWp6ZPQwI29ZoT6o".to_string(),
+            session_secret: "qCej5K5F+ADc+U665zkP0bi9".to_string(),
+            scheme_name: SchemeName::smart_id_demo,
+            relying_party_name: "RELYING_PARTY_NAME".to_string(),
+            brokered_rp_name: "".to_string(),
+            device_link_type: DeviceLinkType::QR,
+            session_type: SessionType::auth,
+            language_code: "eng".to_string(),
+            initial_callback_url: "".to_string(),
+            signature_protocol: Some(ACSP_V2),
+            rp_challenge_or_digest: "FtKbl73BUkdTFvBvoz+Xg4thbS71WHBYIM7ukj8mykEns4hMWPaXeFN8nfEYwgexuJw9YIOYlqSLFyZBYAnEqw==".to_string(),
+            interactions: "W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==".to_string(),
+            session_start_time: Utc::now(),
+        };
+
+        let unprotected_link = device_link.generate_unprotected_device_link();
+        assert_eq!(
+            unprotected_link,
+            "https://sid.demo.sk.ee/device-link?deviceLinkType=QR&elapsedSeconds=0&sessionToken=UhZj7BX4XWp6ZPQwI29ZoT6o&sessionType=auth&version=1.0&lang=eng"
+        );
+
+        let auth_code_payload = device_link.generate_auth_code_payload();
+        assert_eq!(
+            auth_code_payload,
+            "smart-id-demo|ACSP_V2|FtKbl73BUkdTFvBvoz+Xg4thbS71WHBYIM7ukj8mykEns4hMWPaXeFN8nfEYwgexuJw9YIOYlqSLFyZBYAnEqw==|REVNTyBUcnVzdDE=|W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==||https://sid.demo.sk.ee/device-link?deviceLinkType=QR&elapsedSeconds=0&sessionToken=UhZj7BX4XWp6ZPQwI29ZoT6o&sessionType=auth&version=1.0&lang=eng"
+        );
+
+        let auth_code = device_link.generate_auth_code();
+        assert_eq!(auth_code, "7CjR7HgSRz_t5WHfYDxI5SzxqgHrKmFDIAzl7eO7HOI");
     }
 
     #[traced_test]

@@ -52,11 +52,18 @@ async fn test_authentication_qr() -> Result<()> {
 
     let authentication_request = AuthenticationDeviceLinkRequest::new(
         &cfg,
-        vec![Interaction::ConfirmationMessage {
-            display_text_200: "TEST 1".to_string(),
-        }],
+        vec![
+            Interaction::ConfirmationMessage {
+                display_text_200: "Longer description of the transaction context".to_string(),
+            },
+            Interaction::DisplayTextAndPIN {
+                display_text_60: "Short description of the transaction context".to_string(),
+            },
+        ],
         SignatureAlgorithm::RsassaPss,
         AuthenticationCertificateLevel::QUALIFIED,
+        None,
+        HashingAlgorithm::sha_512,
     )?;
     println!(
         "Authentication Request:\n{}",
@@ -64,10 +71,10 @@ async fn test_authentication_qr() -> Result<()> {
     );
 
     smart_id_client
-        .start_authentication_dynamic_link_anonymous_session(authentication_request)
+        .start_authentication_device_link_anonymous_session(authentication_request)
         .await?;
 
-    let qr_code_link = smart_id_client.generate_dynamic_link(DeviceLinkType::QR, "eng")?;
+    let qr_code_link = smart_id_client.generate_device_link(DeviceLinkType::QR, "eng")?;
 
     // Open the QR code in the computer's default image viewer
     // Scan the QR code with the Smart-ID app
@@ -96,8 +103,10 @@ async fn test_authentication_web_to_app() -> Result<()> {
         vec![Interaction::DisplayTextAndPIN {
             display_text_60: "Authenticate to Application: Test".to_string(),
         }],
-        SignatureAlgorithm::sha512WithRSAEncryption,
+        SignatureAlgorithm::RsassaPss,
         AuthenticationCertificateLevel::QUALIFIED,
+        Some(INITIAL_CALLBACK_URL.to_string()),
+        HashingAlgorithm::sha_256,
     )?;
     println!(
         "Authentication Request: \n{}",
@@ -105,10 +114,10 @@ async fn test_authentication_web_to_app() -> Result<()> {
     );
 
     smart_id_client
-        .start_authentication_dynamic_link_anonymous_session(authentication_request)
+        .start_authentication_device_link_anonymous_session(authentication_request)
         .await?;
 
-    let web_to_app_link = smart_id_client.generate_dynamic_link(DeviceLinkType::Web2App, "eng")?;
+    let web_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::Web2App, "eng")?;
 
     // Open the QR code in the computer's default image viewer
     // THIS SHOULD NOT BE SCANNED WITH THE SMART-ID APP
@@ -138,8 +147,10 @@ async fn test_authentication_app_to_app() -> Result<()> {
         vec![Interaction::DisplayTextAndPIN {
             display_text_60: "Authenticate to Application: Test".to_string(),
         }],
-        SignatureAlgorithm::sha512WithRSAEncryption,
+        SignatureAlgorithm::RsassaPss,
         AuthenticationCertificateLevel::QUALIFIED,
+        Some(INITIAL_CALLBACK_URL.to_string()),
+        HashingAlgorithm::sha_256,
     )?;
     println!(
         "Authentication Request: \n{}",
@@ -147,10 +158,10 @@ async fn test_authentication_app_to_app() -> Result<()> {
     );
 
     smart_id_client
-        .start_authentication_dynamic_link_anonymous_session(authentication_request)
+        .start_authentication_device_link_anonymous_session(authentication_request)
         .await?;
 
-    let web_to_app_link = smart_id_client.generate_dynamic_link(DeviceLinkType::App2App, "eng")?;
+    let web_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::App2App, "eng")?;
 
     // Open the QR code in the computer's default image viewer
     // THIS SHOULD NOT BE SCANNED WITH THE SMART-ID APP
@@ -176,20 +187,29 @@ async fn test_notification_auth_then_sign_with_qr_code() -> Result<()> {
     let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
 
     // AUTHENTICATION
-    let authentication_request = AuthenticationDeviceLinkRequest::new(
+    let authentication_request = AuthenticationNotificationRequest::new(
         &cfg,
         vec![Interaction::ConfirmationMessage {
             display_text_200: "TEST".to_string(),
         }],
         SignatureAlgorithm::RsassaPss,
         AuthenticationCertificateLevel::QUALIFIED,
+        HashingAlgorithm::sha_256,
     )?;
-    let vc = smart_id_client
+
+    println!(
+        "Authentication Request:\n{}",
+        serde_json::to_string_pretty(&authentication_request)?
+    );
+
+    let vc_code = smart_id_client
         .start_authentication_notification_document_session(
             authentication_request,
             DOCUMENT_NUMBER.to_string(),
         )
         .await?;
+
+    println!("VC Code: {:?}", vc_code);
 
     // This code should match the code displayed in the Smart-ID app
     println!("Verification Code Auth: {}", vc.value);
