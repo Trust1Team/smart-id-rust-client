@@ -826,8 +826,11 @@ impl SmartIdClient {
                             language_code: language_code.to_string(),
                             session_secret,
                             scheme_name: self.cfg.scheme_name.clone(),
+                            signature_protocol: Some(signature_protocol),
+                            rp_challenge_or_digest: rp_challenge,
                             relying_party_name,
                             brokered_rp_name: "".to_string(),
+                            interactions,
                             initial_callback_url,
                         }
                     }
@@ -876,8 +879,11 @@ impl SmartIdClient {
                             language_code: language_code.to_string(),
                             session_secret,
                             scheme_name: self.cfg.scheme_name.clone(),
+                            signature_protocol: Some(signature_protocol),
+                            rp_challenge_or_digest: digest,
                             relying_party_name,
                             brokered_rp_name: "".to_string(),
+                            interactions,
                             initial_callback_url,
                         }
                     }
@@ -923,8 +929,11 @@ impl SmartIdClient {
                             language_code: language_code.to_string(),
                             session_secret,
                             scheme_name: self.cfg.scheme_name.clone(),
+                            signature_protocol: None,
+                            rp_challenge_or_digest: "".to_string(),
                             relying_party_name,
                             brokered_rp_name: "".to_string(),
+                            interactions: "".to_string(),
                             initial_callback_url,
                         }
                     }

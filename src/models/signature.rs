@@ -317,10 +317,12 @@ pub enum ResponseSignature {
         signature_algorithm_parameters: Option<SignatureResponseAlgorithmParameters>,
         flow_type: FlowType,
     },
-
+    
     // The certificate choice returns this mostly empty variant, it does not actually contain a signature.
     #[serde(rename_all = "camelCase")]
-    CERTIFICATE_CHOICE_NO_SIGNATURE { flow_type: FlowType },
+    CERTIFICATE_CHOICE_NO_SIGNATURE { 
+        flow_type: FlowType,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

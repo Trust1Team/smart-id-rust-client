@@ -105,23 +105,23 @@ async fn uc_authentication_request_example(
     )?;
 
     smart_id_client
-        .start_authentication_dynamic_link_anonymous_session(authentication_request)
+        .start_authentication_device_link_anonymous_session(authentication_request)
         .await?;
 
     // This link can be displayed as QR code
     // The user can scan the QR code with the device that has the Smart-ID app installed
     // The QR code must be refreshed every 1 second.
-    let qr_code_link = smart_id_client.generate_dynamic_link(DeviceLinkType::QR, "eng")?;
+    let qr_code_link = smart_id_client.generate_device_link(DeviceLinkType::QR, "eng")?;
     info!("{:?}", qr_code_link);
 
     // This link can be opened inside an app and redirect to the Smart-ID app
     // It also must be refreshed every 1 second.
-    let app_to_app_link = smart_id_client.generate_dynamic_link(DeviceLinkType::App2App, "eng")?;
+    let app_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::App2App, "eng")?;
     info!("{:?}", app_to_app_link);
 
     // This link can be opened from the web browser and redirect to the Smart-ID app
     // It also must be refreshed every 1 second.
-    let web_to_app_link = smart_id_client.generate_dynamic_link(DeviceLinkType::Web2App, "eng")?;
+    let web_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::Web2App, "eng")?;
     info!("{:?}", web_to_app_link);
 
     // This will open the QR code as an image on your computer so you can scan it with your smart-id app
@@ -169,23 +169,23 @@ async fn uc_signature_request_example(
         None, // No callback url is needed for cross device link sessions (QR)
     )?;
     smart_id_client
-        .start_signature_dynamic_link_document_session(signature_request, document_number)
+        .start_signature_device_link_document_session(signature_request, document_number)
         .await?;
 
     // This link can be displayed as QR code
     // The user can scan the QR code with the device that has the Smart-ID app installed
     // The QR code must be refreshed every 1 second.
-    let qr_code_link = smart_id_client.generate_dynamic_link(DeviceLinkType::QR, "eng")?;
+    let qr_code_link = smart_id_client.generate_device_link(DeviceLinkType::QR, "eng")?;
     info!("{:?}", qr_code_link);
 
     // This link can be opened inside an app and redirect to the Smart-ID app
     // It also must be refreshed every 1 second.
-    let app_to_app_link = smart_id_client.generate_dynamic_link(DeviceLinkType::App2App, "eng")?;
+    let app_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::App2App, "eng")?;
     info!("{:?}", app_to_app_link);
 
     // This link can be opened from the web browser and redirect to the Smart-ID app
     // It also must be refreshed every 1 second.
-    let web_to_app_link = smart_id_client.generate_dynamic_link(DeviceLinkType::Web2App, "eng")?;
+    let web_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::Web2App, "eng")?;
     info!("{:?}", web_to_app_link);
 
     // This will open the QR code as an image on your computer so you can scan it with your smart-id app

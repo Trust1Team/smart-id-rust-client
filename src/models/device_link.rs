@@ -26,6 +26,7 @@ pub enum SessionType {
     cert,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, AsRefStr, Display)]
 pub(crate) enum DeviceLink {
     /// Represents a device link for the same device, i.e web2app or app2app.
     SameDeviceLink {
@@ -61,9 +62,12 @@ pub(crate) enum DeviceLink {
 
         // Auth code parts
         scheme_name: SchemeName,
+        signature_protocol: Option<SignatureProtocol>,
+        rp_challenge_or_digest: String,
         relying_party_name: String,
         brokered_rp_name: String,
-        initial_callback_url: String,
+        interactions: String,
+        initial_callback_url: Option<String>,
     },
 }
 
@@ -183,15 +187,17 @@ impl DeviceLink {
                 relying_party_name,
                 brokered_rp_name,
                 initial_callback_url,
+                signature_protocol,
+                rp_challenge_or_digest,
+                interactions,
                 ..
             } => {
                 let separator: &str = "|";
 
-                // Even though these are not used in the cross-device link, we must still insert empty strings.
-                // So our output looks like {scheme_name}|||{relying_part_name} instead of {scheme_name}|{relying_part_name}.
-                let signature_protocol: &str = "";
-                let rp_challenge_or_digest: &str = "";
-                let interactions: &str = "";
+                let signature_protocol: &str = signature_protocol
+                    .as_ref()
+                    .map(|s| s.as_ref())
+                    .unwrap_or("");
 
                 let relying_party_name_base64: &str = &BASE64_URL_SAFE.encode(relying_party_name);
                 let brokered_rp_name_base64: &str = &BASE64_URL_SAFE.encode(brokered_rp_name);
@@ -341,6 +347,8 @@ mod tests {
             session_token: "tw1hOWNAcw0wd-e9OalXV-Sr".to_string(),
             session_secret: "rG/kLmfR4j4SEO+TTNUEDB7z".to_string(),
             scheme_name: SchemeName::smart_id_demo,
+            signature_protocol: Some(ACSP_V2),
+            rp_challenge_or_digest: "zv++eYQ9JGnEwd3TLpzw/5pJqQQ+zhjp0kFaJfk0f39TW89wOPRUj9PX7rITfKUWQq367RGo/91Q46WNrGRLrg==".to_string(),
             relying_party_name: "RELYING_PARTY_NAME".to_string(),
             brokered_rp_name: "".to_string(),
             device_link_type: DeviceLinkType::QR,
@@ -348,6 +356,7 @@ mod tests {
             language_code: "eng".to_string(),
             initial_callback_url: Some("https://example.com/smart-id/callback".to_string()),
             session_start_time: Utc::now(),
+            interactions: "W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==".to_string(),
         };
 
         let link = device_link.generate_device_link();
@@ -364,13 +373,16 @@ mod tests {
             session_token: "tw1hOWNAcw0wd-e9OalXV-Sr".to_string(),
             session_secret: "qKzzHX6SG0ovfEdMuDEzCgTu".to_string(),
             scheme_name: SchemeName::smart_id,
+            signature_protocol: Some(ACSP_V2),
+            rp_challenge_or_digest: "zv++eYQ9JGnEwd3TLpzw/5pJqQQ+zhjp0kFaJfk0f39TW89wOPRUj9PX7rITfKUWQq367RGo/91Q46WNrGRLrg==".to_string(),
             relying_party_name: "DEMO 1".to_string(),
             brokered_rp_name: "".to_string(),
             device_link_type: DeviceLinkType::QR,
             session_type: SessionType::auth,
             session_start_time: Utc::now(),
             language_code: "eng".to_string(),
-            initial_callback_url: "https://example.com".to_string(),
+            initial_callback_url: Some("https://example.com".to_string()),
+            interactions: "W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==".to_string(),
         };
 
         let unprotected_link = device_link.generate_unprotected_device_link();
@@ -387,13 +399,16 @@ mod tests {
             session_token: "tw1hOWNAcw0wd-e9OalXV-Sr".to_string(),
             session_secret: "qKzzHX6SG0ovfEdMuDEzCgTu".to_string(),
             scheme_name: SchemeName::smart_id,
+            signature_protocol: Some(ACSP_V2),
+            rp_challenge_or_digest: "zv++eYQ9JGnEwd3TLpzw/5pJqQQ+zhjp0kFaJfk0f39TW89wOPRUj9PX7rITfKUWQq367RGo/91Q46WNrGRLrg==".to_string(),
             relying_party_name: "DEMO 1".to_string(),
             brokered_rp_name: "".to_string(),
             device_link_type: DeviceLinkType::QR,
             session_type: SessionType::sign,
             session_start_time: Utc::now(),
             language_code: "eng".to_string(),
-            initial_callback_url: "https://example.com".to_string(),
+            initial_callback_url: Some("https://example.com".to_string()),
+            interactions: "W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==".to_string(),
         };
 
         let unprotected_link = device_link.generate_unprotected_device_link();
@@ -410,13 +425,16 @@ mod tests {
             session_token: "tw1hOWNAcw0wd-e9OalXV-Sr".to_string(),
             session_secret: "qKzzHX6SG0ovfEdMuDEzCgTu".to_string(),
             scheme_name: SchemeName::smart_id,
+            signature_protocol: Some(ACSP_V2),
+            rp_challenge_or_digest: "zv++eYQ9JGnEwd3TLpzw/5pJqQQ+zhjp0kFaJfk0f39TW89wOPRUj9PX7rITfKUWQq367RGo/91Q46WNrGRLrg==".to_string(),
             relying_party_name: "DEMO 1".to_string(),
             brokered_rp_name: "".to_string(),
             device_link_type: DeviceLinkType::QR,
             session_type: SessionType::cert,
             session_start_time: Utc::now(),
             language_code: "eng".to_string(),
-            initial_callback_url: "https://example.com".to_string(),
+            initial_callback_url: Some("https://example.com".to_string()),
+            interactions: "W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==".to_string(),
         };
 
         let unprotected_link = device_link.generate_unprotected_device_link();
