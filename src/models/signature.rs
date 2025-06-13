@@ -6,7 +6,6 @@ use base64::engine::general_purpose::STANDARD_NO_PAD;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use der::Decode;
-use num_bigint::BigUint;
 use rand::rngs::OsRng;
 use rand_chacha::rand_core::RngCore;
 use rsa;
@@ -57,13 +56,13 @@ impl SignatureAlgorithm {
 
         // endregion Workaround for rsa crate limitations
 
-        let rsa_public_key = rsa::RsaPublicKey::new_with_max_size(modulus, public_exponent, 8192)
+        let rsa_public_key = rsa::RsaPublicKey::new_with_max_size(modulus, public_exponent, 10000)
             .map_err(|e| {
-            SmartIdClientError::InvalidResponseSignature(format!(
-                "Failed to create RSA public key: {}",
-                e
-            ))
-        })?;
+                SmartIdClientError::InvalidResponseSignature(format!(
+                    "Failed to create RSA public key: {}",
+                    e
+                ))
+            })?;
 
         // Create PSS verifier with SHA-256
         let verifier = match hashing_algorithm {
@@ -96,6 +95,9 @@ impl SignatureAlgorithm {
         println!("[SmartIdClient] Digest: {:?}", digest);
         println!("[SmartIdClient] Signature: {:?}", signature);
 
+        println!("Digest length: {}", digest.len());
+        println!("Signature length: {}", signature.len());
+
         // Verify signature
         match verifier.verify(&rsa_public_key, digest, signature) {
             Ok(_) => Ok(()),
@@ -119,7 +121,7 @@ impl SignatureAlgorithm {
         initial_callback_url: &str,
         flow_type: FlowType,
         hash_algorithm: HashingAlgorithm,
-    ) -> String {
+    ) -> Vec<u8> {
         let acsp_v2_payload = SignatureAlgorithm::build_acsp_v2_payload(
             scheme_name,
             signature_protocol,
@@ -132,7 +134,6 @@ impl SignatureAlgorithm {
             interaction_type_used,
             initial_callback_url,
             flow_type,
-            hash_algorithm.clone(),
         );
 
         let digest = match hash_algorithm {
@@ -168,7 +169,7 @@ impl SignatureAlgorithm {
             }
         };
 
-        base64::engine::general_purpose::STANDARD.encode(digest)
+        digest.to_vec()
     }
 
     pub(crate) fn build_acsp_v2_payload(
@@ -183,7 +184,6 @@ impl SignatureAlgorithm {
         interaction_type_used: InteractionFlow,
         initial_callback_url: &str,
         flow_type: FlowType,
-        hashing_algorithm: HashingAlgorithm,
     ) -> String {
         let separator: &str = "|";
 
@@ -313,19 +313,19 @@ pub enum ResponseSignature {
     #[serde(rename_all = "camelCase")]
     RAW_DIGEST_SIGNATURE {
         value: String,
-        flow_type: FlowType,
         signature_algorithm: SignatureAlgorithm,
-        signature_algorithm_parameters: Option<SignatureProtocolParameters>,
+        signature_algorithm_parameters: Option<SignatureResponseAlgorithmParameters>,
+        flow_type: FlowType,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignatureResponseAlgorithmParameters {
-    hash_algorithm: HashingAlgorithm,
-    mask_gen_algorithm: MaskGenAlgorithm,
-    salt_length: u32,
-    trailer_field: String,
+    pub hash_algorithm: HashingAlgorithm,
+    pub mask_gen_algorithm: MaskGenAlgorithm,
+    pub salt_length: u32,
+    pub trailer_field: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -380,9 +380,19 @@ pub enum SignatureAlgorithm {
 }
 
 impl ResponseSignature {
-    pub(crate) fn validate_raw_digest(&self, digest: String, cert: String) -> Result<()> {
+    pub(crate) fn validate_raw_digest(
+        &self,
+        digest: String,
+        cert: String,
+        hashing_algorithm: HashingAlgorithm,
+        salt_length: u32,
+    ) -> Result<()> {
         match self {
-            ResponseSignature::RAW_DIGEST_SIGNATURE { value, .. } => {
+            ResponseSignature::RAW_DIGEST_SIGNATURE {
+                value,
+                signature_algorithm,
+                ..
+            } => {
                 let decoded_cert = BASE64_STANDARD.decode(&cert).map_err(|e| {
                     SmartIdClientError::FailedToValidateSessionResponseCertificate(format!(
                         "Could not decode base64 certificate: {:?}",
@@ -408,7 +418,13 @@ impl ResponseSignature {
                     .decode(value)
                     .expect("Failed to decode base64 signature");
 
-                verify_rsa_no_hash(public_key.as_ref(), digest.as_slice(), signature.as_slice())
+                signature_algorithm.validate_signature(
+                    public_key.as_ref(),
+                    digest.as_slice(),
+                    signature.as_slice(),
+                    hashing_algorithm,
+                    salt_length,
+                )
             }
             _ => Err(SmartIdClientError::InvalidSignatureProtocal(
                 "Expected RAW_DIGEST_SIGNATURE signature protocol",
@@ -423,10 +439,10 @@ impl ResponseSignature {
         rp_challenge: String,
         cert: String,
         relying_party_name: String,
-        brokered_rp_name: String,
+        brokered_rp_name: Option<String>,
         interactions: String,
         interaction_type_used: InteractionFlow,
-        initial_callback_url: String,
+        initial_callback_url: Option<String>,
         hashing_algorithm: HashingAlgorithm,
     ) -> Result<()> {
         match self {
@@ -477,10 +493,10 @@ impl ResponseSignature {
                     &rp_challenge,
                     user_challenge,
                     &BASE64_STANDARD.encode(relying_party_name),
-                    &brokered_rp_name,
+                    &BASE64_STANDARD.encode(brokered_rp_name.unwrap_or("".to_string())),
                     &interactions,
                     interaction_type_used,
-                    &initial_callback_url,
+                    &initial_callback_url.unwrap_or("".to_string()),
                     flow_type.clone(),
                     hashing_algorithm,
                 );
@@ -528,28 +544,23 @@ impl ResponseSignature {
             } => signature_algorithm.clone(),
         }
     }
-}
-// endregion
 
-/// Verify RSA signature without hash.
-/// This is not supported by the rsa crate, and the rsa crate traits are sealed.
-fn verify_rsa_no_hash(public_key_der: &[u8], digest: &[u8], signature: &[u8]) -> Result<()> {
-    let public_key = pkcs1::RsaPublicKey::from_der(public_key_der).unwrap();
-    let n: BigUint = BigUint::from_bytes_be(public_key.modulus.as_bytes());
-    let e: BigUint = BigUint::from_bytes_be(public_key.public_exponent.as_bytes());
-    let sig = BigUint::from_bytes_be(signature);
-
-    // Perform raw RSA decryption: m = s^e mod n
-    let decrypted = sig.modpow(&e, &n);
-    let decrypted_bytes = decrypted.to_bytes_be();
-
-    match decrypted_bytes.ends_with(digest) {
-        true => Ok(()),
-        false => Err(SmartIdClientError::InvalidResponseSignature(
-            "Failed to verify raw digest".to_string(),
-        )),
+    pub fn get_signature_algorithm_parameters(
+        &self,
+    ) -> Option<SignatureResponseAlgorithmParameters> {
+        match self {
+            ResponseSignature::ACSP_V2 {
+                signature_algorithm_parameters,
+                ..
+            } => signature_algorithm_parameters.clone(),
+            ResponseSignature::RAW_DIGEST_SIGNATURE {
+                signature_algorithm_parameters,
+                ..
+            } => signature_algorithm_parameters.clone(),
+        }
     }
 }
+// endregion
 
 #[cfg(test)]
 mod tests {
@@ -567,7 +578,7 @@ mod tests {
 
     // Based on documentation https://sk-eid.github.io/smart-id-documentation/rp-api/signature_protocols.html#acsp_v2_digest_calculation
     #[test]
-    fn test_create_acsp_v2_digest_device_link_web2app() {
+    fn test_create_acsp_v2_digest_device_link_web2app_payload_and_hashing() {
         let scheme_name = SchemeName::smart_id;
         let signature_protocol = SignatureProtocol::ACSP_V2;
         let server_random = "MTlop6EXCrQ6FOErcKjxUhbV";
@@ -596,13 +607,14 @@ mod tests {
             HashingAlgorithm::sha_512,
         );
 
-        assert_eq!(digest, "ForpWzIGtGPvivuCWiDXv1U01qBnaf7ob2wjGEtRKpYO/atx7707vsG3o2jdTuezTHJvUvM2V9TKEAIhor+nng==");
+        let digest_base64 = STANDARD.encode(digest);
+
+        assert_eq!(digest_base64, "ForpWzIGtGPvivuCWiDXv1U01qBnaf7ob2wjGEtRKpYO/atx7707vsG3o2jdTuezTHJvUvM2V9TKEAIhor+nng==");
     }
 
+    // Test based on demo interaction with api
     #[test]
     fn test_create_acsp_v2_digest_notification_verify() {
-        // smart-id     |ACSP_V2|MTlop6EXCrQ6FOErcKjxUhbV|GYS+yoah6emAcVDNIajwSs6UB/M95XrDxMzXBUkwQJ9YFDipXXzGpPc7raWcuc2+TEoRc7WvIZ/7dU/iRXenYg==|GnsWXXEjTCKR89fj9uo5u5ReBZ9JR7_pezLAI5jMS00|QmFuayAxMjM=    |RXhhbXBsZSBSUA==|RW2HOCLDvRFNWmAOmpWE+3rt7a8q4JGQD3n75d6xJHM=|confirmationMessage|https://rp.example.com/callback-url?value=RrKjjT4aggzu27YBddX1bQ|Web2App
-        // smart-id-demo|ACSP_V2|0evLuoUo82r4tncm1qvkm7Bn|mlm2h6M6a2cNxlL4w5SsmDtFRDDpQ5bF66x4cwG0gHvCpXkl7EI0i1LpwX289Ljd/zrd6QPF6VdUSnHaSfF86A==|w01ksYOEHRvwZOBENrAo9kzBqs1Sy6C3mPlzAev9P6M|REVNTyBUcnVzdDE=|                |F0dQ/25VQs567pbYr7j3MKBFrPcNRPepcXIepyMKL5M=|confirmationMessage|                                                                |Notification
         let scheme_name = SchemeName::smart_id_demo;
         let signature_protocol = SignatureProtocol::ACSP_V2;
         let server_random = "DnrScjtnPA0foJmEF1D6jSXe";
@@ -643,7 +655,7 @@ mod tests {
             hashing_algorithm.clone(),
         );
 
-        println!("Digest: {}", digest);
+        println!("Digest: {:?}", digest);
 
         let payload = SignatureAlgorithm::build_acsp_v2_payload(
             scheme_name,
@@ -657,7 +669,6 @@ mod tests {
             interaction_type_used,
             initial_callback_url,
             flow_type,
-            hashing_algorithm.clone(),
         );
 
         let signing_cert = "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";
@@ -697,19 +708,9 @@ mod tests {
         );
         println!("{:?}", result_digest);
 
-        let result_payload = SignatureAlgorithm::RsassaPss.validate_signature(
-            public_key.as_ref(),
-            payload.as_bytes(),
-            signature.as_bytes(),
-            signature_algorithm_parameters.hash_algorithm.clone(),
-            signature_algorithm_parameters.salt_length,
-        );
-        println!("{:?}", result_payload);
+        println!("Result Digest: {:?}", result_digest);
 
-        assert!(
-            result_digest.is_ok() || result_payload.is_ok(),
-            "Signature validation failed"
-        );
+        assert!(result_digest.is_ok());
     }
 
     #[test]

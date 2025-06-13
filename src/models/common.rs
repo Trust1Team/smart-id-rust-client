@@ -16,11 +16,14 @@ use crate::models::api::signature_session::{
 use crate::models::signature::{
     ResponseSignature, SignatureAlgorithm, SignatureProtocol, SignatureProtocolParameters,
 };
+use base64::engine::general_purpose::STANDARD;
 use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
 use chrono::{DateTime, Utc};
+use der::Encode;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::clone;
 use std::cmp::Ordering;
 use strum_macros::{AsRefStr, Display, EnumString};
 use tracing::error;
@@ -85,7 +88,7 @@ pub enum SessionConfig {
         scheme_name: SchemeName,
         relying_party_uuid: String,
         relying_party_name: String,
-        initial_callback_url: String,
+        initial_callback_url: Option<String>,
         certificate_level: CertificateLevel,
         signature_protocol: SignatureProtocol,
         signature_protocol_parameters: SignatureProtocolParameters,
@@ -124,7 +127,7 @@ pub enum SessionConfig {
         scheme_name: SchemeName,
         relying_party_uuid: String,
         relying_party_name: String,
-        initial_callback_url: String,
+        initial_callback_url: Option<String>,
         certificate_level: CertificateLevel,
         signature_protocol: SignatureProtocol,
         signature_protocol_parameters: SignatureProtocolParameters,
@@ -181,7 +184,7 @@ pub enum SessionConfig {
         scheme_name: SchemeName,
         relying_party_uuid: String,
         relying_party_name: String,
-        initial_callback_url: String,
+        initial_callback_url: Option<String>,
         certificate_level: CertificateLevel,
 
         // Calculated values
@@ -254,9 +257,7 @@ impl SessionConfig {
             device_link_base: authentication_response.device_link_base,
             relying_party_uuid: authentication_request.relying_party_uuid,
             relying_party_name: authentication_request.relying_party_name,
-            initial_callback_url: authentication_request
-                .initial_callback_url
-                .unwrap_or("".to_string()),
+            initial_callback_url: authentication_request.initial_callback_url,
             certificate_level: authentication_request.certificate_level.into(),
             signature_protocol: authentication_request.signature_protocol,
             signature_protocol_parameters: authentication_request
@@ -445,7 +446,7 @@ impl SessionConfig {
                     ..
                 }) = session_status.signature
                 {
-                    Some(SignatureAlgorithm::build_acsp_v2_digest(
+                    let ascp_digest = SignatureAlgorithm::build_acsp_v2_digest(
                         scheme_name.clone(),
                         signature_protocol.clone(),
                         &server_random,
@@ -455,10 +456,12 @@ impl SessionConfig {
                         "",
                         interactions,
                         interaction_type_used,
-                        initial_callback_url,
+                        "",
                         flow_type.clone(),
                         signature_protocol_parameters.get_hashing_algorithm(),
-                    ))
+                    );
+
+                    Some(STANDARD.encode(ascp_digest))
                 } else {
                     // Authentication device link can only be ACSP_V2, so this should never happen if the session is complete and successful
                     None
@@ -490,7 +493,7 @@ impl SessionConfig {
                     ..
                 }) = session_status.signature
                 {
-                    Some(SignatureAlgorithm::build_acsp_v2_digest(
+                    let ascp_digest = SignatureAlgorithm::build_acsp_v2_digest(
                         scheme_name.clone(),
                         signature_protocol.clone(),
                         &server_random,
@@ -503,7 +506,9 @@ impl SessionConfig {
                         "",
                         flow_type.clone(),
                         signature_protocol_parameters.get_hashing_algorithm(),
-                    ))
+                    );
+
+                    Some(STANDARD.encode(ascp_digest))
                 } else {
                     // Authentication device link can only be ACSP_V2, so this should never happen if the session is complete and successful
                     None

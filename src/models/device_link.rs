@@ -45,7 +45,7 @@ pub(crate) enum DeviceLink {
         relying_party_name: String,
         brokered_rp_name: String,
         interactions: String,
-        initial_callback_url: String,
+        initial_callback_url: Option<String>,
     },
     /// Represents a device link for cross-device flows, i.e QR code.
     CrossDeviceLink {
@@ -172,7 +172,7 @@ impl DeviceLink {
                     &relying_party_name_base64,
                     brokered_rp_name_base64,
                     interactions,
-                    initial_callback_url,
+                    &initial_callback_url.clone().unwrap_or("".to_string()),
                     &unprotected_device_link,
                 ];
 
@@ -204,7 +204,7 @@ impl DeviceLink {
                     relying_party_name_base64,
                     brokered_rp_name_base64,
                     interactions,
-                    initial_callback_url,
+                    &initial_callback_url.clone().unwrap_or("".to_string()),
                     &unprotected_device_link,
                 ];
 
@@ -275,7 +275,7 @@ mod tests {
             device_link_type: DeviceLinkType::QR,
             session_type: SessionType::auth,
             language_code: "eng".to_string(),
-            initial_callback_url: "https://example.com/smart-id/callback".to_string(),
+            initial_callback_url: Some("https://example.com/smart-id/callback".to_string()),
             signature_protocol: Some(SignatureProtocol::ACSP_V2),
             rp_challenge_or_digest: "zv++eYQ9JGnEwd3TLpzw/5pJqQQ+zhjp0kFaJfk0f39TW89wOPRUj9PX7rITfKUWQq367RGo/91Q46WNrGRLrg==".to_string(),
             interactions: "W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==".to_string(),
@@ -309,7 +309,7 @@ mod tests {
             device_link_type: DeviceLinkType::QR,
             session_type: SessionType::auth,
             language_code: "eng".to_string(),
-            initial_callback_url: "".to_string(),
+            initial_callback_url: None,
             signature_protocol: Some(ACSP_V2),
             rp_challenge_or_digest: "FtKbl73BUkdTFvBvoz+Xg4thbS71WHBYIM7ukj8mykEns4hMWPaXeFN8nfEYwgexuJw9YIOYlqSLFyZBYAnEqw==".to_string(),
             interactions: "W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==".to_string(),
@@ -346,7 +346,7 @@ mod tests {
             device_link_type: DeviceLinkType::QR,
             session_type: SessionType::auth,
             language_code: "eng".to_string(),
-            initial_callback_url: "https://example.com/smart-id/callback".to_string(),
+            initial_callback_url: Some("https://example.com/smart-id/callback".to_string()),
             session_start_time: Utc::now(),
         };
 

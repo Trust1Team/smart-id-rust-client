@@ -1130,7 +1130,7 @@ impl SmartIdClient {
                     rp_challenge,
                     cert.value.clone(),
                     relying_party_name,
-                    "".to_string(),
+                    None,
                     interactions,
                     used_interaction_type,
                     initial_callback_url,
@@ -1168,10 +1168,10 @@ impl SmartIdClient {
                     rp_challenge,
                     cert.value.clone(),
                     relying_party_name,
-                    "".to_string(),
+                    None,
                     interactions,
                     used_interaction_type,
-                    "".to_string(),
+                    None,
                     signature_protocol_parameters.get_hashing_algorithm(),
                 )?;
 
@@ -1183,9 +1183,14 @@ impl SmartIdClient {
 
                 Ok(())
             }
-            SessionConfig::SignatureDeviceLink { digest, .. } => {
+            SessionConfig::SignatureDeviceLink { digest,
+                signature_protocol_parameters,
+                .. } => {
                 let signature = session_status_response
                     .signature
+                    .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+                
+                let parameters = signature.get_signature_algorithm_parameters()
                     .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
                 // TODO: CHeck this with prod
@@ -1193,11 +1198,15 @@ impl SmartIdClient {
                     return Ok(());
                 }
 
-                signature.validate_raw_digest(digest, cert.value.clone())
+                signature.validate_raw_digest(digest, cert.value.clone(), signature_protocol_parameters.get_hashing_algorithm(), parameters.salt_length)
             }
-            SessionConfig::SignatureNotification { digest, .. } => {
+            SessionConfig::SignatureNotification { digest,
+                signature_protocol_parameters, .. } => {
                 let signature = session_status_response
                     .signature
+                    .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+
+                let parameters = signature.get_signature_algorithm_parameters()
                     .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
                 // TODO: CHeck this with prod
@@ -1205,7 +1214,7 @@ impl SmartIdClient {
                     return Ok(());
                 }
 
-                signature.validate_raw_digest(digest, cert.value.clone())
+                signature.validate_raw_digest(digest, cert.value.clone(), signature_protocol_parameters.get_hashing_algorithm(), parameters.salt_length)
             }
             _ => {
                 debug!("Signature validation only needed for device link authentication and signature sessions");

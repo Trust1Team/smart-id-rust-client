@@ -62,7 +62,7 @@ pub struct SignatureDeviceLinkRequest {
     #[serde(rename = "relyingPartyUUID")]
     pub relying_party_uuid: String,
     pub relying_party_name: String,
-    pub initial_callback_url: String, // TODO: Check if this is still required with QR flow
+    pub initial_callback_url: Option<String>,
     pub certificate_level: CertificateLevel,
     pub signature_protocol: SignatureProtocol,
     pub signature_protocol_parameters: SignatureProtocolParameters,
@@ -115,7 +115,7 @@ impl SignatureDeviceLinkRequest {
         Ok(SignatureDeviceLinkRequest {
             relying_party_uuid: cfg.relying_party_uuid.clone(),
             relying_party_name: cfg.relying_party_name.clone(),
-            initial_callback_url: initial_callback_url.unwrap_or("".to_string()),
+            initial_callback_url,
             certificate_level: CertificateLevel::QUALIFIED,
             signature_protocol: SignatureProtocol::RAW_DIGEST_SIGNATURE,
             signature_protocol_parameters: SignatureProtocolParameters::RAW_DIGEST_SIGNATURE {

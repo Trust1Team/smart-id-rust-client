@@ -38,7 +38,7 @@ pub struct CertificateChoiceDeviceLinkRequest {
     #[serde(rename = "relyingPartyUUID")]
     pub relying_party_uuid: String,
     pub relying_party_name: String,
-    pub initial_callback_url: String, // TODO: Check if this is still required with QR flow
+    pub initial_callback_url: Option<String>,
     pub certificate_level: CertificateLevel,
     pub nonce: Option<String>,
     pub capabilities: Option<Vec<String>>,
@@ -106,7 +106,7 @@ pub struct CertificateChoiceNotificationRequest {
     #[serde(rename = "relyingPartyUUID")]
     pub relying_party_uuid: String,
     pub relying_party_name: String,
-    pub initial_callback_url: String, // TODO: Check if this is still required with QR flow
+    pub initial_callback_url: Option<String>,
     pub certificate_level: CertificateLevel,
     pub nonce: Option<String>,
     pub capabilities: Option<Vec<String>>,

@@ -4,8 +4,8 @@ use qrcode::QrCode;
 use smart_id_rust_client::client::smart_id_client::SmartIdClient;
 use smart_id_rust_client::config::SmartIDConfig;
 use smart_id_rust_client::models::api::authentication_session::{
-    AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest,
-    AuthenticationNotificationRequest,
+    AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest
+    ,
 };
 use smart_id_rust_client::models::api::certificate_choice_session::CertificateChoiceNotificationRequest;
 use smart_id_rust_client::models::api::session_status::EndResult;
@@ -181,7 +181,7 @@ async fn test_authentication_app_to_app() -> Result<()> {
 
 #[tokio::test]
 #[ignore]
-async fn test_notification_auth_then_sign_with_qr_code() -> Result<()> {
+async fn test_notification_auth_then_notification_sign) -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
@@ -211,9 +211,6 @@ async fn test_notification_auth_then_sign_with_qr_code() -> Result<()> {
 
     println!("VC Code: {:?}", vc_code);
 
-    // This code should match the code displayed in the Smart-ID app
-    println!("Verification Code Auth: {}", vc.value);
-
     // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
     let result = smart_id_client.get_session_status().await?;
     println!(
@@ -227,12 +224,16 @@ async fn test_notification_auth_then_sign_with_qr_code() -> Result<()> {
     println!("Digest: {:?}", digest);
 
     // SIGNATURE
-    let signature_request = SignatureDeviceLinkRequest::new(
+    let signature_request = SignatureNotificationRequest::new(
         &cfg,
-        vec![Interaction::DisplayTextAndPIN {
-            display_text_60: "Sign document".to_string(),
+        vec![
+            Interaction::ConfirmationMessage {
+                display_text_200: "Longer description of the transaction context".to_string(),
+            },
+            Interaction::DisplayTextAndPIN {
+                display_text_60: "Short description of the transaction context".to_string(),
         }],
-        EXAMPLE_SIGNING_TEXT.to_string(),
+        "VC3jDipMw9TgSQrIm3oYuz2t/GciD3Aw2WTpnaGpo+1sdkkRiCnbRz08uqlgU6q1W2/VP6PDxSQlOy5AIxT5Xw==".to_string(),
         SignatureAlgorithm::RsassaPss,
     )?;
     println!(
@@ -240,7 +241,8 @@ async fn test_notification_auth_then_sign_with_qr_code() -> Result<()> {
         serde_json::to_string_pretty(&signature_request)?
     );
 
-    let vc = smart_id_client
+
+    smart_id_client
         .start_signature_notification_document_session(
             signature_request,
             DOCUMENT_NUMBER.to_string(),
