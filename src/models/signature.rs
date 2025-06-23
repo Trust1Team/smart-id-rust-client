@@ -8,7 +8,7 @@ use der::Decode;
 use rand::rngs::OsRng;
 use rand_chacha::rand_core::RngCore;
 use rsa;
-use rsa::traits::SignatureScheme;
+use rsa::traits::{PublicKeyParts, SignatureScheme};
 use rsa::{pkcs1, Pss};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256, Sha384, Sha512};
@@ -204,8 +204,6 @@ impl SignatureAlgorithm {
         ];
 
         let acsp_v2_payload: String = acsp_v2_payload_parts.join(separator);
-
-        // println!("[SmartIdClient] ACSP V2 Payload: {}", acsp_v2_payload);
 
         acsp_v2_payload
     }
@@ -570,6 +568,14 @@ impl ResponseSignature {
                 // This variant does not contain signature algorithm parameters, so we return None.
                 None
             }
+        }
+    }
+
+    pub fn get_flow_type(&self) -> FlowType {
+        match self {
+            ResponseSignature::ACSP_V2 { flow_type, .. } => flow_type.clone(),
+            ResponseSignature::RAW_DIGEST_SIGNATURE { flow_type, .. } => flow_type.clone(),
+            ResponseSignature::CERTIFICATE_CHOICE_NO_SIGNATURE { flow_type } => flow_type.clone(),
         }
     }
 }
