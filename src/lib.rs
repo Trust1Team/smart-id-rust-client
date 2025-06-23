@@ -22,7 +22,8 @@
 //! use smart_id_rust_client::models::signature::SignatureAlgorithm;
 //! #[tokio::main]
 //! async fn main() -> Result<()> {
-//!     let cfg = SmartIDConfig::load_from_env()?;
+//!     use smart_id_rust_client::models::signature::HashingAlgorithm;
+//! let cfg = SmartIDConfig::load_from_env()?;
 //!     let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
 //!
 //!     // Example: Start an authentication session
@@ -33,6 +34,8 @@
 //!         }],
 //!         SignatureAlgorithm::RsassaPss,
 //!         AuthenticationCertificateLevel::QUALIFIED,
+//!         None, // No callback url is needed for cross device link sessions (QR)
+//!         HashingAlgorithm::sha_512,
 //!     )?;
 //!     smart_id_client.start_authentication_device_link_anonymous_session(authentication_request).await?;
 //!

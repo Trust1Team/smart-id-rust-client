@@ -155,6 +155,7 @@ pub struct CertificateChoiceNotificationSession {
 ///       relying_party_name: cfg.relying_party_name.clone(),
 ///       certificate_level: CertificateLevel::QUALIFIED,
 ///   }
+/// }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SigningCertificateRequest {

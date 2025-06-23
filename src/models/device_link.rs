@@ -227,8 +227,6 @@ impl DeviceLink {
             .unwrap();
         let auth_code_payload: String = self.generate_auth_code_payload();
 
-        // println!("Auth code payload: {}", auth_code_payload);
-
         let mut mac =
             Hmac::<Sha256>::new_from_slice(session_secret).expect("HMAC can take key of any size");
         mac.update(auth_code_payload.as_bytes());
@@ -280,7 +278,7 @@ mod tests {
             session_type: SessionType::auth,
             language_code: "eng".to_string(),
             initial_callback_url: Some("https://example.com/smart-id/callback".to_string()),
-            signature_protocol: Some(SignatureProtocol::ACSP_V2),
+            signature_protocol: Some(ACSP_V2),
             rp_challenge_or_digest: "zv++eYQ9JGnEwd3TLpzw/5pJqQQ+zhjp0kFaJfk0f39TW89wOPRUj9PX7rITfKUWQq367RGo/91Q46WNrGRLrg==".to_string(),
             interactions: "W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==".to_string(),
         };
@@ -289,18 +287,16 @@ mod tests {
         assert_eq!(unprotected_link, "https://smart-id.com?deviceLinkType=QR&sessionToken=sessionToken&sessionType=auth&version=1.0&lang=eng");
 
         let auth_code_payload = device_link.generate_auth_code_payload();
-        assert_eq!(auth_code_payload, "smart-id-demo|ACSP_V2|zv++eYQ9JGnEwd3TLpzw/5pJqQQ+zhjp0kFaJfk0f39TW89wOPRUj9PX7rITfKUWQq367RGo/91Q46WNrGRLrg==|REVNTyBUcnVzdDE=|W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==|https://example.com/smart-id/callback|https://smart-id.com?deviceLinkType=QR&sessionToken=sessionToken&sessionType=auth&version=1.0&lang=eng");
+        assert_eq!(auth_code_payload, "smart-id-demo|ACSP_V2|zv++eYQ9JGnEwd3TLpzw/5pJqQQ+zhjp0kFaJfk0f39TW89wOPRUj9PX7rITfKUWQq367RGo/91Q46WNrGRLrg==|REVNTyBUcnVzdDE=||W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==|https://example.com/smart-id/callback|https://smart-id.com?deviceLinkType=QR&sessionToken=sessionToken&sessionType=auth&version=1.0&lang=eng");
 
         let auth_code = device_link.generate_auth_code();
-        assert_eq!(auth_code, "pqF4tQNXJj74VGpX1FNHbzXmJiLcqHuV5vom-oy33L8");
+        assert_eq!(auth_code, "yEbrTnbQ1AmnwnwGT1BGTNjvX2er1Hvun-zsWR9UwS4");
     }
 
     #[traced_test]
     #[tokio::test]
     async fn authentication_qr_device_link_auth_code_generation_with_real_params() {
         use crate::models::common::SchemeName;
-        use crate::models::device_link::DeviceLink::SameDeviceLink;
-        use crate::models::signature::SignatureProtocol;
 
         let device_link = CrossDeviceLink {
             device_link_base: "https://sid.demo.sk.ee/device-link".to_string(),
@@ -329,11 +325,11 @@ mod tests {
         let auth_code_payload = device_link.generate_auth_code_payload();
         assert_eq!(
             auth_code_payload,
-            "smart-id-demo|ACSP_V2|FtKbl73BUkdTFvBvoz+Xg4thbS71WHBYIM7ukj8mykEns4hMWPaXeFN8nfEYwgexuJw9YIOYlqSLFyZBYAnEqw==|REVNTyBUcnVzdDE=|W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==||https://sid.demo.sk.ee/device-link?deviceLinkType=QR&elapsedSeconds=0&sessionToken=UhZj7BX4XWp6ZPQwI29ZoT6o&sessionType=auth&version=1.0&lang=eng"
+            "smart-id-demo|ACSP_V2|FtKbl73BUkdTFvBvoz+Xg4thbS71WHBYIM7ukj8mykEns4hMWPaXeFN8nfEYwgexuJw9YIOYlqSLFyZBYAnEqw==|REVNTyBUcnVzdDE=||W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==||https://sid.demo.sk.ee/device-link?deviceLinkType=QR&elapsedSeconds=0&sessionToken=UhZj7BX4XWp6ZPQwI29ZoT6o&sessionType=auth&version=1.0&lang=eng"
         );
 
         let auth_code = device_link.generate_auth_code();
-        assert_eq!(auth_code, "7CjR7HgSRz_t5WHfYDxI5SzxqgHrKmFDIAzl7eO7HOI");
+        assert_eq!(auth_code, "Ecjsq9F38hNxP3diXalFtFFXcEklMKQUQpI7nMLre2M");
     }
 
     #[traced_test]
@@ -439,53 +435,6 @@ mod tests {
 
         assert_eq!(unprotected_link, "https://smart-id.com/device-link?deviceLinkType=QR&elapsedSeconds=0&sessionToken=tw1hOWNAcw0wd-e9OalXV-Sr&sessionType=cert&version=1.0&lang=eng");
     }
-
-    // #[traced_test]
-    // #[tokio::test]
-    // async fn test_generate_auth_code() {
-    //     let device_link = CrossDeviceLink {
-    //         session_secret: "ZspUAbC9eWgT3OXEu+vMyvUA".to_string(),
-    //         device_link_type: DeviceLinkType::QR,
-    //         session_type: SessionType::auth,
-    //         ..qr_device_link()
-    //     };
-    //
-    //     println!("{:?}", device_link.generate_device_link());
-    //     assert_eq!(
-    //         device_link.generate_auth_code(),
-    //         "WTtkXm95Hz1tImwoH96hfy8WjM2lAFg6P7d-B9Z73Ss="
-    //     );
-    // }
-    //
-    // #[traced_test]
-    // #[tokio::test]
-    // async fn test_generate_auth_code_elapsed_seconds() {
-    //     let device_link = CrossDeviceLink {
-    //         session_start_time: Utc::now() - Duration::seconds(20),
-    //         ..qr_device_link()
-    //     };
-    //     assert_eq!(
-    //         device_link.generate_auth_code(),
-    //         "IoJzCv6p28yRiOmKFlxFkCINPCXbhkiJWq7zWiaE580="
-    //     );
-    // }
-    //
-    // #[traced_test]
-    // #[tokio::test]
-    // async fn test_generate_qr_code_url() {
-    //     let device_link = qr_device_link();
-    //     assert_eq!(device_link.generate_device_link(), "https://sid.demo.sk.ee/device-link?version=0.1&sessionToken=sessionToken&deviceLinkType=QR&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=E4xBQkwfmyspaZAfJoY5Pdz6-bAWytBe-wyiX3SQS5o=");
-    // }
-    //
-    // #[traced_test]
-    // #[tokio::test]
-    // async fn test_generate_web2app_url() {
-    //     let device_link = CrossDeviceLink {
-    //         device_link_type: DeviceLinkType::Web2App,
-    //         ..qr_device_link()
-    //     };
-    //     assert_eq!(device_link.generate_device_link(), "https://sid.demo.sk.ee/device-link?version=0.1&sessionToken=sessionToken&deviceLinkType=Web2App&sessionType=auth&elapsedSeconds=0&lang=eng&authCode=ofcBeca9ATRjdO5Dr17RRvGnamYA5s5C3rmKXyuDN4g=");
-    // }
 }
 
 // endregion: Device Link Tests

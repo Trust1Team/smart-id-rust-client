@@ -6,7 +6,6 @@ use smart_id_rust_client::config::SmartIDConfig;
 use smart_id_rust_client::models::api::authentication_session::{
     AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest,
 };
-use smart_id_rust_client::models::api::certificate_choice_session::CertificateChoiceNotificationRequest;
 use smart_id_rust_client::models::api::session_status::SessionStatusResponse;
 use smart_id_rust_client::models::api::signature_session::SignatureDeviceLinkRequest;
 use smart_id_rust_client::models::common::SchemeName;
@@ -60,21 +59,6 @@ async fn main() -> Result<()> {
     info!(
         "Authentication Result: \n {:?}",
         authentication_session_status
-    );
-
-    // CERTIFICATE CHOICE
-    // If you are signing a *AdES scheme you will need to include the certificate in the document to be signed
-    // In this case you must fetch public signing key using a certificate choice session
-    // If you are signing without going through the auth flow first, but you have the users semantic id you should use this flow as well (ETSI endpoint NOT document!)
-    // Otherwise, you can skip this step by using the document number returned from the authentication session
-    let certificate_choice_status =
-        uc_certificate_choice_request_example(&cfg, &smart_id_client, document_number.clone())
-            .await?;
-    let _signing_certificate = certificate_choice_status.clone().cert.unwrap().value;
-    // let digest = combine_your_document_and_certifice_to_be_signed(signing_certificate);
-    info!(
-        "Certificate Choice Result: \n {:?}",
-        certificate_choice_status
     );
 
     // SIGNATURE

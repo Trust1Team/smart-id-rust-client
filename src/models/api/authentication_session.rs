@@ -199,7 +199,6 @@ pub struct AuthenticationDeviceLinkSession {
 ///         interactions,
 ///         SignatureAlgorithm::RsassaPss,
 ///         AuthenticationCertificateLevel::QUALIFIED,
-///         Some("https://example.com/callback".to_string()),
 ///         HashingAlgorithm::sha_256,
 ///     )
 /// }
@@ -253,8 +252,7 @@ pub struct AuthenticationNotificationRequest {
 ///         interactions,
 ///         SignatureAlgorithm::RsassaPss,
 ///         AuthenticationCertificateLevel::QUALIFIED,
-///         Some("https://example.com/callback".to_string()),
-///         HashingAlgorithm::sha_256
+///         HashingAlgorithm::sha_256,
 ///     )
 /// }
 /// ```

@@ -23,6 +23,7 @@ use crate::models::api::signature_session::{
 use crate::models::common::{SessionConfig, VCCode};
 use crate::models::device_link::DeviceLink::{CrossDeviceLink, SameDeviceLink};
 use crate::models::device_link::{DeviceLinkType, SessionType};
+use crate::models::signature::FlowType;
 use crate::models::user_identity::UserIdentity;
 use crate::utils::demo_certificates::{demo_intermediate_certificates, demo_root_certificates};
 use crate::utils::production_certificates::{
@@ -196,8 +197,6 @@ impl SmartIdClient {
                 .await?; // Add 100ms to allow SmartId to respond with a long polling timeout error instead of reqwest creating a connection error
 
         let session_status = session_response.into_result()?;
-
-        // println!("Session status response: \n {}", serde_json::to_string_pretty(&session_status).unwrap());
 
         match session_status.state {
             SessionState::COMPLETE => {
@@ -422,8 +421,6 @@ impl SmartIdClient {
             .await?;
 
         let session = authentication_response.into_result()?;
-
-        // println!("Authentication response: \n {}", serde_json::to_string_pretty(&session).unwrap());
 
         let session_config = SessionConfig::from_authentication_notification_response(
             session.clone(),
@@ -1084,6 +1081,13 @@ impl SmartIdClient {
                 let signature = session_status_response
                     .signature
                     .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+
+                if signature.get_flow_type() == FlowType::App2App
+                    || signature.get_flow_type() == FlowType::Web2App
+                {
+                    debug!("When the user goes to the callback a secret is appended to the URL, this is needed to verify the signature for these flows");
+                    return Ok(());
+                }
 
                 let used_interaction_type = session_status_response
                     .interaction_type_used

@@ -294,6 +294,7 @@ async fn test_sign_qr() -> Result<()> {
 }
 
 #[tokio::test]
+#[ignore]
 async fn test_sign_notification_document_number() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;

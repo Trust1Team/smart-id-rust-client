@@ -399,7 +399,7 @@ impl SessionConfig {
     pub fn from_certificate_choice_notification_response(
         certificate_choice_response: CertificateChoiceNotificationSession,
         certificate_choice_request: CertificateChoiceNotificationRequest,
-        scheme_name: &SchemeName,
+        _scheme_name: &SchemeName,
     ) -> SessionConfig {
         SessionConfig::CertificateChoiceNotification {
             scheme_name: SchemeName::smart_id,
