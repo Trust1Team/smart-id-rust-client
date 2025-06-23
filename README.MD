@@ -19,15 +19,19 @@ authentication and mobile digital signing using Smart-ID.</div>
 # Introduction
 The library can be used for easy integration with the Smart-ID API. 
 It provides a simple interface for mobile authentication and mobile digital signing using Smart-ID.
-Additional utilities has been provided for easy integration with the Smart-ID API:
-- generate digest and calculate verification code
-- helper structs
-- interactions with the mobile end-user
+It provides these features via the client:
+- Start signing, authentication and certificate choice flows
+- Maintain state between requests and use this to validate the session responses
 
 ## Status
 Supporting SmartID using:
-- Nation Registry number
-- QR code
+- QR Authentication, Signature
+- ETSI (National ID) Authentication, Certificate Choice, Signature
+- Document Number Authentication, Signature
+
+Incomplete:
+- Web2App flows (Will run, but response validation based on callback url not done)
+- App2App flows (Will run, but response validation based on callback url not done)
 
 ## Documentation
 
@@ -127,5 +131,5 @@ let cfg = SmartIDConfig {
 Examples of the various flows with explanations can be found in [smart_id_client.rs](examples/smart_id_client.rs).
 You will need to update the RELYING_PARTY environment variables in [config.toml](.cargo/config.toml) for these to work.
 
-Examples of more complex auth->certificate->sign flows with instructions can be found in [app_interaction_tests.rs](tests/app_interaction_tests.rs).
-You will need to update the RELYING_PARTY variables in the test file for these to work.
+Examples of each flow with instructions can be found in [app_interaction_tests.rs](tests/app_interaction_tests.rs).
+You will need to update some variables at the top of the file to run these tests (see comments in the file).
