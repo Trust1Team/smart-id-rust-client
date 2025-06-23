@@ -20,29 +20,17 @@ use std::env;
 const SMART_ID_ROOT_URL: &str = "https://sid.demo.sk.ee/smart-id-rp";
 const SMART_ID_V3_API_PATH: &str = "/v3";
 const SMART_ID_SCHEME_NAME: &str = "smart-id-demo";
-const RELYING_PARTY_NAME: &str = "RELYING_PARTY_NAME"; // Must be updated to your own relying party name
-const RELYING_PARTY_UUID: &str = "RELYING_PARTY_UUID"; // Must be updated to your own relying party UUID
-const DOCUMENT_NUMBER: &str = "PNOBE-{ETSI_NUMBER}-WJS9-Q";
-const ETSI_ID: &str = "PNOBE-{ETSI_NUMBER}";
-const INITIAL_CALLBACK_URL: &str = "https://example.com/smart-id/callback";
 
-// const SMART_ID_ROOT_URL: &str = "https://rp-api.smart-id.com";
-// const SMART_ID_V3_API_PATH: &str = "/v3";
-// const RELYING_PARTY_NAME: &str = "Trust1Connector"; // Must be updated to your own relying party name
-// const RELYING_PARTY_UUID: &str = "RELYING_PARTY_UUID"; // Must be updated to your own relying party UUID
-// const DOCUMENT_NUMBER: &str = "PNOBE-{ETSI_NUMBER}-WJS9-Q";
-// const ETSI_ID: &str = "BE{ETSI_NUMBER}";
-// const INITIAL_CALLBACK_URL: &str = "https://example.com/smart-id/callback";
+const RELYING_PARTY_NAME: &str = "YOUR_RELYING_PARTY_NAME"; // Must be updated to your own relying party name
+const RELYING_PARTY_UUID: &str = "YOUR_RELYING_PARTY_UUID"; // Must be updated to your own relying party UUID
+#[allow(dead_code)]
+const DOCUMENT_NUMBER: &str = "YOUR_DOCUMENT_ID";
+#[allow(dead_code)]
+const ETSI_ID: &str = "YOUR_ETSI_ID";
+const INITIAL_CALLBACK_URL: &str = "https://example.com/smart-id/callback";
 
 const EXAMPLE_SIGNING_TEXT: &str =
     "VC3jDipMw9TgSQrIm3oYuz2t/GciD3Aw2WTpnaGpo+1sdkkRiCnbRz08uqlgU6q1W2/VP6PDxSQlOy5AIxT5Xw==";
-// const SMART_ID_ROOT_URL: &str = "https://sid.demo.sk.ee/smart-id-rp";
-// const SMART_ID_V3_API_PATH: &str = "/v3";
-// const RELYING_PARTY_NAME: &str = "DEMO"; // Must be updated to your own relying party name
-// const RELYING_PARTY_UUID: &str = "00000000-0000-4000-8000-000000000000"; // Must be updated to your own relying party UUID
-//  const DOCUMENT_NUMBER: &str = "YOUR_DOCUMENT_ID";
-//  const ETSI_ID: &str = "YOUR_ETSI_ID";
-// const INITIAL_CALLBACK_URL: &str = "https://example.com/smart-id/callback";
 
 fn setup() {
     env::set_var("SMART_ID_ROOT_URL", SMART_ID_ROOT_URL);
