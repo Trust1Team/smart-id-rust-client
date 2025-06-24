@@ -7,11 +7,7 @@ use crate::models::api::authentication_session::{
     AuthenticationDeviceLinkRequest, AuthenticationDeviceLinkResponse,
     AuthenticationNotificationRequest, AuthenticationNotificationResponse,
 };
-use crate::models::api::certificate_choice_session::{
-    CertificateChoiceNotificationRequest, CertificateChoiceNotificationResponse,
-    SigningCertificate, SigningCertificateRequest, SigningCertificateResponse,
-    SigningCertificateResponseState,
-};
+use crate::models::api::certificate_choice_session::{CertificateChoiceDeviceLinkRequest, CertificateChoiceDeviceLinkResponse, CertificateChoiceNotificationRequest, CertificateChoiceNotificationResponse, SigningCertificate, SigningCertificateRequest, SigningCertificateResponse, SigningCertificateResponseState};
 use crate::models::api::session_status::{
     SessionCertificate, SessionResponse, SessionState, SessionStatusResponse,
 };
@@ -36,21 +32,16 @@ use tracing::debug;
 // region: Path definitions
 // Copied from https://github.com/SK-EID/smart-id-java-client/blob/81e48f519bf882db8584a344b161db378b959093/src/main/java/ee/sk/smartid/v3/rest/SmartIdRestConnector.java#L79
 const SESSION_STATUS_URI: &str = "/session";
-const NOTIFICATION_CERTIFICATE_CHOICE_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
-    "/signature/certificate-choice/notification/etsi";
-const NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH: &str =
-    "/signature/certificate-choice/notification/document";
-#[allow(dead_code)]
-const ANONYMOUSE_DEVICE_LINK_CERTIFICATE_CHOICE_PATH: &str =
-    "/signature/certificate-choice/device-link/anonymous";
+const NOTIFICATION_CERTIFICATE_CHOICE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/certificate-choice/notification/etsi";
+const NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/certificate-choice/notification/document";
+const ANONYMOUSE_DEVICE_LINK_CERTIFICATE_CHOICE_PATH: &str = "/signature/certificate-choice/device-link/anonymous";
 const SIGNING_CERTIFICATE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/certificate";
 
 const DEVICE_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/device-link/etsi";
 const DEVICE_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/device-link/document";
-#[allow(dead_code)]
 const NOTIFICATION_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/notification/etsi";
-#[allow(dead_code)]
 const NOTIFICATION_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/notification/document";
+const NOTIFICATION_SIGNATURE_WITH_DOCUMENT_NUMBER_LINKED_PATH: &str = "/signature/notification/linked";
 
 const ANONYMOUS_DEVICE_LINK_AUTHENTICATION_PATH: &str = "/authentication/device-link/anonymous";
 const DEVICE_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
@@ -633,7 +624,7 @@ impl SmartIdClient {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
-            NOTIFICATION_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH,
+            NOTIFICATION_SIGNATURE_WITH_DOCUMENT_NUMBER_LINKED_PATH,
             document_number,
         );
 
@@ -697,6 +688,48 @@ impl SmartIdClient {
 
         self.set_session(
             SessionConfig::from_certificate_choice_notification_response(
+                session,
+                certificate_choice_request,
+                &self.cfg.scheme_name,
+            ),
+        )
+    }
+
+    /// Starts an anonymous certificate choice session using a devic link
+    /// Use the get_session_status method to poll for the result.
+    /// This should be proceeded by a signature session.
+    ///
+    /// # Arguments
+    ///
+    /// * `certificate_choice_request` - The certificate choice request.
+    ///
+    /// # Returns
+    ///
+    /// A Result indicating success or failure.
+    pub async fn start_certificate_choice_anonymous_session(
+        &self,
+        certificate_choice_request: CertificateChoiceDeviceLinkRequest,
+    ) -> Result<()> {
+        self.clear_session();
+
+        let path = format!(
+            "{}{}",
+            self.cfg.api_url(),
+            ANONYMOUSE_DEVICE_LINK_CERTIFICATE_CHOICE_PATH,
+        );
+
+        let certificate_choice_response =
+            post::<CertificateChoiceDeviceLinkRequest, CertificateChoiceDeviceLinkResponse>(
+                path.as_str(),
+                &certificate_choice_request,
+                self.cfg.client_request_timeout,
+            )
+                .await?;
+
+        let session = certificate_choice_response.into_result()?;
+
+        self.set_session(
+            SessionConfig::from_certificate_choice_device_link_response(
                 session,
                 certificate_choice_request,
                 &self.cfg.scheme_name,

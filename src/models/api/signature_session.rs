@@ -326,6 +326,7 @@ pub struct SignatureNotificationLinkedRequest {
     pub certificate_level: CertificateLevel,
     pub signature_protocol: SignatureProtocol,
     pub signature_protocol_parameters: SignatureProtocolParameters,
+    #[serde(rename = "linkedSessionID")]
     pub linked_session_id: String, // The session ID of the linked certificate choice session
     pub nonce: Option<String>,
     pub interactions: String, // Base64 encoded JSON of interactions

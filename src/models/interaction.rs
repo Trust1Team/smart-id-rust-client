@@ -188,6 +188,17 @@ mod interaction_tests {
     // Based on the examples provided in https://sk-eid.github.io/smart-id-documentation/rp-api/interactions.html
     #[traced_test]
     #[tokio::test]
+    async fn test_display_text_and_pin_base64_encoding() {
+        let interaction = Interaction::DisplayTextAndPIN {
+            display_text_60: "Log in to mobile banking app".to_string(),
+        };
+        let encoded = encode_interactions_base_64(&vec![interaction]).unwrap();
+        assert_eq!(encoded, "W3sidHlwZSI6ImRpc3BsYXlUZXh0QW5kUElOIiwiZGlzcGxheVRleHQ2MCI6IkxvZyBpbiB0byBtb2JpbGUgYmFua2luZyBhcHAifV0=");
+    }
+
+    // Based on the examples provided in https://sk-eid.github.io/smart-id-documentation/rp-api/interactions.html
+    #[traced_test]
+    #[tokio::test]
     async fn test_multi_interaction_base64_encoding() {
         let interactions = vec![
             Interaction::ConfirmationMessage {

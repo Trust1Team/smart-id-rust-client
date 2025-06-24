@@ -7,15 +7,14 @@ use smart_id_rust_client::models::api::authentication_session::{
     AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest,
     AuthenticationNotificationRequest,
 };
-use smart_id_rust_client::models::api::certificate_choice_session::CertificateChoiceNotificationRequest;
+use smart_id_rust_client::models::api::certificate_choice_session::{CertificateChoiceDeviceLinkRequest, CertificateChoiceNotificationRequest};
 use smart_id_rust_client::models::api::session_status::EndResult;
-use smart_id_rust_client::models::api::signature_session::{
-    SignatureDeviceLinkRequest, SignatureNotificationRequest,
-};
+use smart_id_rust_client::models::api::signature_session::{SignatureDeviceLinkRequest, SignatureNotificationLinkedRequest, SignatureNotificationRequest};
 use smart_id_rust_client::models::device_link::DeviceLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
 use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 use std::env;
+use smart_id_rust_client::models::common::SessionConfig::SignatureNotificationLinked;
 
 const SMART_ID_ROOT_URL: &str = "https://sid.demo.sk.ee/smart-id-rp";
 const SMART_ID_V3_API_PATH: &str = "/v3";
@@ -231,7 +230,56 @@ async fn test_authentication_web_to_app() -> Result<()> {
 
 #[tokio::test]
 #[ignore]
-async fn test_sign_qr() -> Result<()> {
+async fn test_sign_qr_document_number() -> Result<()> {
+    setup();
+    let cfg = SmartIDConfig::load_from_env()?;
+    let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
+
+    // SIGNATURE
+    let signature_request = SignatureDeviceLinkRequest::new(
+        &cfg,
+        vec![
+            Interaction::DisplayTextAndPIN {
+                display_text_60: "Short description of the transaction context".to_string(),
+            },
+        ],
+        "VC3jDipMw9TgSQrIm3oYuz2t/GciD3Aw2WTpnaGpo+1sdkkRiCnbRz08uqlgU6q1W2/VP6PDxSQlOy5AIxT5Xw=="
+            .to_string(),
+        SignatureAlgorithm::RsassaPss,
+        HashingAlgorithm::sha_256,
+        None,
+    )?;
+    println!(
+        "Signature Request: \n{}",
+        serde_json::to_string_pretty(&signature_request)?
+    );
+
+    smart_id_client
+        .start_signature_device_link_document_session(
+            signature_request,
+            DOCUMENT_NUMBER.to_string(),
+        )
+        .await?;
+
+    let qr_code_link = smart_id_client.generate_device_link(DeviceLinkType::QR, "eng")?;
+
+    // Open the QR code in the computer's default image viewer
+    // Scan the QR code with the Smart-ID app
+    open_qr_in_computer_image_viewer(qr_code_link, "qr_sign_code")?;
+
+    let result = smart_id_client.get_session_status().await?;
+    println!(
+        "Signature Session Status \n{:}",
+        serde_json::to_string_pretty(&result)?
+    );
+
+    assert_eq!(result.result.unwrap().end_result, EndResult::OK);
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_sign_qr_etsi() -> Result<()> {
     setup();
     let cfg = SmartIDConfig::load_from_env()?;
     let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
@@ -253,16 +301,14 @@ async fn test_sign_qr() -> Result<()> {
         HashingAlgorithm::sha_512,
         None,
     )?;
+
     println!(
         "Signature Request: \n{}",
         serde_json::to_string_pretty(&signature_request)?
     );
 
     smart_id_client
-        .start_signature_device_link_document_session(
-            signature_request,
-            DOCUMENT_NUMBER.to_string(),
-        )
+        .start_signature_device_link_etsi_session(signature_request, ETSI_ID.to_string())
         .await?;
 
     let qr_code_link = smart_id_client.generate_device_link(DeviceLinkType::QR, "eng")?;
@@ -481,6 +527,81 @@ async fn test_certificate_choice_notification_etsi() -> Result<()> {
 
     smart_id_client
         .start_signature_notification_document_session(
+            signature_request,
+            document_number.to_string(),
+        )
+        .await?;
+
+    let result = smart_id_client.get_session_status().await?;
+
+    println!(
+        "Signature Session Status \n{:}",
+        serde_json::to_string_pretty(&result)?
+    );
+
+    assert_eq!(result.result.unwrap().end_result, EndResult::OK);
+
+    Ok(())
+}
+
+// This flow by default expects you to do a signature afterwards. The mobile app shows a waiting for signature screen.
+#[tokio::test]
+#[ignore]
+async fn test_certificate_choice_anonymous_qr() -> Result<()> {
+    setup();
+    let cfg = SmartIDConfig::load_from_env()?;
+    let smart_id_client = SmartIdClient::new(&cfg, None, vec![], vec![]);
+
+    // CERTIFICATE CHOICE
+    let certificate_choice_request = CertificateChoiceDeviceLinkRequest::new(&cfg);
+    println!(
+        "Certificate Choice Request: \n{}",
+        serde_json::to_string_pretty(&certificate_choice_request)?
+    );
+
+    smart_id_client
+        .start_certificate_choice_anonymous_session(certificate_choice_request)
+        .await?;
+
+    let qr_code_link = smart_id_client.generate_device_link(DeviceLinkType::QR, "eng")?;
+
+    // Open the QR code in the computer's default image viewer
+    // Scan the QR code with the Smart-ID app
+    open_qr_in_computer_image_viewer(qr_code_link, "qr_cert_code")?;
+
+
+    let linked_session_id = smart_id_client.get_session().unwrap().session_id().clone();
+
+    // Enter you pin code in the smartID app to choose a certificate, and this will return a successful result.
+    let result = smart_id_client.get_session_status().await?;
+    println!(
+        "Certificate Choice Session Status\n{}",
+        serde_json::to_string_pretty(&result)?
+    );
+
+    assert_eq!(result.result.clone().unwrap().end_result, EndResult::OK);
+
+    let document_number = result.result.unwrap().document_number.unwrap();
+    println!("Document Number: {}", document_number);
+
+    let signature_request = SignatureNotificationLinkedRequest::new(
+        &cfg,
+        vec![Interaction::DisplayTextAndPIN {
+            display_text_60: "Sign document".to_string(),
+        }],
+        EXAMPLE_SIGNING_TEXT.to_string(),
+        SignatureAlgorithm::RsassaPss,
+        linked_session_id,
+        HashingAlgorithm::sha_512,
+    )?;
+
+    println!(
+        "Signature Request: \n{}",
+        serde_json::to_string_pretty(&signature_request)?
+    );
+
+    smart_id_client
+        .start_signature_notification_document_linked_session(
             signature_request,
             document_number.to_string(),
         )
