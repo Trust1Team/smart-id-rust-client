@@ -752,6 +752,7 @@ impl SmartIdClient {
         document_number: String,
         signing_certificate_request: SigningCertificateRequest,
     ) -> Result<SigningCertificate> {
+        self.clear_session();
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
