@@ -14,7 +14,6 @@ use smart_id_rust_client::models::device_link::DeviceLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
 use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 use std::env;
-use smart_id_rust_client::models::common::SessionConfig::SignatureNotificationLinked;
 
 const SMART_ID_ROOT_URL: &str = "https://sid.demo.sk.ee/smart-id-rp";
 const SMART_ID_V3_API_PATH: &str = "/v3";
@@ -392,7 +391,7 @@ async fn test_sign_notification_etsi() -> Result<()> {
                 display_text_60: "Short description of the transaction context".to_string(),
             },
         ],
-        "VC3jDipMw9TgSQrIm3oYuz2t/GciD3Aw2WTpnaGpo+1sdkkRiCnbRz08uqlgU6q1W2/VP6PDxSQlOy5AIxT5Xw=="
+        "l38F23ocgcQatHhluzKkxJU+q8zM7JtVN73C40LMqYg="
             .to_string(),
         SignatureAlgorithm::RsassaPss,
         HashingAlgorithm::sha_512,

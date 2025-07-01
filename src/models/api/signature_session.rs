@@ -3,7 +3,7 @@ use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::models::api::response::SmartIdAPIResponse;
 use crate::models::common::{CertificateLevel, RequestProperties, VCCode};
-use crate::models::interaction::{encode_interactions_base_64, Interaction};
+use crate::models::interaction::{encode_interactions_base_64, hash_encode_digest, Interaction};
 use crate::models::signature::{
     HashingAlgorithm, SignatureAlgorithm, SignatureProtocol, SignatureProtocolParameters,
     SignatureRequestAlgorithmParameters,
@@ -108,9 +108,7 @@ impl SignatureDeviceLinkRequest {
 
         let encoded_interactions = encode_interactions_base_64(&interactions)?;
 
-        BASE64_STANDARD.decode(&digest).map_err(|_| {
-            SmartIdClientError::InvalidDigestException("Digest not encoded in base64")
-        })?;
+        let hashed_and_encoded_digest = hash_encode_digest(&digest, &hash_algorithm)?;
 
         Ok(SignatureDeviceLinkRequest {
             relying_party_uuid: cfg.relying_party_uuid.clone(),
@@ -239,9 +237,7 @@ impl SignatureNotificationRequest {
 
         let encoded_interactions = encode_interactions_base_64(&interactions)?;
 
-        BASE64_STANDARD.decode(&digest).map_err(|_| {
-            SmartIdClientError::InvalidDigestException("Digest not encoded in base64")
-        })?;
+        let hashed_and_encoded_digest = hash_encode_digest(&digest, &hash_algorithm)?;
 
         Ok(SignatureNotificationRequest {
             relying_party_uuid: cfg.relying_party_uuid.clone(),
@@ -249,7 +245,7 @@ impl SignatureNotificationRequest {
             certificate_level: CertificateLevel::QUALIFIED,
             signature_protocol: SignatureProtocol::RAW_DIGEST_SIGNATURE,
             signature_protocol_parameters: SignatureProtocolParameters::RAW_DIGEST_SIGNATURE {
-                digest,
+                digest: hashed_and_encoded_digest,
                 signature_algorithm,
                 signature_algorithm_parameters: SignatureRequestAlgorithmParameters {
                     hash_algorithm,
@@ -369,9 +365,7 @@ impl SignatureNotificationLinkedRequest {
 
         let encoded_interactions = encode_interactions_base_64(&interactions)?;
 
-        BASE64_STANDARD.decode(&digest).map_err(|_| {
-            SmartIdClientError::InvalidDigestException("Digest not encoded in base64")
-        })?;
+        let hashed_and_encoded_digest = hash_encode_digest(&digest, &hash_algorithm)?;
 
         Ok(SignatureNotificationLinkedRequest {
             relying_party_uuid: cfg.relying_party_uuid.clone(),
@@ -380,7 +374,7 @@ impl SignatureNotificationLinkedRequest {
             certificate_level: CertificateLevel::QUALIFIED,
             signature_protocol: SignatureProtocol::RAW_DIGEST_SIGNATURE,
             signature_protocol_parameters: SignatureProtocolParameters::RAW_DIGEST_SIGNATURE {
-                digest,
+                digest: hashed_and_encoded_digest,
                 signature_algorithm,
                 signature_algorithm_parameters: SignatureRequestAlgorithmParameters {
                     hash_algorithm,

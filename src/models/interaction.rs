@@ -1,9 +1,12 @@
 use crate::error::Result;
 use crate::error::SmartIdClientError;
 use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
+use sha2::{Digest, Sha256, Sha384, Sha512};
 use strum_macros::AsRefStr;
+use crate::models::signature::HashingAlgorithm;
 
 /// Interaction Flow
 ///
@@ -96,6 +99,43 @@ pub fn encode_interactions_base_64(interactions: &Vec<Interaction>) -> Result<St
     let base64_encoded =
         base64::engine::general_purpose::STANDARD.encode(interactions_json.as_bytes());
     Ok(base64_encoded)
+}
+
+pub fn hash_encode_digest(digest: &str, hashing_algorithm: &HashingAlgorithm) -> Result<String> {
+    let hash_bytes = match hashing_algorithm {
+        HashingAlgorithm::sha_256 => {
+            let mut hasher = Sha256::new();
+            hasher.update(digest.as_bytes());
+            hasher.finalize().to_vec()
+        },
+        HashingAlgorithm::sha_384 => {
+            let mut hasher = Sha384::new();
+            hasher.update(digest.as_bytes());
+            hasher.finalize().to_vec()
+        },
+        HashingAlgorithm::sha_512 => {
+            let mut hasher = Sha512::new();
+            hasher.update(digest.as_bytes());
+            hasher.finalize().to_vec()
+        },
+        HashingAlgorithm::sha3_256 => {
+            let mut hasher = sha3::Sha3_256::new();
+            hasher.update(digest.as_bytes());
+            hasher.finalize().to_vec()
+        },
+        HashingAlgorithm::sha3_384 => {
+            let mut hasher = sha3::Sha3_384::new();
+            hasher.update(digest.as_bytes());
+            hasher.finalize().to_vec()
+        },
+        HashingAlgorithm::sha3_512 => {
+            let mut hasher = sha3::Sha3_512::new();
+            hasher.update(digest.as_bytes());
+            hasher.finalize().to_vec()
+        },
+    };
+    
+    Ok(STANDARD.encode(hash_bytes))
 }
 
 // region: Interaction Tests
