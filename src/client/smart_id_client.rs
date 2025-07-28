@@ -610,10 +610,9 @@ impl SmartIdClient {
     ///
     /// * `signature_request` - The signature request.
     /// * `document_number` - The document number.
-    ///
     /// # Returns
     ///
-    /// A `Result` containing the verification code the user will see on screen.
+    /// A Result indicating success or failure.
     pub async fn start_signature_notification_document_linked_session(
         &self,
         signature_request: SignatureNotificationLinkedRequest,
