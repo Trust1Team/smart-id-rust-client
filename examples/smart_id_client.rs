@@ -97,12 +97,12 @@ async fn uc_authentication_request_example(
     info!("{:?}", qr_code_link);
 
     // This link can be opened inside an app and redirect to the Smart-ID app
-    // It also must be refreshed every 1 second.
+    // It should never be refreshed.
     let app_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::App2App, "eng")?;
     info!("{:?}", app_to_app_link);
 
     // This link can be opened from the web browser and redirect to the Smart-ID app
-    // It also must be refreshed every 1 second.
+    // It should never be refreshed.
     let web_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::Web2App, "eng")?;
     info!("{:?}", web_to_app_link);
 
@@ -142,12 +142,12 @@ async fn uc_signature_request_example(
     info!("{:?}", qr_code_link);
 
     // This link can be opened inside an app and redirect to the Smart-ID app
-    // It also must be refreshed every 1 second.
+    // It should never be refreshed.
     let app_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::App2App, "eng")?;
     info!("{:?}", app_to_app_link);
 
     // This link can be opened from the web browser and redirect to the Smart-ID app
-    // It also must be refreshed every 1 second.
+    // It should never be refreshed.
     let web_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::Web2App, "eng")?;
     info!("{:?}", web_to_app_link);
 
