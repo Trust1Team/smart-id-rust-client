@@ -695,7 +695,7 @@ impl SmartIdClient {
         )
     }
 
-    /// Starts an anonymous certificate choice session using a devic link
+    /// Starts an anonymous certificate choice session using a ge link
     /// Use the get_session_status method to poll for the result.
     /// This should be proceeded by a signature session.
     ///
