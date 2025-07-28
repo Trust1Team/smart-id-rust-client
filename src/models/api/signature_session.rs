@@ -117,7 +117,7 @@ impl SignatureDeviceLinkRequest {
             certificate_level: CertificateLevel::QUALIFIED,
             signature_protocol: SignatureProtocol::RAW_DIGEST_SIGNATURE,
             signature_protocol_parameters: SignatureProtocolParameters::RAW_DIGEST_SIGNATURE {
-                digest,
+                digest: hashed_and_encoded_digest,
                 signature_algorithm,
                 signature_algorithm_parameters: SignatureRequestAlgorithmParameters {
                     hash_algorithm,
