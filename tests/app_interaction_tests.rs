@@ -90,7 +90,7 @@ async fn test_authentication_qr() -> Result<()> {
     // Scan the QR code with the Smart-ID app
     open_qr_in_computer_image_viewer(qr_code_link, "qr_code")?;
 
-    // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
+    // Enter your pin code in the smartID app to authenticate, and this will return a successful result.
     let result = smart_id_client.get_session_status().await?;
     println!(
         "Authentication Session Status \n{:}",
@@ -129,7 +129,7 @@ async fn test_authentication_notification_document_number() -> Result<()> {
         )
         .await?;
 
-    // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
+    // Enter your pin code in the smartID app to authenticate, and this will return a successful result.
     let result = smart_id_client.get_session_status().await?;
     println!(
         "Authentication Session Status \n{:}",
@@ -165,7 +165,7 @@ async fn test_authentication_notification_etsi() -> Result<()> {
         .start_authentication_notification_etsi_session(authentication_request, ETSI_ID.to_string())
         .await?;
 
-    // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
+    // Enter your pin code in the smartID app to authenticate, and this will return a successful result.
     let result = smart_id_client.get_session_status().await?;
     println!(
         "Authentication Session Status \n{:}",
@@ -210,7 +210,7 @@ async fn test_authentication_web_to_app() -> Result<()> {
     // This is a web link that should be opened in a browser. You can use a QR code app or your camera app to open the link in a browser.
     open_qr_in_computer_image_viewer(web_to_app_link, "qr_code")?;
 
-    // Enter you pin code in the smartID app to authenticate, and this will return a successful result.
+    // Enter your pin code in the smartID app to authenticate, and this will return a successful result.
     let result = smart_id_client.get_session_status().await?;
     println!(
         "Authentication Session Status \n{:}",
@@ -362,7 +362,7 @@ async fn test_sign_notification_document_number() -> Result<()> {
         )
         .await?;
 
-    // Enter you pin code in the smartID app to sign, and this will return a successful result.
+    // Enter your pin code in the smartID app to sign, and this will return a successful result.
     let result = smart_id_client.get_session_status().await?;
     println!(
         "Signature Session Status \n{:}",
@@ -406,7 +406,7 @@ async fn test_sign_notification_etsi() -> Result<()> {
         .start_signature_notification_etsi_session(signature_request, ETSI_ID.to_string())
         .await?;
 
-    // Enter you pin code in the smartID app to sign, and this will return a successful result.
+    // Enter your pin code in the smartID app to sign, and this will return a successful result.
     let result = smart_id_client.get_session_status().await?;
     println!(
         "Signature Session Status \n{:}",
@@ -456,7 +456,7 @@ pub async fn test_sign_web_to_app() -> Result<()> {
     // This is a web link that should be opened in a browser. You can use a QR code app or your camera app to open the link in a browser.
     open_qr_in_computer_image_viewer(web_to_app_link, "qr_sign_code")?;
 
-    // Enter you pin code in the smartID app to sign, and this will return a successful result.
+    // Enter your pin code in the smartID app to sign, and this will return a successful result.
     let result = smart_id_client.get_session_status().await?;
 
     // WARNING! To properly validate the response from App2App & Web2App flows, you need the secret passed as a query parameter to the callback!
@@ -497,7 +497,7 @@ async fn test_certificate_choice_notification_etsi() -> Result<()> {
         )
         .await?;
 
-    // Enter you pin code in the smartID app to choose a certificate, and this will return a successful result.
+    // Enter your pin code in the smartID app to choose a certificate, and this will return a successful result.
     let result = smart_id_client.get_session_status().await?;
     println!(
         "Certificate Choice Session Status\n{}",
@@ -571,7 +571,7 @@ async fn test_certificate_choice_anonymous_qr() -> Result<()> {
 
     let linked_session_id = smart_id_client.get_session().unwrap().session_id().clone();
 
-    // Enter you pin code in the smartID app to choose a certificate, and this will return a successful result.
+    // Enter your pin code in the smartID app to choose a certificate, and this will return a successful result.
     let result = smart_id_client.get_session_status().await?;
     println!(
         "Certificate Choice Session Status\n{}",
