@@ -3,21 +3,23 @@ use crate::config::SmartIDConfig;
 use crate::error::Result;
 use crate::error::SmartIdClientError;
 use crate::error::SmartIdClientError::NoSessionException;
-use crate::models::authentication_session::{
-    AuthenticationDynamicLinkResponse, AuthenticationNotificationResponse, AuthenticationRequest,
+use crate::models::api::authentication_session::{
+    AuthenticationDeviceLinkRequest, AuthenticationDeviceLinkResponse,
+    AuthenticationNotificationRequest, AuthenticationNotificationResponse,
 };
-use crate::models::certificate_choice_session::{
-    CertificateChoiceRequest, CertificateChoiceResponse,
+use crate::models::api::certificate_choice_session::{CertificateChoiceDeviceLinkRequest, CertificateChoiceDeviceLinkResponse, CertificateChoiceNotificationRequest, CertificateChoiceNotificationResponse, SigningCertificate, SigningCertificateRequest, SigningCertificateResponse, SigningCertificateResponseState};
+use crate::models::api::session_status::{
+    SessionCertificate, SessionResponse, SessionState, SessionStatusResponse,
+};
+use crate::models::api::signature_session::{
+    SignatureDeviceLinkRequest, SignatureDeviceLinkResponse, SignatureNotificationLinkedRequest,
+    SignatureNotificationLinkedResponse, SignatureNotificationRequest,
+    SignatureNotificationResponse,
 };
 use crate::models::common::{SessionConfig, VCCode};
-use crate::models::dynamic_link::{DynamicLink, DynamicLinkType, SessionType};
-use crate::models::session_status::{
-    SessionCertificate, SessionResponse, SessionState, SessionStatus,
-};
-use crate::models::signature::ResponseSignature;
-use crate::models::signature_session::{
-    SignatureNotificationResponse, SignatureRequest, SignatureResponse,
-};
+use crate::models::device_link::DeviceLink::{CrossDeviceLink, SameDeviceLink};
+use crate::models::device_link::{DeviceLinkType, SessionType};
+use crate::models::signature::FlowType;
 use crate::models::user_identity::UserIdentity;
 use crate::utils::demo_certificates::{demo_intermediate_certificates, demo_root_certificates};
 use crate::utils::production_certificates::{
@@ -30,23 +32,23 @@ use tracing::debug;
 // region: Path definitions
 // Copied from https://github.com/SK-EID/smart-id-java-client/blob/81e48f519bf882db8584a344b161db378b959093/src/main/java/ee/sk/smartid/v3/rest/SmartIdRestConnector.java#L79
 const SESSION_STATUS_URI: &str = "/session";
-const NOTIFICATION_CERTIFICATE_CHOICE_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
-    "/certificatechoice/notification/etsi";
-const NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH: &str =
-    "/certificatechoice/notification/document";
-
-const DYNAMIC_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/dynamic-link/etsi";
-const DYNAMIC_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/dynamic-link/document";
+const NOTIFICATION_CERTIFICATE_CHOICE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/certificate-choice/notification/etsi";
 #[allow(dead_code)]
+const NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/certificate-choice/notification/document";
+const ANONYMOUSE_DEVICE_LINK_CERTIFICATE_CHOICE_PATH: &str = "/signature/certificate-choice/device-link/anonymous";
+const SIGNING_CERTIFICATE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/certificate";
+
+const DEVICE_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/device-link/etsi";
+const DEVICE_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/device-link/document";
 const NOTIFICATION_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/notification/etsi";
-#[allow(dead_code)]
 const NOTIFICATION_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/notification/document";
+const NOTIFICATION_SIGNATURE_WITH_DOCUMENT_NUMBER_LINKED_PATH: &str = "/signature/notification/linked";
 
-const ANONYMOUS_DYNAMIC_LINK_AUTHENTICATION_PATH: &str = "/authentication/dynamic-link/anonymous";
-const DYNAMIC_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
-    "/authentication/dynamic-link/etsi";
-const DYNAMIC_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str =
-    "/authentication/dynamic-link/document";
+const ANONYMOUS_DEVICE_LINK_AUTHENTICATION_PATH: &str = "/authentication/device-link/anonymous";
+const DEVICE_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
+    "/authentication/device-link/etsi";
+const DEVICE_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str =
+    "/authentication/device-link/document";
 #[allow(dead_code)]
 const NOTIFICATION_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
     "/authentication/notification/etsi";
@@ -54,13 +56,16 @@ const NOTIFICATION_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH: &str =
 const NOTIFICATION_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH: &str =
     "/authentication/notification/document";
 
+// Currently only support for 1.0
+const DEVICE_LINK_VERSION: &str = "1.0";
+
 // endregion: Path definitions
 
 /// Smart ID Client
 ///
 /// This struct provides methods to interact with the Smart ID service, including starting authentication,
-/// certificate choice, and signature sessions using dynamic links. It also includes methods to generate
-/// dynamic links, retrieve session status, and validate session responses.
+/// certificate choice, and signature sessions using device links. It also includes methods to generate
+/// device links, retrieve session status, and validate session responses.
 ///
 /// The client maintains session state and authenticated user identity to ensure the correct user is signing
 /// and to validate session responses.
@@ -115,7 +120,7 @@ impl SmartIdClient {
     /// Example Use Case:
     /// After starting an authentication session, you can cache the session_configuration (serialized).
     /// Then, when you receive a request for session status, you rebuild the client. After you cache the session_configuration again.
-    /// Then, when you receive a request for a Dynamic Link, you can rebuild the client from the session_configuration.
+    /// Then, when you receive a request for a Device Link, you can rebuild the client from the session_configuration.
     ///
     /// # Arguments
     ///
@@ -168,7 +173,7 @@ impl SmartIdClient {
     /// - The session response is missing a signature.
     /// - The session response certificate is invalid.
     /// - The session response signature is invalid.
-    pub async fn get_session_status(&self) -> Result<SessionStatus> {
+    pub async fn get_session_status(&self) -> Result<SessionStatusResponse> {
         let session_config = self.get_session()?;
 
         let path = format!(
@@ -200,8 +205,8 @@ impl SmartIdClient {
 
     // region: Authentication
 
-    /// Starts an authentication session using a dynamic link.
-    /// Use the create dynamic link methods to generate the dynamic link to send to the user to continue the authentication process.
+    /// Starts an authentication session using a device link.
+    /// Use the create device link methods to generate the device link to send to the user to continue the authentication process.
     /// Use the get_session_status method to poll for the result.
     ///
     /// # Arguments
@@ -211,20 +216,20 @@ impl SmartIdClient {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_authentication_dynamic_link_anonymous_session(
+    pub async fn start_authentication_device_link_anonymous_session(
         &self,
-        authentication_request: AuthenticationRequest,
+        authentication_request: AuthenticationDeviceLinkRequest,
     ) -> Result<()> {
         self.clear_session();
 
         let path = format!(
             "{}{}",
             self.cfg.api_url(),
-            ANONYMOUS_DYNAMIC_LINK_AUTHENTICATION_PATH,
+            ANONYMOUS_DEVICE_LINK_AUTHENTICATION_PATH,
         );
 
         let authentication_response =
-            post::<AuthenticationRequest, AuthenticationDynamicLinkResponse>(
+            post::<AuthenticationDeviceLinkRequest, AuthenticationDeviceLinkResponse>(
                 path.as_str(),
                 &authentication_request,
                 self.cfg.client_request_timeout,
@@ -233,14 +238,15 @@ impl SmartIdClient {
 
         let session = authentication_response.into_result()?;
 
-        self.set_session(SessionConfig::from_authentication_dynamic_link_response(
+        self.set_session(SessionConfig::from_authentication_device_link_response(
             session,
             authentication_request,
+            &self.cfg.scheme_name,
         )?)
     }
 
-    /// Starts an authentication session with a document using a dynamic link.
-    /// Use the create dynamic link methods to generate the dynamic link to send to the user to continue the authentication process.
+    /// Starts an authentication session with a document using a device link.
+    /// Use the create device link methods to generate the device link to send to the user to continue the authentication process.
     /// Use the get_session_status method to poll for the result.
     ///
     /// # Arguments
@@ -251,9 +257,9 @@ impl SmartIdClient {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_authentication_dynamic_link_document_session(
+    pub async fn start_authentication_device_link_document_session(
         &self,
-        authentication_request: AuthenticationRequest,
+        authentication_request: AuthenticationDeviceLinkRequest,
         document_number: String,
     ) -> Result<()> {
         self.clear_session();
@@ -261,12 +267,12 @@ impl SmartIdClient {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
-            DYNAMIC_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH,
+            DEVICE_LINK_AUTHENTICATION_WITH_DOCUMENT_NUMBER_PATH,
             document_number,
         );
 
         let authentication_response =
-            post::<AuthenticationRequest, AuthenticationDynamicLinkResponse>(
+            post::<AuthenticationDeviceLinkRequest, AuthenticationDeviceLinkResponse>(
                 path.as_str(),
                 &authentication_request,
                 self.cfg.client_request_timeout,
@@ -275,14 +281,15 @@ impl SmartIdClient {
 
         let session = authentication_response.into_result()?;
 
-        self.set_session(SessionConfig::from_authentication_dynamic_link_response(
+        self.set_session(SessionConfig::from_authentication_device_link_response(
             session,
             authentication_request,
+            &self.cfg.scheme_name,
         )?)
     }
 
-    /// Starts an authentication session with an etsi using a dynamic link.
-    /// Use the create dynamic link methods to generate the dynamic link to send to the user to continue the authentication process.
+    /// Starts an authentication session with an etsi using a device link.
+    /// Use the create device link methods to generate the device link to send to the user to continue the authentication process.
     /// Use the get_session_status method to poll for the result.
     ///
     /// # Arguments
@@ -293,9 +300,9 @@ impl SmartIdClient {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_authentication_dynamic_link_etsi_session(
+    pub async fn start_authentication_device_link_etsi_session(
         &self,
-        authentication_request: AuthenticationRequest,
+        authentication_request: AuthenticationDeviceLinkRequest,
         etsi: String,
     ) -> Result<()> {
         self.clear_session();
@@ -303,12 +310,12 @@ impl SmartIdClient {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
-            DYNAMIC_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH,
+            DEVICE_LINK_AUTHENTICATION_WITH_SEMANTIC_IDENTIFIER_PATH,
             etsi,
         );
 
         let authentication_response =
-            post::<AuthenticationRequest, AuthenticationDynamicLinkResponse>(
+            post::<AuthenticationDeviceLinkRequest, AuthenticationDeviceLinkResponse>(
                 path.as_str(),
                 &authentication_request,
                 self.cfg.client_request_timeout,
@@ -317,9 +324,10 @@ impl SmartIdClient {
 
         let session = authentication_response.into_result()?;
 
-        self.set_session(SessionConfig::from_authentication_dynamic_link_response(
+        self.set_session(SessionConfig::from_authentication_device_link_response(
             session,
             authentication_request,
+            &self.cfg.scheme_name,
         )?)
     }
 
@@ -336,7 +344,7 @@ impl SmartIdClient {
     /// A `Result` containing the verification code the user will see on screen.
     pub async fn start_authentication_notification_etsi_session(
         &self,
-        authentication_request: AuthenticationRequest,
+        authentication_request: AuthenticationNotificationRequest,
         etsi: String,
     ) -> Result<VCCode> {
         self.clear_session();
@@ -349,7 +357,7 @@ impl SmartIdClient {
         );
 
         let authentication_response =
-            post::<AuthenticationRequest, AuthenticationNotificationResponse>(
+            post::<AuthenticationNotificationRequest, AuthenticationNotificationResponse>(
                 path.as_str(),
                 &authentication_request,
                 self.cfg.client_request_timeout,
@@ -358,12 +366,17 @@ impl SmartIdClient {
 
         let session = authentication_response.into_result()?;
 
-        self.set_session(SessionConfig::from_authentication_notification_response(
+        let session_config = SessionConfig::from_authentication_notification_response(
             session.clone(),
             authentication_request,
-        )?)?;
+            &self.cfg.scheme_name,
+        )?;
 
-        Ok(session.vc)
+        let vc_code = session_config.calculate_vc_code();
+
+        self.set_session(session_config)?;
+
+        vc_code
     }
 
     /// Starts an authentication session using a notification.
@@ -379,7 +392,7 @@ impl SmartIdClient {
     /// A `Result` containing the verification code the user will see on screen.
     pub async fn start_authentication_notification_document_session(
         &self,
-        authentication_request: AuthenticationRequest,
+        authentication_request: AuthenticationNotificationRequest,
         document_number: String,
     ) -> Result<VCCode> {
         self.clear_session();
@@ -392,7 +405,7 @@ impl SmartIdClient {
         );
 
         let authentication_response =
-            post::<AuthenticationRequest, AuthenticationNotificationResponse>(
+            post::<AuthenticationNotificationRequest, AuthenticationNotificationResponse>(
                 path.as_str(),
                 &authentication_request,
                 self.cfg.client_request_timeout,
@@ -401,20 +414,25 @@ impl SmartIdClient {
 
         let session = authentication_response.into_result()?;
 
-        self.set_session(SessionConfig::from_authentication_notification_response(
+        let session_config = SessionConfig::from_authentication_notification_response(
             session.clone(),
             authentication_request,
-        )?)?;
+            &self.cfg.scheme_name,
+        )?;
 
-        Ok(session.vc)
+        let vc_code = session_config.calculate_vc_code();
+
+        self.set_session(session_config)?;
+
+        vc_code
     }
 
     // endregion: Authentication
 
     // region: Signature
 
-    /// Starts a signature session using a dynamic link and an ETSI identifier.
-    /// Use the create dynamic link methods to generate the dynamic link to send to the user to continue the signature process.
+    /// Starts a signature session using a device link and an ETSI identifier.
+    /// Use the create device link methods to generate the device link to send to the user to continue the signature process.
     /// Use the get_session_status method to poll for the result.
     ///
     /// # Arguments
@@ -425,9 +443,9 @@ impl SmartIdClient {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_signature_dynamic_link_etsi_session(
+    pub async fn start_signature_device_link_etsi_session(
         &self,
-        signature_request: SignatureRequest,
+        signature_request: SignatureDeviceLinkRequest,
         etsi: String,
     ) -> Result<()> {
         self.clear_session();
@@ -435,11 +453,11 @@ impl SmartIdClient {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
-            DYNAMIC_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH,
+            DEVICE_LINK_SIGNATURE_WITH_SEMANTIC_IDENTIFIER_PATH,
             etsi,
         );
 
-        let signature_response = post::<SignatureRequest, SignatureResponse>(
+        let signature_response = post::<SignatureDeviceLinkRequest, SignatureDeviceLinkResponse>(
             path.as_str(),
             &signature_request,
             self.cfg.client_request_timeout,
@@ -448,14 +466,15 @@ impl SmartIdClient {
 
         let session = signature_response.into_result()?;
 
-        self.set_session(SessionConfig::from_signature_dynamic_link_request_response(
+        self.set_session(SessionConfig::from_signature_device_link_request_response(
             session,
             signature_request,
+            &self.cfg.scheme_name,
         )?)
     }
 
-    /// Starts a signature session using a dynamic link and a document number.
-    /// Use the create dynamic link methods to generate the dynamic link to send to the user to continue the signature process.
+    /// Starts a signature session using a device link and a document number.
+    /// Use the create device link methods to generate the device link to send to the user to continue the signature process.
     /// Use the get_session_status method to poll for the result.
     ///
     /// # Arguments
@@ -466,9 +485,9 @@ impl SmartIdClient {
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_signature_dynamic_link_document_session(
+    pub async fn start_signature_device_link_document_session(
         &self,
-        signature_request: SignatureRequest,
+        signature_request: SignatureDeviceLinkRequest,
         document_number: String,
     ) -> Result<()> {
         self.clear_session();
@@ -476,11 +495,11 @@ impl SmartIdClient {
         let path = format!(
             "{}{}/{}",
             self.cfg.api_url(),
-            DYNAMIC_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH,
+            DEVICE_LINK_SIGNATURE_WITH_DOCUMENT_NUMBER_PATH,
             document_number,
         );
 
-        let signature_response = post::<SignatureRequest, SignatureResponse>(
+        let signature_response = post::<SignatureDeviceLinkRequest, SignatureDeviceLinkResponse>(
             path.as_str(),
             &signature_request,
             self.cfg.client_request_timeout,
@@ -489,9 +508,10 @@ impl SmartIdClient {
 
         let session = signature_response.into_result()?;
 
-        self.set_session(SessionConfig::from_signature_dynamic_link_request_response(
+        self.set_session(SessionConfig::from_signature_device_link_request_response(
             session,
             signature_request,
+            &self.cfg.scheme_name,
         )?)
     }
 
@@ -508,7 +528,7 @@ impl SmartIdClient {
     /// A `Result` containing the verification code the user will see on screen.
     pub async fn start_signature_notification_etsi_session(
         &self,
-        signature_request: SignatureRequest,
+        signature_request: SignatureNotificationRequest,
         etsi: String,
     ) -> Result<VCCode> {
         self.clear_session();
@@ -520,18 +540,20 @@ impl SmartIdClient {
             etsi,
         );
 
-        let signature_response = post::<SignatureRequest, SignatureNotificationResponse>(
-            path.as_str(),
-            &signature_request,
-            self.cfg.client_request_timeout,
-        )
-        .await?;
+        let signature_response =
+            post::<SignatureNotificationRequest, SignatureNotificationResponse>(
+                path.as_str(),
+                &signature_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
 
         let session = signature_response.into_result()?;
 
         self.set_session(SessionConfig::from_signature_notification_response(
             session.clone(),
             signature_request,
+            &self.cfg.scheme_name,
         )?)?;
 
         Ok(session.vc)
@@ -550,7 +572,7 @@ impl SmartIdClient {
     /// A `Result` containing the verification code the user will see on screen.
     pub async fn start_signature_notification_document_session(
         &self,
-        signature_request: SignatureRequest,
+        signature_request: SignatureNotificationRequest,
         document_number: String,
     ) -> Result<VCCode> {
         self.clear_session();
@@ -562,21 +584,67 @@ impl SmartIdClient {
             document_number,
         );
 
-        let signature_response = post::<SignatureRequest, SignatureNotificationResponse>(
-            path.as_str(),
-            &signature_request,
-            self.cfg.client_request_timeout,
-        )
-        .await?;
+        let signature_response =
+            post::<SignatureNotificationRequest, SignatureNotificationResponse>(
+                path.as_str(),
+                &signature_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
 
         let session = signature_response.into_result()?;
 
         self.set_session(SessionConfig::from_signature_notification_response(
             session.clone(),
             signature_request,
+            &self.cfg.scheme_name,
         )?)?;
 
         Ok(session.vc)
+    }
+
+    /// Starts a linked signature session using a notification.
+    /// This is the same as the start_signature_notification_document_session method, but can be linked to a previous certificate choice session.
+    /// Use the `get_session_status` method to poll for the result.
+    ///
+    /// # Arguments
+    ///
+    /// * `signature_request` - The signature request.
+    /// * `document_number` - The document number.
+    /// # Returns
+    ///
+    /// A Result indicating success or failure.
+    pub async fn start_signature_notification_document_linked_session(
+        &self,
+        signature_request: SignatureNotificationLinkedRequest,
+        document_number: String,
+    ) -> Result<()> {
+        self.clear_session();
+
+        let path = format!(
+            "{}{}/{}",
+            self.cfg.api_url(),
+            NOTIFICATION_SIGNATURE_WITH_DOCUMENT_NUMBER_LINKED_PATH,
+            document_number,
+        );
+
+        let signature_response =
+            post::<SignatureNotificationLinkedRequest, SignatureNotificationLinkedResponse>(
+                path.as_str(),
+                &signature_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
+
+        let session = signature_response.into_result()?;
+
+        self.set_session(SessionConfig::from_signature_notification_linked_response(
+            session.clone(),
+            signature_request,
+            &self.cfg.scheme_name,
+        )?)?;
+
+        Ok(())
     }
 
     // endregion: Signature
@@ -596,7 +664,7 @@ impl SmartIdClient {
     /// A Result indicating success or failure.
     pub async fn start_certificate_choice_notification_etsi_session(
         &self,
-        certificate_choice_request: CertificateChoiceRequest,
+        certificate_choice_request: CertificateChoiceNotificationRequest,
         etsi: String,
     ) -> Result<()> {
         self.clear_session();
@@ -609,7 +677,7 @@ impl SmartIdClient {
         );
 
         let certificate_choice_response =
-            post::<CertificateChoiceRequest, CertificateChoiceResponse>(
+            post::<CertificateChoiceNotificationRequest, CertificateChoiceNotificationResponse>(
                 path.as_str(),
                 &certificate_choice_request,
                 self.cfg.client_request_timeout,
@@ -618,132 +686,319 @@ impl SmartIdClient {
 
         let session = certificate_choice_response.into_result()?;
 
-        self.set_session(SessionConfig::from_certificate_choice_response(
-            session,
-            certificate_choice_request,
-        ))
+        self.set_session(
+            SessionConfig::from_certificate_choice_notification_response(
+                session,
+                certificate_choice_request,
+                &self.cfg.scheme_name,
+            ),
+        )
     }
 
-    /// Starts a certificate choice session using a notification and document id.
+    /// Starts an anonymous certificate choice session using a ge link
     /// Use the get_session_status method to poll for the result.
+    /// This should be proceeded by a signature session.
     ///
     /// # Arguments
     ///
     /// * `certificate_choice_request` - The certificate choice request.
-    /// * `document_number` - The document number.
     ///
     /// # Returns
     ///
     /// A Result indicating success or failure.
-    pub async fn start_certificate_choice_notification_document_session(
+    pub async fn start_certificate_choice_anonymous_session(
         &self,
-        certificate_choice_request: CertificateChoiceRequest,
-        document_number: String,
+        certificate_choice_request: CertificateChoiceDeviceLinkRequest,
     ) -> Result<()> {
         self.clear_session();
 
         let path = format!(
-            "{}{}/{}",
+            "{}{}",
             self.cfg.api_url(),
-            NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH,
-            document_number,
+            ANONYMOUSE_DEVICE_LINK_CERTIFICATE_CHOICE_PATH,
         );
 
         let certificate_choice_response =
-            post::<CertificateChoiceRequest, CertificateChoiceResponse>(
+            post::<CertificateChoiceDeviceLinkRequest, CertificateChoiceDeviceLinkResponse>(
                 path.as_str(),
                 &certificate_choice_request,
                 self.cfg.client_request_timeout,
             )
-            .await?;
+                .await?;
 
         let session = certificate_choice_response.into_result()?;
 
-        self.set_session(SessionConfig::from_certificate_choice_response(
-            session,
-            certificate_choice_request,
-        ))
+        self.set_session(
+            SessionConfig::from_certificate_choice_device_link_response(
+                session,
+                certificate_choice_request,
+                &self.cfg.scheme_name,
+            ),
+        )
+    }
+
+    /// Get the signing certificate of the requested document number.
+    /// If the document number has been previously aquired via the certificate choice session or authentication session, this can be used to get the signing certificate.
+    /// This does not require a session.
+    ///
+    /// # Arguments
+    /// * `document_number` - The document number.
+    /// * `signing_certificate_request` - The signing certificate request.
+    ///
+    /// # Returns
+    /// A `Result` containing a SigningCertificateResult or an error.
+    pub async fn get_signing_certificate(
+        &self,
+        document_number: String,
+        signing_certificate_request: SigningCertificateRequest,
+    ) -> Result<SigningCertificate> {
+        self.clear_session();
+        let path = format!(
+            "{}{}/{}",
+            self.cfg.api_url(),
+            SIGNING_CERTIFICATE_WITH_DOCUMENT_NUMBER_PATH,
+            document_number,
+        );
+
+        let certificate_choice_response =
+            post::<SigningCertificateRequest, SigningCertificateResponse>(
+                path.as_str(),
+                &signing_certificate_request,
+                self.cfg.client_request_timeout,
+            )
+            .await?;
+
+        match certificate_choice_response {
+            SigningCertificateResponse::Success(signing_certificate_result) => {
+                match signing_certificate_result.state {
+                    SigningCertificateResponseState::OK => Ok(signing_certificate_result.cert),
+                    SigningCertificateResponseState::DOCUMENT_UNUSABLE => {
+                        Err(SmartIdClientError::GetSigningCertificateException(
+                            "Document is unusable".to_string(),
+                        ))
+                    }
+                }
+            }
+            SigningCertificateResponse::Error(e) => Err(
+                SmartIdClientError::GetSigningCertificateException(e.error_type),
+            ),
+        }
     }
 
     // endregion: Certificate Choice
 
-    // region: Dynamic Link
+    // region: Device Link
 
-    /// Generates a dynamic link for the current session.
+    /// Generates a device link for the current session.
     /// The link will redirect the device to the Smart-ID app.
     /// The link must be refreshed every 1 second.
     ///
     /// # Arguments
     ///
-    /// * `dynamic_link_type` - This can be a QR, Web2App or App2App link.
+    /// * `device_link_type` - This can be a QR, Web2App or App2App link.
     /// * `language_code` - The language code (3-letter ISO 639-2 code).
     ///
     /// # Returns
     ///
-    /// A `Result` containing the generated dynamic link as a `String` or an error.
+    /// A `Result` containing the generated device link as a `String` or an error.
     ///
     /// # Errors
     ///
     /// This function will return an error if:
     /// - There is no running session.
     /// - The session type is `CertificateChoice`.
-    pub fn generate_dynamic_link(
+    pub fn generate_device_link(
         &self,
-        dynamic_link_type: DynamicLinkType,
+        device_link_type: DeviceLinkType,
         language_code: &str,
     ) -> Result<String> {
         let session: SessionConfig = self.get_session()?;
 
         match session {
-            SessionConfig::AuthenticationDynamicLink {
+            SessionConfig::AuthenticationDeviceLink {
                 session_secret,
                 session_token,
+                device_link_base,
+                relying_party_name,
+                initial_callback_url,
+                signature_protocol,
+                interactions,
+                rp_challenge,
                 session_start_time,
                 ..
             } => {
-                let dynamic_link = DynamicLink {
-                    url: self.cfg.dynamic_link_url(),
-                    version: "0.1".to_string(), //TODO: store this somewhere
-                    session_token,
-                    session_secret,
-                    dynamic_link_type: dynamic_link_type.clone(),
-                    session_type: SessionType::auth,
-                    session_start_time,
-                    language_code: language_code.to_string(),
+                let device_link = match device_link_type {
+                    DeviceLinkType::Web2App | DeviceLinkType::App2App => {
+                        if let Some(initial_callback_url) = initial_callback_url {
+                            SameDeviceLink {
+                                device_link_base,
+                                device_link_type,
+                                session_token,
+                                session_type: SessionType::auth,
+                                version: DEVICE_LINK_VERSION.to_string(),
+                                language_code: language_code.to_string(),
+                                session_secret,
+                                scheme_name: self.cfg.scheme_name.clone(),
+                                signature_protocol: Some(signature_protocol),
+                                rp_challenge_or_digest: rp_challenge,
+                                relying_party_name,
+                                brokered_rp_name: "".to_string(),
+                                interactions,
+                                initial_callback_url,
+                            }
+                        } else {
+                            return Err(SmartIdClientError::GenerateDeviceLinkException(
+                                "Initial callback URL is required for Web2App or App2App device links",
+                            ));
+                        }
+                    }
+                    DeviceLinkType::QR => {
+                        CrossDeviceLink {
+                            device_link_base,
+                            device_link_type,
+                            session_start_time,
+                            session_token,
+                            session_type: SessionType::auth,
+                            version: DEVICE_LINK_VERSION.to_string(),
+                            language_code: language_code.to_string(),
+                            session_secret,
+                            scheme_name: self.cfg.scheme_name.clone(),
+                            signature_protocol: Some(signature_protocol),
+                            rp_challenge_or_digest: rp_challenge,
+                            relying_party_name,
+                            brokered_rp_name: "".to_string(),
+                            interactions,
+                            initial_callback_url,
+                        }
+                    }
                 };
-                let dynamic_link = dynamic_link.generate_dynamic_link();
-                Ok(dynamic_link)
+                Ok(device_link.generate_device_link())
             }
-            SessionConfig::Signature {
+            SessionConfig::SignatureDeviceLink {
                 session_secret,
                 session_token,
+                device_link_base,
+                relying_party_name,
+                initial_callback_url,
+                signature_protocol,
+                interactions,
+                digest,
                 session_start_time,
                 ..
             } => {
-                let dynamic_link = DynamicLink {
-                    url: self.cfg.dynamic_link_url(),
-                    version: "0.1".to_string(), //TODO: store this somewhere
-                    session_token,
-                    session_secret,
-                    dynamic_link_type: dynamic_link_type.clone(),
-                    session_type: SessionType::sign,
-                    session_start_time,
-                    language_code: language_code.to_string(),
+                let device_link = match device_link_type {
+                    DeviceLinkType::Web2App | DeviceLinkType::App2App => {
+                        if let Some(initial_callback_url) = initial_callback_url {
+                            SameDeviceLink {
+                                device_link_base,
+                                device_link_type,
+                                session_token,
+                                session_type: SessionType::sign,
+                                version: DEVICE_LINK_VERSION.to_string(),
+                                language_code: language_code.to_string(),
+                                session_secret,
+                                scheme_name: self.cfg.scheme_name.clone(),
+                                signature_protocol: Some(signature_protocol),
+                                rp_challenge_or_digest: digest,
+                                relying_party_name,
+                                brokered_rp_name: "".to_string(),
+                                interactions,
+                                initial_callback_url,
+                            }
+                        } else {
+                            return Err(SmartIdClientError::GenerateDeviceLinkException(
+                                "Initial callback URL is required for Web2App or App2App device links",
+                            ));
+                        }
+                    }
+                    DeviceLinkType::QR => {
+                        CrossDeviceLink {
+                            device_link_base,
+                            device_link_type,
+                            session_start_time,
+                            session_token,
+                            session_type: SessionType::sign,
+                            version: DEVICE_LINK_VERSION.to_string(),
+                            language_code: language_code.to_string(),
+                            session_secret,
+                            scheme_name: self.cfg.scheme_name.clone(),
+                            signature_protocol: Some(signature_protocol),
+                            rp_challenge_or_digest: digest,
+                            relying_party_name,
+                            brokered_rp_name: "".to_string(),
+                            interactions,
+                            initial_callback_url,
+                        }
+                    }
                 };
-                let dynamic_link = dynamic_link.generate_dynamic_link();
-                debug!("Generated dynamic link: {}", dynamic_link);
-                Ok(dynamic_link)
+                Ok(device_link.generate_device_link())
+            }
+            SessionConfig::CertificateChoiceDeviceLink {
+                session_token,
+                session_secret,
+                device_link_base,
+                relying_party_name,
+                initial_callback_url,
+                session_start_time,
+                ..
+            } => {
+                let device_link = match device_link_type {
+                    DeviceLinkType::Web2App | DeviceLinkType::App2App => {
+                        if let Some(initial_callback_url) = initial_callback_url {
+                            SameDeviceLink {
+                                device_link_base,
+                                device_link_type,
+                                session_token,
+                                session_type: SessionType::cert,
+                                version: DEVICE_LINK_VERSION.to_string(),
+                                language_code: language_code.to_string(),
+                                session_secret,
+                                scheme_name: self.cfg.scheme_name.clone(),
+                                signature_protocol: None,
+                                rp_challenge_or_digest: "".to_string(),
+                                relying_party_name,
+                                brokered_rp_name: "".to_string(),
+                                interactions: "".to_string(),
+                                initial_callback_url,
+                            }
+                        } else {
+                            return Err(SmartIdClientError::GenerateDeviceLinkException(
+                                "Initial callback URL is required for Web2App or App2App device links",
+                            ));
+                        }
+                    }
+                    DeviceLinkType::QR => {
+                        CrossDeviceLink {
+                            device_link_base,
+                            device_link_type,
+                            session_start_time,
+                            session_token,
+                            session_type: SessionType::cert,
+                            version: DEVICE_LINK_VERSION.to_string(),
+                            language_code: language_code.to_string(),
+                            session_secret,
+                            scheme_name: self.cfg.scheme_name.clone(),
+                            signature_protocol: None,
+                            rp_challenge_or_digest: "".to_string(),
+                            relying_party_name,
+                            brokered_rp_name: "".to_string(),
+                            interactions: "".to_string(),
+                            initial_callback_url,
+                        }
+                    }
+                };
+                Ok(device_link.generate_device_link())
             }
             _ => {
-                Err(SmartIdClientError::GenerateDynamicLinkException(
-                    "Can only generate dynamic links for authentication or signature dynamic link sessions",
+                Err(SmartIdClientError::GenerateDeviceLinkException(
+                    "Can only generate device links for authentication or signature device link sessions",
                 ))
             }
 
         }
     }
 
-    // endregion: Dynamic Link
+    // endregion: Device Link
 
     // region: Validation
 
@@ -781,10 +1036,10 @@ impl SmartIdClient {
     /// - The provided identity does not match the certificate.
     fn validate_session_status(
         &self,
-        session_status: SessionStatus,
+        session_status: SessionStatusResponse,
         session_config: SessionConfig,
     ) -> Result<()> {
-        match session_status.result {
+        match session_status.result.clone() {
             Some(session_result) => {
                 // Check the result is OK
                 session_result.end_result.is_ok()?;
@@ -792,6 +1047,7 @@ impl SmartIdClient {
                 // Validate the certificate is present (Required for OK status)
                 let cert = session_status
                     .cert
+                    .clone()
                     .ok_or(SmartIdClientError::SessionResponseMissingCertificate)?;
 
                 // Verify the certificate chain
@@ -809,7 +1065,7 @@ impl SmartIdClient {
                 };
 
                 // Validate signature is correct
-                self.validate_signature(session_config, session_status.signature, cert.clone())?;
+                self.validate_signature(session_config, session_status, cert.clone())?;
 
                 // Check that the identity matches the certificate
                 if let Some(user_identity) = self.get_user_identity()? {
@@ -860,17 +1116,47 @@ impl SmartIdClient {
     fn validate_signature(
         &self,
         session_config: SessionConfig,
-        signature: Option<ResponseSignature>,
+        session_status_response: SessionStatusResponse,
         cert: SessionCertificate,
     ) -> Result<()> {
         match session_config {
-            SessionConfig::AuthenticationDynamicLink {
-                random_challenge, ..
+            SessionConfig::AuthenticationDeviceLink {
+                relying_party_name,
+                initial_callback_url,
+                interactions,
+                rp_challenge,
+                scheme_name,
+                signature_protocol,
+                signature_protocol_parameters,
+                ..
             } => {
-                let signature =
-                    signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+                let signature = session_status_response
+                    .signature
+                    .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
-                signature.validate_acsp_v1(random_challenge, cert.value.clone())?;
+                if signature.get_flow_type() == FlowType::App2App
+                    || signature.get_flow_type() == FlowType::Web2App
+                {
+                    debug!("When the user goes to the callback a secret is appended to the URL, this is needed to verify the signature for these flows");
+                    return Ok(());
+                }
+
+                let used_interaction_type = session_status_response
+                    .interaction_type_used
+                    .ok_or(SmartIdClientError::SessionResponseMissingInteractionType)?;
+
+                signature.validate_acsp_v2(
+                    scheme_name,
+                    signature_protocol,
+                    rp_challenge,
+                    cert.value.clone(),
+                    relying_party_name,
+                    None,
+                    interactions,
+                    used_interaction_type,
+                    initial_callback_url,
+                    signature_protocol_parameters.get_hashing_algorithm(),
+                )?;
 
                 // If no user identity is set, set it from the certificate
                 // This happens during all anonymous sessions
@@ -881,12 +1167,34 @@ impl SmartIdClient {
                 Ok(())
             }
             SessionConfig::AuthenticationNotification {
-                random_challenge, ..
+                relying_party_name,
+                interactions,
+                rp_challenge,
+                scheme_name,
+                signature_protocol,
+                signature_protocol_parameters,
+                ..
             } => {
-                let signature =
-                    signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+                let signature = session_status_response
+                    .signature
+                    .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
-                signature.validate_acsp_v1(random_challenge, cert.value.clone())?;
+                let used_interaction_type = session_status_response
+                    .interaction_type_used
+                    .ok_or(SmartIdClientError::SessionResponseMissingInteractionType)?;
+
+                signature.validate_acsp_v2(
+                    scheme_name,
+                    signature_protocol,
+                    rp_challenge,
+                    cert.value.clone(),
+                    relying_party_name,
+                    None,
+                    interactions,
+                    used_interaction_type,
+                    None,
+                    signature_protocol_parameters.get_hashing_algorithm(),
+                )?;
 
                 // If no user identity is set, set it from the certificate
                 // This happens during all anonymous sessions
@@ -896,30 +1204,58 @@ impl SmartIdClient {
 
                 Ok(())
             }
-            SessionConfig::Signature { digest, .. } => {
-                let signature =
-                    signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+            SessionConfig::SignatureDeviceLink {
+                digest,
+                signature_protocol_parameters,
+                ..
+            } => {
+                let signature = session_status_response
+                    .signature
+                    .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+
+                let parameters = signature
+                    .get_signature_algorithm_parameters()
+                    .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
                 // TODO: CHeck this with prod
                 if self.cfg.is_demo() {
                     return Ok(());
                 }
 
-                signature.validate_raw_digest(digest, cert.value.clone())
+                signature.validate_raw_digest(
+                    digest,
+                    cert.value.clone(),
+                    signature_protocol_parameters.get_hashing_algorithm(),
+                    parameters.salt_length,
+                )
             }
-            SessionConfig::SignatureNotification { digest, .. } => {
-                let signature =
-                    signature.ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+            SessionConfig::SignatureNotification {
+                digest,
+                signature_protocol_parameters,
+                ..
+            } => {
+                let signature = session_status_response
+                    .signature
+                    .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
+
+                let parameters = signature
+                    .get_signature_algorithm_parameters()
+                    .ok_or(SmartIdClientError::SessionResponseMissingSignature)?;
 
                 // TODO: CHeck this with prod
                 if self.cfg.is_demo() {
                     return Ok(());
                 }
 
-                signature.validate_raw_digest(digest, cert.value.clone())
+                signature.validate_raw_digest(
+                    digest,
+                    cert.value.clone(),
+                    signature_protocol_parameters.get_hashing_algorithm(),
+                    parameters.salt_length,
+                )
             }
             _ => {
-                debug!("Signature validation only needed for dynamic link authentication and signature sessions");
+                debug!("Signature validation only needed for device link authentication and signature sessions");
                 Ok(())
             }
         }

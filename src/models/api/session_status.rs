@@ -1,13 +1,13 @@
 use crate::error::Result;
 use crate::error::SmartIdClientError;
+use crate::models::api::response::SmartIdAPIResponse;
 use crate::models::common::CertificateLevel;
 use crate::models::interaction::InteractionFlow;
-use crate::models::response::SmartIdAPIResponse;
 use crate::models::signature::{ResponseSignature, SignatureProtocol};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
-pub(crate) type SessionResponse = SmartIdAPIResponse<SessionStatus>;
+pub(crate) type SessionResponse = SmartIdAPIResponse<SessionStatusResponse>;
 
 /// Session Status
 ///
@@ -22,19 +22,19 @@ pub(crate) type SessionResponse = SmartIdAPIResponse<SessionStatus>;
 /// * `signature` - The signature response, if available.
 /// * `cert` - The session certificate, if available. Contains the level of the certificate and the certificate value DER+Base64 encoded.
 /// * `ignored_properties` - Any values from requestProperties that were unsupported or ignored.
-/// * `interaction_flow_used` - The interaction flow used during the session, if available.
+/// * `interaction_type_used` - The interaction flow used during the session, if available.
 /// * `device_ip_address` - The IP address of the mobile device, if it was requested using "shareMdClientIpAddress" in the session creation parameters.
 #[skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct SessionStatus {
+pub struct SessionStatusResponse {
     pub state: SessionState,
     pub result: Option<SessionResult>,
     pub signature_protocol: Option<SignatureProtocol>,
     pub signature: Option<ResponseSignature>,
     pub cert: Option<SessionCertificate>,
     pub ignored_properties: Option<Vec<String>>,
-    pub interaction_flow_used: Option<InteractionFlow>,
+    pub interaction_type_used: Option<InteractionFlow>,
     pub device_ip_address: Option<String>,
 }
 
@@ -90,6 +90,8 @@ pub enum EndResult {
     OK,
     // User refused the session.
     USER_REFUSED,
+    // User refused on interaction screen, i.e. displayed text and PIN, or verification code choice.
+    USER_REFUSED_INTERACTION,
     // There was a timeout, i.e. end user did not confirm or refuse the operation within given time frame.
     TIMEOUT,
     // For some reason, this RP request cannot be completed. User must either check his/her Smart-ID mobile application or turn to customer support for getting the exact reason.
@@ -108,6 +110,10 @@ pub enum EndResult {
     USER_REFUSED_CONFIRMATIONMESSAGE,
     // User cancelled on confirmationMessageAndVerificationCodeChoice screen.
     USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE,
+    // Failure in executing the protocol
+    PROTOCOL_FAILURE,
+    // Generic server error
+    SERVER_ERROR,
     #[default]
     UNKNOWN,
 }
@@ -142,7 +148,9 @@ impl EndResult {
             EndResult::USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE => Err(
                 SmartIdClientError::UserRefusedConfirmationMessageWithVerificationChoiceException,
             ),
-            _ => Err(SmartIdClientError::SmartIdClientException(
+            EndResult::PROTOCOL_FAILURE => Err(SmartIdClientError::ProtocolFailureException),
+            EndResult::SERVER_ERROR => Err(SmartIdClientError::ServerErrorException),
+            EndResult::UNKNOWN | _ => Err(SmartIdClientError::SmartIdClientException(
                 "Unknown session end result",
             )),
         }

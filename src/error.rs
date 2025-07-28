@@ -10,6 +10,10 @@ pub enum SmartIdClientError {
     #[error("Configuration missing: {0}")]
     ConfigMissingException(&'static str),
 
+    /// Serialization Error
+    #[error("Serialization error: {0}")]
+    SerializationError(String),
+
     ///RelyingPartyAccountConfigurationException
     #[error("Relying Party account configuration exception: {0}")]
     RelyingPartyAccountConfigurationException(&'static str),
@@ -46,6 +50,10 @@ pub enum SmartIdClientError {
     #[error("Failed to set user identity")]
     SetUserIdentityException,
 
+    /// Get signing certificate failed
+    #[error("Get signing certificate failed: {0}")]
+    GetSigningCertificateException(String),
+
     /// Authentication session completed without result
     #[error("Authentication session completed without result")]
     AuthenticationSessionCompletedWithoutResult,
@@ -73,6 +81,10 @@ pub enum SmartIdClientError {
     /// Session response missing signature
     #[error("Session response missing signature")]
     SessionResponseMissingSignature,
+
+    /// Session response missing interaction type
+    #[error("Session response missing interaction type")]
+    SessionResponseMissingInteractionType,
 
     /// Session response signature verification failed
     #[error("Session response signature verification failed: {0}")]
@@ -122,9 +134,9 @@ pub enum SmartIdClientError {
     #[error("Interaction parameters are invalid: {0}")]
     InvalidInteractionParametersException(&'static str),
 
-    /// Failed to generate dynamic link
-    #[error("Failed to generate dynamic link: {0}")]
-    GenerateDynamicLinkException(&'static str),
+    /// Failed to generate device link
+    #[error("Failed to generate device link: {0}")]
+    GenerateDeviceLinkException(&'static str),
 
     /// Invalid signature protocol
     #[error("Invalid signature protocol: {0}")]
@@ -157,4 +169,12 @@ pub enum SmartIdClientError {
     /// Invalid semantic identifier
     #[error("Invalid semantic identifier: {0}")]
     InvalidSemanticIdentifierException(String),
+
+    // Protocol Failure Exception
+    #[error("Protocol failure exception")]
+    ProtocolFailureException,
+
+    // Server Error Exception
+    #[error("Server error exception")]
+    ServerErrorException,
 }

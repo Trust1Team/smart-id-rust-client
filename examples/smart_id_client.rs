@@ -3,15 +3,15 @@ use image::Luma;
 use qrcode::QrCode;
 use smart_id_rust_client::client::smart_id_client::SmartIdClient;
 use smart_id_rust_client::config::SmartIDConfig;
-use smart_id_rust_client::models::authentication_session::{
-    AuthenticationCertificateLevel, AuthenticationRequest,
+use smart_id_rust_client::models::api::authentication_session::{
+    AuthenticationCertificateLevel, AuthenticationDeviceLinkRequest,
 };
-use smart_id_rust_client::models::certificate_choice_session::CertificateChoiceRequest;
-use smart_id_rust_client::models::dynamic_link::DynamicLinkType;
+use smart_id_rust_client::models::api::session_status::SessionStatusResponse;
+use smart_id_rust_client::models::api::signature_session::SignatureDeviceLinkRequest;
+use smart_id_rust_client::models::common::SchemeName;
+use smart_id_rust_client::models::device_link::DeviceLinkType;
 use smart_id_rust_client::models::interaction::Interaction;
-use smart_id_rust_client::models::session_status::SessionStatus;
-use smart_id_rust_client::models::signature::SignatureAlgorithm;
-use smart_id_rust_client::models::signature_session::SignatureRequest;
+use smart_id_rust_client::models::signature::{HashingAlgorithm, SignatureAlgorithm};
 use tracing::{info, Level};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::fmt::SubscriberBuilder;
@@ -32,6 +32,7 @@ async fn main() -> Result<()> {
     let _cfg = SmartIDConfig {
         root_url: "https://sid.demo.sk.ee".to_string(),
         api_path: "/smart-id-rp/v3".to_string(),
+        scheme_name: SchemeName::smart_id_demo,
         relying_party_uuid: "test-uuid".to_string(),
         relying_party_name: "test-name".to_string(),
         client_request_timeout: Some(30000),
@@ -60,21 +61,6 @@ async fn main() -> Result<()> {
         authentication_session_status
     );
 
-    // CERTIFICATE CHOICE
-    // If you are signing a *AdES scheme you will need to include the certificate in the document to be signed
-    // In this case you must fetch public signing key using a certificate choice session
-    // If you are signing without going through the auth flow first, but you have the users semantic id you should use this flow as well (ETSI endpoint NOT document!)
-    // Otherwise, you can skip this step by using the document number returned from the authentication session
-    let certificate_choice_status =
-        uc_certificate_choice_request_example(&cfg, &smart_id_client, document_number.clone())
-            .await?;
-    let _signing_certificate = certificate_choice_status.clone().cert.unwrap().value;
-    // let digest = combine_your_document_and_certifice_to_be_signed(signing_certificate);
-    info!(
-        "Certificate Choice Result: \n {:?}",
-        certificate_choice_status
-    );
-
     // SIGNATURE
     // Sign the document hash with the user's private key
     let digest = "YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=".to_string();
@@ -88,57 +74,40 @@ async fn main() -> Result<()> {
 async fn uc_authentication_request_example(
     cfg: &SmartIDConfig,
     smart_id_client: &SmartIdClient,
-) -> Result<SessionStatus> {
-    let authentication_request = AuthenticationRequest::new(
+) -> Result<SessionStatusResponse> {
+    let authentication_request = AuthenticationDeviceLinkRequest::new(
         cfg,
         vec![Interaction::DisplayTextAndPIN {
             display_text_60: "Authenticate to Application: Test".to_string(),
         }],
-        SignatureAlgorithm::sha256WithRSAEncryption,
+        SignatureAlgorithm::RsassaPss,
         AuthenticationCertificateLevel::QUALIFIED,
+        None, // No callback url is needed for cross device link sessions (QR)
+        HashingAlgorithm::sha_256,
     )?;
 
     smart_id_client
-        .start_authentication_dynamic_link_anonymous_session(authentication_request)
+        .start_authentication_device_link_anonymous_session(authentication_request)
         .await?;
 
     // This link can be displayed as QR code
     // The user can scan the QR code with the device that has the Smart-ID app installed
     // The QR code must be refreshed every 1 second.
-    let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "eng")?;
+    let qr_code_link = smart_id_client.generate_device_link(DeviceLinkType::QR, "eng")?;
     info!("{:?}", qr_code_link);
 
     // This link can be opened inside an app and redirect to the Smart-ID app
-    // It also must be refreshed every 1 second.
-    let app_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::App2App, "eng")?;
+    // It should never be refreshed.
+    let app_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::App2App, "eng")?;
     info!("{:?}", app_to_app_link);
 
     // This link can be opened from the web browser and redirect to the Smart-ID app
-    // It also must be refreshed every 1 second.
-    let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::Web2App, "eng")?;
+    // It should never be refreshed.
+    let web_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::Web2App, "eng")?;
     info!("{:?}", web_to_app_link);
 
     // This will open the QR code as an image on your computer so you can scan it with your smart-id app
     open_qr_in_computer_image_viewer(qr_code_link.clone(), "auth_qr_code")?;
-
-    // This will long poll the session status
-    let result = smart_id_client.get_session_status().await?;
-    info!("{:?}", result.clone().result.unwrap().end_result);
-    Ok(result)
-}
-
-async fn uc_certificate_choice_request_example(
-    cfg: &SmartIDConfig,
-    smart_id_client: &SmartIdClient,
-    document_number: String,
-) -> Result<SessionStatus> {
-    let certificate_choice_request = CertificateChoiceRequest::new(cfg);
-    smart_id_client
-        .start_certificate_choice_notification_document_session(
-            certificate_choice_request,
-            document_number,
-        )
-        .await?;
 
     // This will long poll the session status
     let result = smart_id_client.get_session_status().await?;
@@ -152,32 +121,34 @@ async fn uc_signature_request_example(
     digest: String,
     document_number: String,
 ) -> Result<String> {
-    let signature_request = SignatureRequest::new(
+    let signature_request = SignatureDeviceLinkRequest::new(
         cfg,
         vec![Interaction::DisplayTextAndPIN {
             display_text_60: "Sign document".to_string(),
         }],
         digest,
-        SignatureAlgorithm::sha256WithRSAEncryption,
+        SignatureAlgorithm::RsassaPss,
+        HashingAlgorithm::sha_256,
+        None, // No callback url is needed for cross device link sessions (QR)
     )?;
     smart_id_client
-        .start_signature_dynamic_link_document_session(signature_request, document_number)
+        .start_signature_device_link_document_session(signature_request, document_number)
         .await?;
 
     // This link can be displayed as QR code
     // The user can scan the QR code with the device that has the Smart-ID app installed
     // The QR code must be refreshed every 1 second.
-    let qr_code_link = smart_id_client.generate_dynamic_link(DynamicLinkType::QR, "eng")?;
+    let qr_code_link = smart_id_client.generate_device_link(DeviceLinkType::QR, "eng")?;
     info!("{:?}", qr_code_link);
 
     // This link can be opened inside an app and redirect to the Smart-ID app
-    // It also must be refreshed every 1 second.
-    let app_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::App2App, "eng")?;
+    // It should never be refreshed.
+    let app_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::App2App, "eng")?;
     info!("{:?}", app_to_app_link);
 
     // This link can be opened from the web browser and redirect to the Smart-ID app
-    // It also must be refreshed every 1 second.
-    let web_to_app_link = smart_id_client.generate_dynamic_link(DynamicLinkType::Web2App, "eng")?;
+    // It should never be refreshed.
+    let web_to_app_link = smart_id_client.generate_device_link(DeviceLinkType::Web2App, "eng")?;
     info!("{:?}", web_to_app_link);
 
     // This will open the QR code as an image on your computer so you can scan it with your smart-id app

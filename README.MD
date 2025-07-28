@@ -19,15 +19,19 @@ authentication and mobile digital signing using Smart-ID.</div>
 # Introduction
 The library can be used for easy integration with the Smart-ID API. 
 It provides a simple interface for mobile authentication and mobile digital signing using Smart-ID.
-Additional utilities has been provided for easy integration with the Smart-ID API:
-- generate digest and calculate verification code
-- helper structs
-- interactions with the mobile end-user
+It provides these features via the client:
+- Start signing, authentication and certificate choice flows
+- Maintain state between requests and use this to validate the session responses
 
 ## Status
-Supporting SmartID using:
-- Nation Registry number
-- QR code
+Supporting Smart-ID using:
+- QR Authentication, Signature
+- ETSI (National ID) Authentication, Certificate Choice, Signature
+- Document Number Authentication, Signature
+
+Incomplete:
+- Web2App flows (Will run, but response validation based on callback url not done)
+- App2App flows (Will run, but response validation based on callback url not done)
 
 ## Documentation
 
@@ -72,15 +76,15 @@ cargo doc --no-deps --open
 ## Example Client
 
 See the examples folder for a simple example client.
-To create an SmartID account, download the app:
-[SmartID App](https://www.smart-id.com/download/)
+To create an Smart-ID account, download the app:
+[Smart-ID App](https://www.smart-id.com/download/)
 
 The example application goes through the following use cases:
 - Verify Certificate Existence
-- SmartID Authentication
-- SmartID Digital Signature
+- Smart-ID Authentication
+- Smart-ID Digital Signature
 
-The example is using a MOCK ID to simulate the SmartID user.
+The example is using a MOCK ID to simulate the Smart-ID user.
 
 ```shell
 cargo run --example smart_id_client
@@ -95,6 +99,7 @@ The required environment variables are:
 | HOST_URL                                  | The host address of the Smart ID Service                                       | Y              |
 | RELYING_PARTY_UUID                        | The UUID assigned to the Relying-party - provided by Smart ID                  | Y              |
 | RELYING_PARTY_NAME                        | The unique name assigned to the Relying-Party - provided by Smart ID           | Y              |
+| SMART_ID_SCHEME_NAME                      | The scheme name for the Smart ID Service (smart-id for prod, smart-id-demo..)  | Y              |
 | CLIENT_REQ_NETWORK_TIMEOUT_MILLIS         | The timeout for the REST client when requesting Smart ID Services              | N - default () |
 | CLIENT_REQ_MAX_ATTEMPTS                   | The maximum attempts for the REST client retry mechanism                       |                |
 | CLIENT_REQ_DELAY_SECONDS_BETWEEN_ATTEMPTS | The wait time between consecutive REST client requests                         |                |
@@ -104,7 +109,7 @@ The required environment variables are:
 
 
 
-SmartID configuration can be loaded form environment variables:
+Smart-ID configuration can be loaded form environment variables:
 ```shell
 /// Get default Config (from environment variables)
 let cfg = get_config_from_env();
@@ -112,7 +117,7 @@ let cfg = get_config_from_env();
 
 Or set manually
 ```shell
-/// Create SmartID Config
+/// Create Smart-ID Config
 let cfg = SmartIDConfig {
     root_url: "https://sid.demo.sk.ee".to_string(),
     api_path: "/smart-id-rp/v3".to_string(),
@@ -126,5 +131,5 @@ let cfg = SmartIDConfig {
 Examples of the various flows with explanations can be found in [smart_id_client.rs](examples/smart_id_client.rs).
 You will need to update the RELYING_PARTY environment variables in [config.toml](.cargo/config.toml) for these to work.
 
-Examples of more complex auth->certificate->sign flows with instructions can be found in [app_interaction_tests.rs](tests/app_interaction_tests.rs).
-You will need to update the RELYING_PARTY variables in the test file for these to work.
+Examples of each flow with instructions can be found in [app_interaction_tests.rs](tests/app_interaction_tests.rs).
+You will need to update some variables at the top of the file to run these tests (see comments in the file).
