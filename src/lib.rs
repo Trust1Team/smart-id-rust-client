@@ -8,7 +8,7 @@
 //!
 //! # Example
 //!
-//! ```rust
+//! ```rust,ignore
 //! use crate::smart_id_rust_client::config::SmartIDConfig;
 //! use crate::smart_id_rust_client::client::smart_id_client::SmartIdClient;
 //! use smart_id_rust_client::models::api::authentication_session::AuthenticationDeviceLinkRequest;

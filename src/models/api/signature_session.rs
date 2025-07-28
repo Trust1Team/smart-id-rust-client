@@ -8,8 +8,6 @@ use crate::models::signature::{
     HashingAlgorithm, SignatureAlgorithm, SignatureProtocol, SignatureProtocolParameters,
     SignatureRequestAlgorithmParameters,
 };
-use base64::prelude::BASE64_STANDARD;
-use base64::Engine;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 

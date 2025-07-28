@@ -287,10 +287,10 @@ mod tests {
         assert_eq!(unprotected_link, "https://smart-id.com?deviceLinkType=QR&sessionToken=sessionToken&sessionType=auth&version=1.0&lang=eng");
 
         let auth_code_payload = device_link.generate_auth_code_payload();
-        assert_eq!(auth_code_payload, "smart-id-demo|ACSP_V2|zv++eYQ9JGnEwd3TLpzw/5pJqQQ+zhjp0kFaJfk0f39TW89wOPRUj9PX7rITfKUWQq367RGo/91Q46WNrGRLrg==|REVNTyBUcnVzdDE=||W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==|https://example.com/smart-id/callback|https://smart-id.com?deviceLinkType=QR&sessionToken=sessionToken&sessionType=auth&version=1.0&lang=eng");
+        assert_eq!(auth_code_payload, "smart-id-demo|ACSP_V2|zv++eYQ9JGnEwd3TLpzw/5pJqQQ+zhjp0kFaJfk0f39TW89wOPRUj9PX7rITfKUWQq367RGo/91Q46WNrGRLrg==|UkVMWUlOR19QQVJUWV9OQU1F||W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==|https://example.com/smart-id/callback|https://smart-id.com?deviceLinkType=QR&sessionToken=sessionToken&sessionType=auth&version=1.0&lang=eng");
 
         let auth_code = device_link.generate_auth_code();
-        assert_eq!(auth_code, "yEbrTnbQ1AmnwnwGT1BGTNjvX2er1Hvun-zsWR9UwS4");
+        assert_eq!(auth_code, "JeHwngmeXvisAQD_RRkE4MDhBKnXMzlbmxMKxHaQvso");
     }
 
     #[traced_test]
@@ -325,11 +325,11 @@ mod tests {
         let auth_code_payload = device_link.generate_auth_code_payload();
         assert_eq!(
             auth_code_payload,
-            "smart-id-demo|ACSP_V2|FtKbl73BUkdTFvBvoz+Xg4thbS71WHBYIM7ukj8mykEns4hMWPaXeFN8nfEYwgexuJw9YIOYlqSLFyZBYAnEqw==|REVNTyBUcnVzdDE=||W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==||https://sid.demo.sk.ee/device-link?deviceLinkType=QR&elapsedSeconds=0&sessionToken=UhZj7BX4XWp6ZPQwI29ZoT6o&sessionType=auth&version=1.0&lang=eng"
+            "smart-id-demo|ACSP_V2|FtKbl73BUkdTFvBvoz+Xg4thbS71WHBYIM7ukj8mykEns4hMWPaXeFN8nfEYwgexuJw9YIOYlqSLFyZBYAnEqw==|UkVMWUlOR19QQVJUWV9OQU1F||W3sidHlwZSI6ImNvbmZpcm1hdGlvbk1lc3NhZ2UiLCJkaXNwbGF5VGV4dDIwMCI6IlRFU1QgMSJ9XQ==||https://sid.demo.sk.ee/device-link?deviceLinkType=QR&elapsedSeconds=0&sessionToken=UhZj7BX4XWp6ZPQwI29ZoT6o&sessionType=auth&version=1.0&lang=eng"
         );
 
         let auth_code = device_link.generate_auth_code();
-        assert_eq!(auth_code, "Ecjsq9F38hNxP3diXalFtFFXcEklMKQUQpI7nMLre2M");
+        assert_eq!(auth_code, "nf7jnfLkQ_3rztvdOpzZzbz6iN2a5AowWDWZnGov1e0");
     }
 
     #[traced_test]

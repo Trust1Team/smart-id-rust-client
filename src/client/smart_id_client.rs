@@ -33,6 +33,7 @@ use tracing::debug;
 // Copied from https://github.com/SK-EID/smart-id-java-client/blob/81e48f519bf882db8584a344b161db378b959093/src/main/java/ee/sk/smartid/v3/rest/SmartIdRestConnector.java#L79
 const SESSION_STATUS_URI: &str = "/session";
 const NOTIFICATION_CERTIFICATE_CHOICE_WITH_SEMANTIC_IDENTIFIER_PATH: &str = "/signature/certificate-choice/notification/etsi";
+#[allow(dead_code)]
 const NOTIFICATION_CERTIFICATE_CHOICE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/certificate-choice/notification/document";
 const ANONYMOUSE_DEVICE_LINK_CERTIFICATE_CHOICE_PATH: &str = "/signature/certificate-choice/device-link/anonymous";
 const SIGNING_CERTIFICATE_WITH_DOCUMENT_NUMBER_PATH: &str = "/signature/certificate";
