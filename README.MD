@@ -24,7 +24,7 @@ It provides these features via the client:
 - Maintain state between requests and use this to validate the session responses
 
 ## Status
-Supporting SmartID using:
+Supporting Smart-ID using:
 - QR Authentication, Signature
 - ETSI (National ID) Authentication, Certificate Choice, Signature
 - Document Number Authentication, Signature
@@ -76,15 +76,15 @@ cargo doc --no-deps --open
 ## Example Client
 
 See the examples folder for a simple example client.
-To create an SmartID account, download the app:
-[SmartID App](https://www.smart-id.com/download/)
+To create an Smart-ID account, download the app:
+[Smart-ID App](https://www.smart-id.com/download/)
 
 The example application goes through the following use cases:
 - Verify Certificate Existence
-- SmartID Authentication
-- SmartID Digital Signature
+- Smart-ID Authentication
+- Smart-ID Digital Signature
 
-The example is using a MOCK ID to simulate the SmartID user.
+The example is using a MOCK ID to simulate the Smart-ID user.
 
 ```shell
 cargo run --example smart_id_client
@@ -109,7 +109,7 @@ The required environment variables are:
 
 
 
-SmartID configuration can be loaded form environment variables:
+Smart-ID configuration can be loaded form environment variables:
 ```shell
 /// Get default Config (from environment variables)
 let cfg = get_config_from_env();
@@ -117,7 +117,7 @@ let cfg = get_config_from_env();
 
 Or set manually
 ```shell
-/// Create SmartID Config
+/// Create Smart-ID Config
 let cfg = SmartIDConfig {
     root_url: "https://sid.demo.sk.ee".to_string(),
     api_path: "/smart-id-rp/v3".to_string(),
