@@ -829,21 +829,27 @@ impl SmartIdClient {
             } => {
                 let device_link = match device_link_type {
                     DeviceLinkType::Web2App | DeviceLinkType::App2App => {
-                        SameDeviceLink {
-                            device_link_base,
-                            device_link_type,
-                            session_token,
-                            session_type: SessionType::auth,
-                            version: DEVICE_LINK_VERSION.to_string(),
-                            language_code: language_code.to_string(),
-                            session_secret,
-                            scheme_name: self.cfg.scheme_name.clone(),
-                            signature_protocol: Some(signature_protocol),
-                            rp_challenge_or_digest: rp_challenge,
-                            relying_party_name,
-                            brokered_rp_name: "".to_string(),
-                            interactions,
-                            initial_callback_url,
+                        if let Some(initial_callback_url) = initial_callback_url {
+                            SameDeviceLink {
+                                device_link_base,
+                                device_link_type,
+                                session_token,
+                                session_type: SessionType::auth,
+                                version: DEVICE_LINK_VERSION.to_string(),
+                                language_code: language_code.to_string(),
+                                session_secret,
+                                scheme_name: self.cfg.scheme_name.clone(),
+                                signature_protocol: Some(signature_protocol),
+                                rp_challenge_or_digest: rp_challenge,
+                                relying_party_name,
+                                brokered_rp_name: "".to_string(),
+                                interactions,
+                                initial_callback_url,
+                            }
+                        } else {
+                            return Err(SmartIdClientError::GenerateDeviceLinkException(
+                                "Initial callback URL is required for Web2App or App2App device links",
+                            ));
                         }
                     }
                     DeviceLinkType::QR => {
@@ -882,21 +888,27 @@ impl SmartIdClient {
             } => {
                 let device_link = match device_link_type {
                     DeviceLinkType::Web2App | DeviceLinkType::App2App => {
-                        SameDeviceLink {
-                            device_link_base,
-                            device_link_type,
-                            session_token,
-                            session_type: SessionType::sign,
-                            version: DEVICE_LINK_VERSION.to_string(),
-                            language_code: language_code.to_string(),
-                            session_secret,
-                            scheme_name: self.cfg.scheme_name.clone(),
-                            signature_protocol: Some(signature_protocol),
-                            rp_challenge_or_digest: digest,
-                            relying_party_name,
-                            brokered_rp_name: "".to_string(),
-                            interactions,
-                            initial_callback_url,
+                        if let Some(initial_callback_url) = initial_callback_url {
+                            SameDeviceLink {
+                                device_link_base,
+                                device_link_type,
+                                session_token,
+                                session_type: SessionType::sign,
+                                version: DEVICE_LINK_VERSION.to_string(),
+                                language_code: language_code.to_string(),
+                                session_secret,
+                                scheme_name: self.cfg.scheme_name.clone(),
+                                signature_protocol: Some(signature_protocol),
+                                rp_challenge_or_digest: digest,
+                                relying_party_name,
+                                brokered_rp_name: "".to_string(),
+                                interactions,
+                                initial_callback_url,
+                            }
+                        } else {
+                            return Err(SmartIdClientError::GenerateDeviceLinkException(
+                                "Initial callback URL is required for Web2App or App2App device links",
+                            ));
                         }
                     }
                     DeviceLinkType::QR => {
@@ -932,21 +944,27 @@ impl SmartIdClient {
             } => {
                 let device_link = match device_link_type {
                     DeviceLinkType::Web2App | DeviceLinkType::App2App => {
-                        SameDeviceLink {
-                            device_link_base,
-                            device_link_type,
-                            session_token,
-                            session_type: SessionType::cert,
-                            version: DEVICE_LINK_VERSION.to_string(),
-                            language_code: language_code.to_string(),
-                            session_secret,
-                            scheme_name: self.cfg.scheme_name.clone(),
-                            signature_protocol: None,
-                            rp_challenge_or_digest: "".to_string(),
-                            relying_party_name,
-                            brokered_rp_name: "".to_string(),
-                            interactions: "".to_string(),
-                            initial_callback_url,
+                        if let Some(initial_callback_url) = initial_callback_url {
+                            SameDeviceLink {
+                                device_link_base,
+                                device_link_type,
+                                session_token,
+                                session_type: SessionType::cert,
+                                version: DEVICE_LINK_VERSION.to_string(),
+                                language_code: language_code.to_string(),
+                                session_secret,
+                                scheme_name: self.cfg.scheme_name.clone(),
+                                signature_protocol: None,
+                                rp_challenge_or_digest: "".to_string(),
+                                relying_party_name,
+                                brokered_rp_name: "".to_string(),
+                                interactions: "".to_string(),
+                                initial_callback_url,
+                            }
+                        } else {
+                            return Err(SmartIdClientError::GenerateDeviceLinkException(
+                                "Initial callback URL is required for Web2App or App2App device links",
+                            ));
                         }
                     }
                     DeviceLinkType::QR => {
