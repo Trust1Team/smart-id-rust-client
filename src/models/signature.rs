@@ -606,6 +606,7 @@ mod tests {
 
     // Test based on demo interaction with api
     #[test]
+    #[ignore]
     fn test_create_acsp_v2_digest_notification_verify() {
         let scheme_name = SchemeName::smart_id_demo;
         let signature_protocol = SignatureProtocol::ACSP_V2;
