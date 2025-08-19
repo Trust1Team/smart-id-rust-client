@@ -148,7 +148,7 @@ pub enum SmartIdClientError {
 
     /// Digest is not in valid format
     #[error("Digest is not in valid format: {0}")]
-    InvalidDigestException(&'static str),
+    InvalidDigestException(String),
 
     /// User should view Smart-ID app or portal
     #[error("User should view Smart-ID app or portal")]

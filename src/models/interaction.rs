@@ -102,35 +102,39 @@ pub fn encode_interactions_base_64(interactions: &Vec<Interaction>) -> Result<St
 }
 
 pub fn hash_encode_digest(digest: &str, hashing_algorithm: &HashingAlgorithm) -> Result<String> {
+    let digest_bytes = STANDARD.decode(digest).map_err(
+        |e| SmartIdClientError::InvalidDigestException(format!("Failed to decode digest from base 64: {}", e)),
+    )?;
+
     let hash_bytes = match hashing_algorithm {
         HashingAlgorithm::sha_256 => {
             let mut hasher = Sha256::new();
-            hasher.update(digest.as_bytes());
+            hasher.update(digest_bytes);
             hasher.finalize().to_vec()
         },
         HashingAlgorithm::sha_384 => {
             let mut hasher = Sha384::new();
-            hasher.update(digest.as_bytes());
+            hasher.update(digest_bytes);
             hasher.finalize().to_vec()
         },
         HashingAlgorithm::sha_512 => {
             let mut hasher = Sha512::new();
-            hasher.update(digest.as_bytes());
+            hasher.update(digest_bytes);
             hasher.finalize().to_vec()
         },
         HashingAlgorithm::sha3_256 => {
             let mut hasher = sha3::Sha3_256::new();
-            hasher.update(digest.as_bytes());
+            hasher.update(digest_bytes);
             hasher.finalize().to_vec()
         },
         HashingAlgorithm::sha3_384 => {
             let mut hasher = sha3::Sha3_384::new();
-            hasher.update(digest.as_bytes());
+            hasher.update(digest_bytes);
             hasher.finalize().to_vec()
         },
         HashingAlgorithm::sha3_512 => {
             let mut hasher = sha3::Sha3_512::new();
-            hasher.update(digest.as_bytes());
+            hasher.update(digest_bytes);
             hasher.finalize().to_vec()
         },
     };
