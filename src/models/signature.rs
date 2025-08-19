@@ -234,7 +234,7 @@ impl SignatureProtocolParameters {
 
     // Get the digest from the request parameters this.
     // This is only possible for RAW_DIGEST_SIGNATURE requests, as ACSP_V2 requests require a server random from the response to build the digest (auth)
-    pub(crate) fn get_digest(&self) -> Option<String> {
+    pub fn get_digest(&self) -> Option<String> {
         match self {
             SignatureProtocolParameters::RAW_DIGEST_SIGNATURE { digest, .. } => {
                 Some(digest.clone())
