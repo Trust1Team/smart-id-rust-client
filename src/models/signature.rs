@@ -334,6 +334,7 @@ pub struct MaskGenAlgorithmParameters {
     pub hash_algorithm: HashingAlgorithm,
 }
 
+// Based on the list here https://github.com/SK-EID/smart-id-java-client/blob/bc6157305aea08186e56e6484390ffa8065f5b65/src/main/java/ee/sk/smartid/HashAlgorithm.java#L1-L102
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING-KEBAB-CASE")]
 #[allow(non_camel_case_types)]
