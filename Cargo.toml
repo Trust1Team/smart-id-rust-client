@@ -1,6 +1,6 @@
 [package]
 name = "smart-id-rust-client"
-version = "0.2.1"
+version = "0.3.3"
 description = "Smart ID Rust Client"
 homepage = "https://smart-id.com"
 authors = ["Michallis Pashidis <michallis@trust1team.com>, Joey de l'Arago <joeydelarago@gmail.com>"]
@@ -24,7 +24,7 @@ tokio = { version = "1.36.0", features = ["full"] }
 
 # Error handling, logging
 anyhow = "1.0.95"
-thiserror = "1.0.59"
+thiserror = "2.0.18"
 serde_with = "3.8.0"
 tracing = "0.1.40"
 tracing-subscriber = {  version = "0.3.18", features = [
@@ -36,13 +36,13 @@ tracing-subscriber = {  version = "0.3.18", features = [
 # HTTP & Serialization
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.114"
-reqwest = {  version = "0.12.4", features = [
+reqwest = {  version = "0.12.12", features = [
     "json",
     "rustls-tls",
 ] }
 chrono = { version = "0.4.39", features = ["serde"] }
-strum = "0.27.1"
-strum_macros = "0.26.4"
+strum = "0.28.0"
+strum_macros = "0.28.0"
 
 # Cryptography
 base64 = "0.22.0"
